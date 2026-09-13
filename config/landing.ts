@@ -1,1 +1,1 @@
-export const landingConfig = {};
+export const features = [];
