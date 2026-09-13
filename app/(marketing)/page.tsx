@@ -1,23 +1,21 @@
-import { infos } from "@/config/landing";
-import BentoGrid from "@/components/sections/bentogrid";
-import Features from "@/components/sections/features";
-import HeroLanding from "@/components/sections/hero-landing";
-import InfoLanding from "@/components/sections/info-landing";
-import Powered from "@/components/sections/powered";
-import PreviewLanding from "@/components/sections/preview-landing";
-import Testimonials from "@/components/sections/testimonials";
-
-export default function IndexPage() {
+export default function Home() {
   return (
-    <>
-      <HeroLanding />
-      <PreviewLanding />
-      <Powered />
-      <BentoGrid />
-      <InfoLanding data={infos[0]} reverse={true} />
-      {/* <InfoLanding data={infos[1]} /> */}
-      <Features />
-      <Testimonials />
-    </>
+    <main className="flex min-h-screen flex-col items-center justify-between p-24">
+      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
+        <div className="text-center mx-auto space-y-6">
+          <h1 className="text-5xl font-bold tracking-tight text-gray-900 sm:text-6xl">
+            Automate Your Cleaning Business Operations
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Say goodbye to messy spreadsheets and paper schedules. Smart Cleaning Desk brings your bookings, client requests, and daily operations into one powerful platform.
+          </p>
+          <div className="flex justify-center gap-4">
+            <a href="/pricing" className="bg-black text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition">
+              View Pricing
+            </a>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }
