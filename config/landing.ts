@@ -2,9 +2,9 @@ import { FeatureLdg, InfoLdg, TestimonialType } from "types";
 
 export const infos: InfoLdg[] = [
   {
-    title: "Empower your projects",
+    title: "Smart Cleaning Desk",
     description:
-      "Unlock the full potential of your projects with our open-source SaaS platform. Collaborate seamlessly, innovate effortlessly, and scale limitlessly.",
+      "Smart Cleaning Desk helps cleaning businesses manage customer messages, leads, and daily operations with powerful automation and smart business tools—all in one platform. Collaborate seamlessly, innovate effortlessly, and scale limitlessly.",
     image: "/_static/illustrations/work-from-home.jpg",
     list: [
       {
@@ -54,20 +54,17 @@ export const infos: InfoLdg[] = [
 
 export const features: FeatureLdg[] = [
   {
-    title: "Feature 1",
-    description:
-      "Amet praesentium deserunt ex commodi tempore fuga voluptatem. Sit, sapiente.",
-    link: "/",
-    icon: "nextjs",
-  },
+ {
+  title: "Smart Scheduling",
+  description: "Easily manage and schedule cleaning appointments for your team with automated reminders.",
+  link: "/",
+  icon: "nextjs",
   {
-    title: "Feature 2",
-    description:
-      "Amet praesentium deserunt ex commodi tempore fuga voluptatem. Sit, sapiente.",
-    link: "/",
-    icon: "google",
-  },
-  {
+  title: "Client & Lead Management",
+  description: "Track customer messages, requests, and daily operations all in one dashboard.",
+  link: "/",
+  icon: "google",
+},
     title: "Feature 3",
     description:
       "Amet praesentium deserunt ex commodi tempore fuga voluptatem. Sit, sapiente.",
