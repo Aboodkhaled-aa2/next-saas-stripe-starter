@@ -12,7 +12,7 @@ export default function Page() {
                         <span className="text-xl font-bold tracking-tight text-white">CleanAgent<span className="text-blue-500">.ai</span></span>
                     </div>
                     <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
-                        <a href="/how-it-works" className="hover:text-white transition">How it Works</a>
+                      <a href="/how-it-works" ...>How it Works</a>
                         <a href="#pricing" className="hover:text-white transition">Pricing</a>
                     </div>
                     <div>
