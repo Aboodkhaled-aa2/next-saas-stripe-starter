@@ -12,7 +12,7 @@ export default function Page() {
                         <span className="text-xl font-bold tracking-tight text-white">CleanAgent<span className="text-blue-500">.ai</span></span>
                     </div>
                     <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
-                        <a href="#features" className="hover:text-white transition">How it Works</a>
+                        <a href="#how-it-works" className="hover:text-white transition">How it Works</a>
                         <a href="#pricing" className="hover:text-white transition">Pricing</a>
                     </div>
                     <div>
@@ -47,6 +47,58 @@ export default function Page() {
                             Hire Your AI Employee Now
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                         </a>
+                    </div>
+                </div>
+            </section>
+
+            {/* How It Works Section */}
+            <section id="how-it-works" className="py-24 border-t border-gray-800/60 bg-[#080b13] relative">
+                <div className="max-w-6xl mx-auto px-6">
+                    <div className="text-center max-w-2xl mx-auto mb-16">
+                        <div className="text-blue-400 text-sm font-semibold tracking-wider uppercase mb-2">Seamless Automation</div>
+                        <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">How Your AI Employee Works</h2>
+                        <p className="text-gray-400 text-base">Set it up in 5 minutes. Let it handle your customer operations 24/7.</p>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-8">
+                        {/* Step 1 */}
+                        <div className="bg-[#131b2e]/60 border border-gray-800/80 rounded-2xl p-8 relative flex flex-col justify-between">
+                            <div>
+                                <div className="w-12 h-12 rounded-xl bg-blue-600/10 border border-blue-600/30 flex items-center justify-center text-blue-400 font-bold text-xl mb-6">
+                                    01
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-3">Connects Instantly</h3>
+                                <p className="text-gray-400 text-sm leading-relaxed">
+                                    Links with your business phone number and WhatsApp or social channels in just a few clicks. No complex coding required.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Step 2 */}
+                        <div className="bg-[#131b2e]/60 border border-gray-800/80 rounded-2xl p-8 relative flex flex-col justify-between">
+                            <div>
+                                <div className="w-12 h-12 rounded-xl bg-blue-600/10 border border-blue-600/30 flex items-center justify-center text-blue-400 font-bold text-xl mb-6">
+                                    02
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-3">Answers & Qualifies</h3>
+                                <p className="text-gray-400 text-sm leading-relaxed">
+                                    When clients call or text asking for prices or availability, the AI talks naturally, understands their needs, and qualifies them.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Step 3 */}
+                        <div className="bg-[#131b2e]/60 border border-gray-800/80 rounded-2xl p-8 relative flex flex-col justify-between">
+                            <div>
+                                <div className="w-12 h-12 rounded-xl bg-blue-600/10 border border-blue-600/30 flex items-center justify-center text-blue-400 font-bold text-xl mb-6">
+                                    03
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-3">Books & Syncs</h3>
+                                <p className="text-gray-400 text-sm leading-relaxed">
+                                    It locks down appointments directly into your schedule and sends confirmations, keeping your cleaning business running on autopilot.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
