@@ -2,13 +2,13 @@ export default function Page() {
   return (
     <div className="min-h-screen bg-[#0b0f19] text-gray-100 font-sans antialiased selection:bg-blue-600 selection:text-white">
       {/* Header / Navbar */}
-      <header className="border-b border-gray-800/60 sticky top-0 z-50 bg-[#0b0f19]/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-emerald-500 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-600/30">
+      <header className="border-b border-gray-800/60 sticky top-0 z-50 bg-[#0b0f19]/90 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-emerald-500 flex items-center justify-center font-bold text-white text-sm sm:text-base shadow-lg shadow-blue-600/30">
               AI
             </div>
-            <span className="text-xl font-bold tracking-tight text-white">CleanAgent<span className="text-blue-500">.ai</span></span>
+            <span className="text-lg sm:text-xl font-bold tracking-tight text-white">CleanAgent<span className="text-blue-500">.ai</span></span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
             <a href="/how-it-works" className="hover:text-white transition">How it Works</a>
@@ -16,7 +16,7 @@ export default function Page() {
             <a href="#pricing" className="hover:text-white transition">Pricing</a>
           </div>
           <div>
-            <a href="#pricing" className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-medium transition shadow-md shadow-blue-600/20">
+            <a href="/login" className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-medium transition shadow-md shadow-blue-600/20">
               Get Started
             </a>
           </div>
@@ -38,7 +38,7 @@ export default function Page() {
             Meet your tireless AI receptionist. It answers calls, replies to WhatsApp messages instantly, qualifies leads, and books jobs around the clock.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href="#pricing" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-semibold transition shadow-lg shadow-blue-600/30">
+            <a href="/login" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-semibold transition shadow-lg shadow-blue-600/30">
               Hire Your AI Employee Now &rarr;
             </a>
             <a href="/how-it-works" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-800 px-8 py-4 rounded-xl font-semibold transition">
@@ -64,7 +64,7 @@ export default function Page() {
             <div className="bg-[#0b0f19] border border-gray-800 p-8 rounded-2xl">
               <div className="w-12 h-12 rounded-xl bg-emerald-600/10 text-emerald-400 flex items-center justify-center text-xl font-bold mb-6">📅</div>
               <h3 className="text-xl font-semibold text-white mb-3">Automated Booking</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">Qualifies lead requirements (home size, rooms) and locks down appointments directly into your calendar.</p>
+              <p className="text-gray-400 text-sm leading-relaxed">Qualifies lead requirements and locks down appointments directly into your calendar.</p>
             </div>
             <div className="bg-[#0b0f19] border border-gray-800 p-8 rounded-2xl">
               <div className="w-12 h-12 rounded-xl bg-purple-600/10 text-purple-400 flex items-center justify-center text-xl font-bold mb-6">⚡</div>
@@ -82,39 +82,59 @@ export default function Page() {
             <h2 className="text-3xl font-bold text-white mb-4">Simple, Transparent Pricing</h2>
             <p className="text-gray-400">Choose the plan that fits your cleaning business growth.</p>
           </div>
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {/* Starter Plan */}
             <div className="bg-[#0d1322] border border-gray-800 p-8 rounded-2xl flex flex-col justify-between">
               <div>
                 <h3 className="text-xl font-bold text-white mb-2">Starter</h3>
                 <p className="text-gray-400 text-sm mb-6">Perfect for independent cleaners & small local teams.</p>
-                <div className="text-4xl font-extrabold text-white mb-6">$99<span className="text-sm font-normal text-gray-400">/month</span></div>
+                <div className="text-3xl sm:text-4xl font-extrabold text-white mb-6">$49 - $59<span className="text-sm font-normal text-gray-400">/month</span></div>
                 <ul className="space-y-4 text-sm text-gray-300 mb-8">
-                  <li className="flex items-center gap-3">✓ AI WhatsApp Assistant</li>
-                  <li className="flex items-center gap-3">✓ Up to 150 Bookings/mo</li>
-                  <li className="flex items-center gap-3">✓ Basic Calendar Integration</li>
+                  <li className="flex items-center gap-3">✓ WhatsApp AI Assistant</li>
+                  <li className="flex items-center gap-3">✓ Up to 50–75 Bookings/mo</li>
+                  <li className="flex items-center gap-3">✓ Calendar Integration</li>
+                  <li className="flex items-center gap-3">✓ Basic Follow-ups</li>
                 </ul>
               </div>
-              <a href="#pricing" className="w-full text-center bg-gray-800 hover:bg-gray-700 text-white font-medium py-3 rounded-xl transition">
+              <a href="/login" className="w-full text-center bg-gray-800 hover:bg-gray-700 text-white font-medium py-3 rounded-xl transition">
+                Get Started
+              </a>
+            </div>
+
+            {/* Growth Plan (Popular) */}
+            <div className="bg-[#0d1322] border-2 border-blue-600 p-8 rounded-2xl flex flex-col justify-between relative shadow-xl shadow-blue-600/10">
+              <div className="absolute -top-3.5 right-8 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">POPULAR</div>
+              <div>
+                <h3 className="text-xl font-bold text-white mb-2">Growth</h3>
+                <p className="text-gray-400 text-sm mb-6">For scaling cleaning companies wanting full automation.</p>
+                <div className="text-3xl sm:text-4xl font-extrabold text-white mb-6">$129 - $149<span className="text-sm font-normal text-gray-400">/month</span></div>
+                <ul className="space-y-4 text-sm text-gray-300 mb-8">
+                  <li className="flex items-center gap-3">✓ WhatsApp AI + Voice AI</li>
+                  <li className="flex items-center gap-3">✓ 150–250 Bookings/mo</li>
+                  <li className="flex items-center gap-3">✓ CRM & Follow-ups</li>
+                  <li className="flex items-center gap-3">✓ Lead Capture & Auto Booking</li>
+                </ul>
+              </div>
+              <a href="/login" className="w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition shadow-md shadow-blue-600/20">
                 Get Started
               </a>
             </div>
 
             {/* Pro Plan */}
-            <div className="bg-[#0d1322] border-2 border-blue-600 p-8 rounded-2xl flex flex-col justify-between relative shadow-xl shadow-blue-600/10">
-              <div className="absolute -top-3.5 right-8 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">POPULAR</div>
+            <div className="bg-[#0d1322] border border-gray-800 p-8 rounded-2xl flex flex-col justify-between">
               <div>
-                <h3 className="text-xl font-bold text-white mb-2">Pro Growth</h3>
-                <p className="text-gray-400 text-sm mb-6">For scaling cleaning companies wanting full automation.</p>
-                <div className="text-4xl font-extrabold text-white mb-6">$249<span className="text-sm font-normal text-gray-400">/month</span></div>
+                <h3 className="text-xl font-bold text-white mb-2">Pro</h3>
+                <p className="text-gray-400 text-sm mb-6">High-volume operations requiring customized AI setups.</p>
+                <div className="text-3xl sm:text-4xl font-extrabold text-white mb-6">$249 - $299<span className="text-sm font-normal text-gray-400">/month</span></div>
                 <ul className="space-y-4 text-sm text-gray-300 mb-8">
-                  <li className="flex items-center gap-3">✓ 24/7 Voice Calls + WhatsApp AI</li>
-                  <li className="flex items-center gap-3">✓ Unlimited Bookings & Leads</li>
-                  <li className="flex items-center gap-3">✓ Advanced CRM & Follow-ups</li>
+                  <li className="flex items-center gap-3">✓ Unlimited / High-volume</li>
+                  <li className="flex items-center gap-3">✓ Voice + WhatsApp AI</li>
+                  <li className="flex items-center gap-3">✓ Advanced CRM & Reactivation</li>
+                  <li className="flex items-center gap-3">✓ Custom AI Workflows</li>
                   <li className="flex items-center gap-3">✓ Priority Support</li>
                 </ul>
               </div>
-              <a href="#pricing" className="w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition shadow-md shadow-blue-600/20">
+              <a href="/login" className="w-full text-center bg-gray-800 hover:bg-gray-700 text-white font-medium py-3 rounded-xl transition">
                 Get Started
               </a>
             </div>
