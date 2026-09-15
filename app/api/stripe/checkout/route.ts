@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { getServerAuthSession } from "../../../server/auth";
-import { stripe } from "../../../lib/stripe";
-import { env } from "../../../env.mjs";
+import { getServerAuthSession } from "@/server/auth";
+import { stripe } from "@/lib/stripe";
+import { env } from "@/env.mjs";
 
 export async function POST(req: Request) {
   try {
