@@ -1,39 +1,39 @@
-Import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { stripe } from "@/lib/stripe";
 import { env } from "@/env.mjs";
 
 export async function POST(req: Request) {
-  Try {
-    Const session = await auth();
+  try {
+    const session = await auth();
 
-    If (!session || !session.user) {
-      Return new NextResponse("Unauthorized", { status: 401 });
+    if (!session || !session.user) {
+      return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    Const body = await req.json();
-    Const { priceId } = body;
+    const body = await req.json();
+    const { priceId } = body;
 
-    Const stripeSession = await stripe.checkout.sessions.create({
-      Success_url: `${env.NEXTAUTH_URL}/dashboard?success=true`,
-      Cancel_url: `${env.NEXTAUTH_URL}/pricing?canceled=true`,
-      Payment_method_types: ["card"],
-      Mode: "subscription",
-      Customer_email: session.user.email ?? undefined,
-      Line_items: [
+    const stripeSession = await stripe.checkout.sessions.create({
+      success_url: `${env.NEXTAUTH_URL}/dashboard?success=true`,
+      cancel_url: `${env.NEXTAUTH_URL}/pricing?canceled=true`,
+      payment_method_types: ["card"],
+      mode: "subscription",
+      customer_email: session.user.email ?? undefined,
+      line_items: [
         {
-          Price: priceId,
-          Quantity: 1,
+          price: priceId,
+          quantity: 1,
         },
       ],
-      Metadata: {
-        UserId: session.user.id,
+      metadata: {
+        userId: session.user.id,
       },
     });
 
-    Return NextResponse.json({ url: stripeSession.url });
+    return NextResponse.json({ url: stripeSession.url });
   } catch (error) {
-    Console.error("[STRIPE_ERROR]", error);
-    Return new NextResponse("Internal Error", { status: 500 });
+    console.error("[STRIPE_ERROR]", error);
+    return new NextResponse("Internal Error", { status: 500 });
   }
 }
