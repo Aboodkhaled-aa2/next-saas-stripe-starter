@@ -16,12 +16,12 @@ import { toast } from "sonner";
 import { Icons } from "@/components/shared/icons";
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
-  type?: string;
+  type?: "login" | "register";
 }
 
 type FormData = z.infer<typeof userAuthSchema>;
 
-export function UserAuthForm({ className, type, ...props }: UserAuthFormProps) {
+export function UserAuthForm({ className, type = "login", ...props }: UserAuthFormProps) {
   const {
     register,
     handleSubmit,
@@ -29,6 +29,7 @@ export function UserAuthForm({ className, type, ...props }: UserAuthFormProps) {
   } = useForm<FormData>({
     resolver: zodResolver(userAuthSchema),
   });
+  
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [isGoogleLoading, setIsGoogleLoading] = React.useState<boolean>(false);
   const searchParams = useSearchParams();
@@ -36,31 +37,67 @@ export function UserAuthForm({ className, type, ...props }: UserAuthFormProps) {
   async function onSubmit(data: FormData) {
     setIsLoading(true);
 
-    const signInResult = await signIn("resend", {
-      email: data.email.toLowerCase(),
-      redirect: false,
-      callbackUrl: searchParams?.get("from") || "/dashboard",
-    });
+    try {
+      // هنا تتم عملية التسجيل أو تسجيل الدخول عبر الإيميل والباسورد
+      const signInResult = await signIn("credentials", {
+        email: data.email.toLowerCase(),
+        password: data.password,
+        redirect: false,
+        callbackUrl: searchParams?.get("from") || "/dashboard",
+      });
 
-    setIsLoading(false);
+      setIsLoading(false);
 
-    if (!signInResult?.ok) {
-      return toast.error("Something went wrong.", {
-        description: "Your sign in request failed. Please try again."
+      if (!signInResult?.ok) {
+        return toast.error("Something went wrong.", {
+          description: "Your sign in request failed. Please try again.",
+        });
+      }
+
+      toast.success("Success!", {
+        description: "You have successfully signed in.",
+      });
+      
+      window.location.href = searchParams?.get("from") || "/dashboard";
+    } catch (error) {
+      setIsLoading(false);
+      toast.error("Error", {
+        description: "An unexpected error occurred.",
       });
     }
-
-    return toast.success("Check your email", {
-      description: "We sent you a login link. Be sure to check your spam too.",
-    });
   }
 
   return (
     <div className={cn("grid gap-6", className)} {...props}>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="grid gap-2">
+        <div className="grid gap-4">
+          
+          {/* حقل الاسم (يظهر فقط في حالة التسجيل Register) */}
+          {type === "register" && (
+            <div className="grid gap-1">
+              <Label className="text-gray-300" htmlFor="name">
+                Name
+              </Label>
+              <Input
+                id="name"
+                placeholder="John Doe"
+                type="text"
+                autoCapitalize="none"
+                autoComplete="name"
+                autoCorrect="off"
+                disabled={isLoading || isGoogleLoading}
+                className="bg-[#0b0f19] border-gray-800 text-white placeholder:text-gray-600 focus:border-blue-500"
+                {...register("name")}
+              />
+              {errors?.name && (
+                <p className="px-1 text-xs text-red-400">{errors.name.message}</p>
+              )}
+            </div>
+          )}
+
+          {/* حقل البريد الإلكتروني */}
           <div className="grid gap-1">
-            <Label className="sr-only" htmlFor="email">
+            <Label className="text-gray-300" htmlFor="email">
               Email
             </Label>
             <Input
@@ -71,38 +108,66 @@ export function UserAuthForm({ className, type, ...props }: UserAuthFormProps) {
               autoComplete="email"
               autoCorrect="off"
               disabled={isLoading || isGoogleLoading}
+              className="bg-[#0b0f19] border-gray-800 text-white placeholder:text-gray-600 focus:border-blue-500"
               {...register("email")}
             />
             {errors?.email && (
-              <p className="px-1 text-xs text-red-600">
-                {errors.email.message}
-              </p>
+              <p className="px-1 text-xs text-red-400">{errors.email.message}</p>
             )}
           </div>
-          <button className={cn(buttonVariants())} disabled={isLoading}>
-            {isLoading && (
-              <Icons.spinner className="mr-2 size-4 animate-spin" />
+
+          {/* حقل كلمة المرور مع التحقق الأمني */}
+          <div className="grid gap-1">
+            <Label className="text-gray-300" htmlFor="password">
+              Password
+            </Label>
+            <Input
+              id="password"
+              placeholder="********"
+              type="password"
+              autoComplete="current-password"
+              disabled={isLoading || isGoogleLoading}
+              className="bg-[#0b0f19] border-gray-800 text-white placeholder:text-gray-600 focus:border-blue-500"
+              {...register("password")}
+            />
+            {errors?.password && (
+              <p className="px-1 text-xs text-red-400">{errors.password.message}</p>
             )}
-            {type === "register" ? "Sign Up with Email" : "Sign In with Email"}
+          </div>
+
+          {/* زر المتابعة */}
+          <button
+            className={cn(
+              buttonVariants(),
+              "w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded-lg transition"
+            )}
+            disabled={isLoading}
+          >
+            {isLoading && <Icons.spinner className="mr-2 size-4 animate-spin" />}
+            {type === "register" ? "Create Account" : "Sign In with Email"}
           </button>
         </div>
       </form>
+
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
+          <span className="w-full border-t border-gray-800" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">
-            Or continue with
-          </span>
+          <span className="bg-[#0d1322] px-2 text-gray-500">Or continue with</span>
         </div>
       </div>
+
+      {/* زر تسجيل الدخول عبر جوجل */}
       <button
         type="button"
-        className={cn(buttonVariants({ variant: "outline" }))}
+        className={cn(
+          buttonVariants({ variant: "outline" }),
+          "w-full bg-transparent border-gray-800 text-gray-200 hover:bg-gray-800/50 hover:text-white"
+        )}
         onClick={() => {
           setIsGoogleLoading(true);
-          signIn("google");
+          signIn("google", { callbackUrl: searchParams?.get("from") || "/dashboard" });
         }}
         disabled={isLoading || isGoogleLoading}
       >
@@ -115,4 +180,4 @@ export function UserAuthForm({ className, type, ...props }: UserAuthFormProps) {
       </button>
     </div>
   );
-}
+} 
