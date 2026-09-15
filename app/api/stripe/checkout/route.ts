@@ -1,39 +1,39 @@
-import { NextResponse } from "next/server";
-import { getServerAuthSession } from "@/server/auth";
+Import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { stripe } from "@/lib/stripe";
 import { env } from "@/env.mjs";
 
 export async function POST(req: Request) {
-  try {
-    const session = await getServerAuthSession();
+  Try {
+    Const session = await auth();
 
-    if (!session || !session.user) {
-      return new NextResponse("Unauthorized", { status: 401 });
+    If (!session || !session.user) {
+      Return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const body = await req.json();
-    const { priceId } = body;
+    Const body = await req.json();
+    Const { priceId } = body;
 
-    const stripeSession = await stripe.checkout.sessions.create({
-      success_url: `${env.NEXTAUTH_URL}/dashboard?success=true`,
-      cancel_url: `${env.NEXTAUTH_URL}/pricing?canceled=true`,
-      payment_method_types: ["card"],
-      mode: "subscription",
-      customer_email: session.user.email ?? undefined,
-      line_items: [
+    Const stripeSession = await stripe.checkout.sessions.create({
+      Success_url: `${env.NEXTAUTH_URL}/dashboard?success=true`,
+      Cancel_url: `${env.NEXTAUTH_URL}/pricing?canceled=true`,
+      Payment_method_types: ["card"],
+      Mode: "subscription",
+      Customer_email: session.user.email ?? undefined,
+      Line_items: [
         {
-          price: priceId,
-          quantity: 1,
+          Price: priceId,
+          Quantity: 1,
         },
       ],
-      metadata: {
-        userId: session.user.id,
+      Metadata: {
+        UserId: session.user.id,
       },
     });
 
-    return NextResponse.json({ url: stripeSession.url });
+    Return NextResponse.json({ url: stripeSession.url });
   } catch (error) {
-    console.error("[STRIPE_ERROR]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    Console.error("[STRIPE_ERROR]", error);
+    Return new NextResponse("Internal Error", { status: 500 });
   }
 }
