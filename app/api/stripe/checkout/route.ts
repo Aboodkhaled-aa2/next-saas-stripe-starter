@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
-import { getServerAuthSession } from "~/server/auth";
-import { stripe } from "~/server/db/stripe";
-import { env } from "~/env.mjs";
+// تعديل مسار الجلسة بناءً على مكان ملف الauth الحقيقي في مشروعك
+import { getServerSession } from "next-auth"; 
+import { authOptions } from "@/server/auth"; // أو المسار الصحيح للـ auth حسب باقي ملفات الـ api عندك
+import { stripe } from "@/lib/stripe"; // تأكد من مسار الـ stripe لديك
+import { env } from "@/env.mjs";
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerAuthSession();
+    const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
       return new NextResponse("Unauthorized", { status: 401 });
