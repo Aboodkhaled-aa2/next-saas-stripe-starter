@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       cancel_url: `${env.NEXTAUTH_URL}/pricing?canceled=true`,
       payment_method_types: ["card"],
       mode: "subscription",
-      customer_email: session.user.email ?? null,
+      customer_email: session.user.email ?? undefined,
       line_items: [
         {
           price: priceId,
