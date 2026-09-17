@@ -414,7 +414,14 @@ function FeatureColumn({
         </div>
 
         <div>
-          <h3 className="text-xl font-bold text-white">{title}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-xl font-bold text-white">{title}</h3>
+            {title === "Pro" && (
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/25">
+                Full AI Receptionist
+              </span>
+            )}
+          </div>
           <p className="text-sm text-slate-400">{description}</p>
         </div>
       </div>
@@ -755,7 +762,7 @@ export default function LandingPage() {
           <div className="mt-16 grid gap-7 lg:grid-cols-3">
             <FeatureColumn
               title="Starter"
-              description="For getting started"
+              description="Essential messaging and lead capture for growing cleaning teams."
               price="$49"
               featuresList={starterFeatures}
               icon={Sparkles}
@@ -764,7 +771,7 @@ export default function LandingPage() {
 
             <FeatureColumn
               title="Business"
-              description="For growing cleaning businesses"
+              description="Full automation with voice AI and advanced booking workflows."
               price="$99"
               featuresList={businessFeatures}
               popular
@@ -774,7 +781,7 @@ export default function LandingPage() {
 
             <FeatureColumn
               title="Pro"
-              description="Full AI receptionist"
+              description="Maximum power, custom phone numbers, and advanced AI behavior."
               price="$249"
               featuresList={proFeatures}
               icon={Phone}
@@ -1018,72 +1025,37 @@ export default function LandingPage() {
             <div className="md:col-span-2">
               <Link
                 href="/"
-                className="flex items-center gap-2 text-white"
+                className="flex items-center gap-2"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/30">
                   <Sparkles className="h-5 w-5" />
                 </div>
-
-                <span className="font-black">Smart Cleaning Desk</span>
+                <span className="text-lg font-black tracking-tight text-white">
+                  Smart Cleaning Desk
+                </span>
               </Link>
-
-              <p className="mt-4 max-w-md text-sm leading-6">
-                AI-powered customer communication and management software
-                designed for cleaning businesses.
+              <p className="mt-4 text-sm leading-6 text-slate-400 max-w-sm">
+                AI-powered customer communication and workflow automation built specifically for cleaning businesses.
               </p>
             </div>
-
             <div>
-              <h3 className="font-bold text-white">Product</h3>
-
-              <div className="mt-4 space-y-3 text-sm">
-                <a
-                  href="#features"
-                  className="block transition hover:text-white"
-                >
-                  Features
-                </a>
-
-                <a
-                  href="#pricing"
-                  className="block transition hover:text-white"
-                >
-                  Pricing
-                </a>
-
-                <a
-                  href="#faq"
-                  className="block transition hover:text-white"
-                >
-                  FAQ
-                </a>
-              </div>
+              <h4 className="text-sm font-bold text-white uppercase tracking-wider">Product</h4>
+              <ul className="mt-4 space-y-2 text-sm">
+                <li><a href="#features" className="transition hover:text-white">Features</a></li>
+                <li><a href="#how-it-works" className="transition hover:text-white">How It Works</a></li>
+                <li><a href="#pricing" className="transition hover:text-white">Pricing</a></li>
+              </ul>
             </div>
-
             <div>
-              <h3 className="font-bold text-white">Account</h3>
-
-              <div className="mt-4 space-y-3 text-sm">
-                <Link
-                  href="/login"
-                  className="block transition hover:text-white"
-                >
-                  Log In
-                </Link>
-
-                <Link
-                  href="/signup?plan=starter"
-                  className="block transition hover:text-white"
-                >
-                  Get Started
-                </Link>
-              </div>
+              <h4 className="text-sm font-bold text-white uppercase tracking-wider">Account</h4>
+              <ul className="mt-4 space-y-2 text-sm">
+                <li><Link href="/login" className="transition hover:text-white">Log In</Link></li>
+                <li><Link href="/signup?plan=starter" className="transition hover:text-white">Sign Up</Link></li>
+              </ul>
             </div>
           </div>
-
-          <div className="mt-10 border-t border-slate-800/80 pt-7 text-sm text-slate-500">
-            © {new Date().getFullYear()} Smart Cleaning Desk. All rights
-            reserved.
+          <div className="mt-12 border-t border-slate-800/80 pt-8 text-center text-xs text-slate-500">
+            &copy; {new Date().getFullYear()} Smart Cleaning Desk. All rights reserved.
           </div>
         </div>
       </footer>
