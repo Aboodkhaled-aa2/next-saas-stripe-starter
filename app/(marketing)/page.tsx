@@ -1088,6 +1088,3 @@ export default function LandingPage() {
         </div>
       </footer>
     </main>
-  );
-}
-}
