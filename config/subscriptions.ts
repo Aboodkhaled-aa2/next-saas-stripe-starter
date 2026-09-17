@@ -119,4 +119,4 @@ export const comparePlans: PlansRow[] = [
     pro: true,
     enterprise: true,
   },
-  
+];
