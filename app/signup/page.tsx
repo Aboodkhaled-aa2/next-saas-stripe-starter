@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import Link from "next/link";
-import { Sparkles, ArrowRight, ShieldCheck, Check } from "lucide-react";
+import { Sparkles, ArrowRight, ShieldCheck, Check, Lock, Mail } from "lucide-react";
 
 function SignupContent() {
   const searchParams = useSearchParams();
@@ -12,9 +12,27 @@ function SignupContent() {
   const [selectedPlan, setSelectedPlan] = useState(initialPlan);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const validatePassword = (pass: string) => {
+    const hasUpperCase = /[A-Z]/.test(pass);
+    const hasLetters = /[a-zA-Z]/.test(pass);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
+    const isValidLength = pass.length >= 8;
+
+    return hasUpperCase && hasLetters && hasSpecialChar && isValidLength;
+  };
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg("");
+
+    if (!validatePassword(password)) {
+      setErrorMsg("Password must be at least 8 characters long and include an uppercase letter, letters, and a special character/symbol.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -32,15 +50,14 @@ function SignupContent() {
       const data = await response.json();
 
       if (data.url) {
-        // الانتقال إلى صفحة الدفع الآمنة الخاصة بـ Stripe
         window.location.href = data.url;
       } else {
-        alert(data.error || "Something went wrong during checkout.");
+        setErrorMsg(data.error || "Something went wrong during checkout.");
         setLoading(false);
       }
     } catch (err) {
       console.error(err);
-      alert("An unexpected error occurred.");
+      setErrorMsg("An unexpected error occurred.");
       setLoading(false);
     }
   };
@@ -65,14 +82,21 @@ function SignupContent() {
       {/* Main Content */}
       <div className="max-w-xl mx-auto px-4 py-16 w-full flex-grow">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-black text-white sm:text-4xl">Activate Your Subscription</h1>
+          <h1 className="text-3xl font-black text-white sm:text-4xl">Create Account & Subscribe</h1>
           <p className="mt-3 text-slate-400">
-            Smart Cleaning Desk is a paid-only platform. Choose your plan and proceed to secure checkout.
+            Set up your credentials, choose your plan, and proceed to secure checkout.
           </p>
         </div>
 
         <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-8 shadow-2xl">
+          {errorMsg && (
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs leading-relaxed">
+              {errorMsg}
+            </div>
+          )}
+
           <form onSubmit={handleCheckout} className="space-y-6">
+            {/* Plans Selection */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Select Your Plan
@@ -100,18 +124,43 @@ function SignupContent() {
               </div>
             </div>
 
+            {/* Email Input */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Business Email
               </label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@yourcleaningco.com"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 transition"
-              />
+              <div className="relative">
+                <Mail className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@yourcleaningco.com"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 transition"
+                />
+              </div>
+            </div>
+
+            {/* Password Input */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Create Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="At least 8 chars, Uppercase & Symbol (!@#$)"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 transition"
+                />
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                Must contain an uppercase letter, lowercase letters, numbers, and a special character.
+              </p>
             </div>
 
             <div className="bg-slate-950/50 border border-slate-800/80 rounded-2xl p-4 space-y-2">
@@ -121,7 +170,7 @@ function SignupContent() {
               </div>
               <div className="flex items-center gap-2 text-xs text-slate-400">
                 <ShieldCheck className="h-4 w-4 text-blue-400" />
-                <span>Secured and processed securely via Stripe</span>
+                <span>Secured and processed safely via Stripe</span>
               </div>
             </div>
 
