@@ -34,6 +34,8 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
   const [isGoogleLoading, setIsGoogleLoading] = React.useState<boolean>(false);
   const searchParams = useSearchParams();
 
+  const targetDestination = searchParams?.get("from") || "/pricing";
+
   async function onSubmit(data: FormData) {
     setIsLoading(true);
 
@@ -42,7 +44,7 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
         email: data.email.toLowerCase(),
         password: data.password,
         redirect: false,
-        callbackUrl: searchParams?.get("from") || "/dashboard",
+        callbackUrl: targetDestination,
       });
 
       setIsLoading(false);
@@ -57,7 +59,7 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
         description: "You have successfully signed in.",
       });
       
-      window.location.href = searchParams?.get("from") || "/dashboard";
+      window.location.href = targetDestination;
     } catch (error) {
       setIsLoading(false);
       toast.error("Error", {
@@ -130,7 +132,7 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
         className={cn(buttonVariants({ variant: "outline" }), "w-full border-gray-800 text-gray-200 hover:bg-gray-800/50")}
         onClick={() => {
           setIsGoogleLoading(true);
-          signIn("google", { callbackUrl: searchParams?.get("from") || "/dashboard" });
+          signIn("google", { callbackUrl: targetDestination });
         }}
         disabled={isLoading || isGoogleLoading}
       >
