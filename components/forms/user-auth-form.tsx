@@ -42,8 +42,7 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
         email: data.email.toLowerCase(),
         password: data.password,
         redirect: false,
-        // تم تغيير الرابط هنا ليذهب لصفحة الدفع مباشرة
-        callbackUrl: searchParams?.get("from") || "/api/checkout",
+        callbackUrl: searchParams?.get("from") || "/dashboard",
       });
 
       setIsLoading(false);
@@ -58,7 +57,7 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
         description: "You have successfully signed in.",
       });
       
-      window.location.href = searchParams?.get("from") || "/api/checkout";
+      window.location.href = searchParams?.get("from") || "/dashboard";
     } catch (error) {
       setIsLoading(false);
       toast.error("Error", {
@@ -81,16 +80,10 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
                 id="name"
                 placeholder="John Doe"
                 type="text"
-                autoCapitalize="none"
-                autoComplete="name"
-                autoCorrect="off"
                 disabled={isLoading || isGoogleLoading}
-                className="bg-[#0b0f19] border-gray-800 text-white placeholder:text-gray-600 focus:border-blue-500"
+                className="bg-[#0b0f19] border-gray-800 text-white"
                 {...register("name")}
               />
-              {errors?.name && (
-                <p className="px-1 text-xs text-red-400">{errors.name.message}</p>
-              )}
             </div>
           )}
 
@@ -102,16 +95,10 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
               id="email"
               placeholder="name@example.com"
               type="email"
-              autoCapitalize="none"
-              autoComplete="email"
-              autoCorrect="off"
               disabled={isLoading || isGoogleLoading}
-              className="bg-[#0b0f19] border-gray-800 text-white placeholder:text-gray-600 focus:border-blue-500"
+              className="bg-[#0b0f19] border-gray-800 text-white"
               {...register("email")}
             />
-            {errors?.email && (
-              <p className="px-1 text-xs text-red-400">{errors.email.message}</p>
-            )}
           </div>
 
           <div className="grid gap-1">
@@ -122,21 +109,14 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
               id="password"
               placeholder="********"
               type="password"
-              autoComplete="current-password"
               disabled={isLoading || isGoogleLoading}
-              className="bg-[#0b0f19] border-gray-800 text-white placeholder:text-gray-600 focus:border-blue-500"
+              className="bg-[#0b0f19] border-gray-800 text-white"
               {...register("password")}
             />
-            {errors?.password && (
-              <p className="px-1 text-xs text-red-400">{errors.password.message}</p>
-            )}
           </div>
 
           <button
-            className={cn(
-              buttonVariants(),
-              "w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded-lg transition"
-            )}
+            className={cn(buttonVariants(), "w-full bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg")}
             disabled={isLoading}
           >
             {isLoading && <Icons.spinner className="mr-2 size-4 animate-spin" />}
@@ -145,34 +125,16 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
         </div>
       </form>
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-gray-800" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-[#0d1322] px-2 text-gray-500">Or continue with</span>
-        </div>
-      </div>
-
       <button
         type="button"
-        className={cn(
-          buttonVariants({ variant: "outline" }),
-          "w-full bg-transparent border-gray-800 text-gray-200 hover:bg-gray-800/50 hover:text-white"
-        )}
+        className={cn(buttonVariants({ variant: "outline" }), "w-full border-gray-800 text-gray-200 hover:bg-gray-800/50")}
         onClick={() => {
           setIsGoogleLoading(true);
-          // تم تغيير الرابط هنا ليذهب لصفحة الدفع مباشرة بعد تسجيل الدخول بجوجل
-          signIn("google", { callbackUrl: searchParams?.get("from") || "/api/checkout" });
+          signIn("google", { callbackUrl: searchParams?.get("from") || "/dashboard" });
         }}
         disabled={isLoading || isGoogleLoading}
       >
-        {isGoogleLoading ? (
-          <Icons.spinner className="mr-2 size-4 animate-spin" />
-        ) : (
-          <Icons.google className="mr-2 size-4" />
-        )}{" "}
-        Google
+        {isGoogleLoading ? <Icons.spinner className="mr-2 size-4 animate-spin" /> : <Icons.google className="mr-2 size-4" />} Google
       </button>
     </div>
   );
