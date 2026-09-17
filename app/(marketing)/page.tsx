@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Check, X, Sparkles, ArrowRight, ShieldCheck, Clock, Users, Star } from 'lucide-react';
+import { Check, X, Sparkles, ArrowRight, ShieldCheck, Clock, Users } from 'lucide-react';
 
 export default function Page() {
   return (
@@ -31,7 +31,6 @@ export default function Page() {
             </Link>
           </div>
 
-          {/* Feature Badges */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto pt-8 border-t border-white/10 text-zinc-400 text-sm">
             <div className="flex items-center justify-center gap-2">
               <Clock className="w-4 h-4 text-emerald-400" /> 24/7 Instant Response
@@ -43,7 +42,6 @@ export default function Page() {
               <ShieldCheck className="w-4 h-4 text-emerald-400" /> Automated Booking
             </div>
           </div>
-
         </div>
       </section>
 
