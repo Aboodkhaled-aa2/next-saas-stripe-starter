@@ -24,7 +24,7 @@ function SignupContent() {
     return hasUpperCase && hasLetters && hasSpecialChar && isValidLength;
   };
 
-  const handleCheckout = async (e: React.FormEvent) => {
+  const handleSignupAndCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
 
@@ -55,11 +55,17 @@ function SignupContent() {
         setErrorMsg(data.error || "Something went wrong during checkout.");
         setLoading(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       setErrorMsg("An unexpected error occurred.");
       setLoading(false);
     }
+  };
+
+  // دالة مخصصة لربط زر جوجل (يمكنك ربطها مع موفر المصادقة مثل Supabase أو Firebase لاحقاً)
+  const handleGoogleSignup = () => {
+    // Example: supabase.auth.signInWithOAuth({ provider: 'google' })
+    alert("Google Sign-Up integration will be connected with your auth provider.");
   };
 
   return (
@@ -88,14 +94,47 @@ function SignupContent() {
           </p>
         </div>
 
-        <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-8 shadow-2xl">
+        <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
           {errorMsg && (
-            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs leading-relaxed">
+            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs leading-relaxed">
               {errorMsg}
             </div>
           )}
 
-          <form onSubmit={handleCheckout} className="space-y-6">
+          {/* Google Sign Up Button */}
+          <button
+            type="button"
+            onClick={handleGoogleSignup}
+            className="w-full h-12 bg-white hover:bg-slate-100 text-slate-900 font-semibold rounded-xl transition flex items-center justify-center gap-3 shadow-md"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.13 0-5.78-2.11-6.73-4.96H1.18v3.15C3.15 21.32 7.22 24 12 24z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.6H1.18C.43 8.12 0 9.82 0 12s.43 3.88 1.18 5.4l4.09-3.16z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.22 0 3.15 2.68 1.18 6.6l4.09 3.15c.95-2.85 3.6-4.96 6.73-4.96z"
+              />
+            </svg>
+            Continue with Google
+          </button>
+
+          <div className="flex items-center my-4">
+            <div className="flex-grow border-t border-slate-800"></div>
+            <span className="px-4 text-xs text-slate-500 uppercase tracking-wider">Or with email</span>
+            <div className="flex-grow border-t border-slate-800"></div>
+          </div>
+
+          <form onSubmit={handleSignupAndCheckout} className="space-y-6">
             {/* Plans Selection */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -179,7 +218,7 @@ function SignupContent() {
               disabled={loading}
               className="w-full h-12 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {loading ? "Processing..." : "Proceed to Secure Checkout"}
+              {loading ? "Processing..." : "Create Account & Proceed to Checkout"}
               <ArrowRight className="h-4 w-4" />
             </button>
           </form>
