@@ -1,11 +1,10 @@
 "use client";
 
-import { useContext, useState } from "react";
+import { useContext } from "react";
 import Link from "next/link";
 import { UserSubscriptionPlan } from "@/types";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { BillingFormButton } from "@/components/forms/billing-form-button";
 import { ModalContext } from "@/components/modals/providers";
 import { HeaderSection } from "@/components/shared/header-section";
@@ -17,12 +16,12 @@ interface PricingCardsProps {
   subscriptionPlan?: UserSubscriptionPlan;
 }
 
-// الخطط الحقيقية الخاصة بمنصة Smart Cleaning Desk
+// الخطط الشهرية المباشرة لمنصة Smart Cleaning Desk
 const cleaningPricingData = [
   {
     title: "Starter",
     description: "Essential messaging and lead capture for growing cleaning teams.",
-    prices: { monthly: 49, yearly: 470 }, // 470 سنويّاً كمثال أو حسب رغبتك
+    price: 49,
     benefits: [
       "AI Customer Messaging",
       "Instagram",
@@ -42,7 +41,7 @@ const cleaningPricingData = [
   {
     title: "Business",
     description: "Full automation with voice AI and advanced booking workflows.",
-    prices: { monthly: 99, yearly: 950 },
+    price: 99,
     benefits: [
       "Everything in Starter",
       "AI Voice Receptionist",
@@ -63,7 +62,7 @@ const cleaningPricingData = [
   {
     title: "Pro",
     description: "Maximum power, custom phone numbers, and advanced AI behavior.",
-    prices: { monthly: 249, yearly: 2390 },
+    price: 249,
     benefits: [
       "Everything in Business",
       "Dedicated Business Phone Number",
@@ -85,68 +84,45 @@ const cleaningPricingData = [
 ];
 
 export function PricingCards({ userId, subscriptionPlan }: PricingCardsProps) {
-  const isYearlyDefault =
-    !subscriptionPlan?.stripeCustomerId || subscriptionPlan.interval === "year"
-      ? true
-      : false;
-  const [isYearly, setIsYearly] = useState<boolean>(!!isYearlyDefault);
   const { setShowSignInModal } = useContext(ModalContext);
-
-  const toggleBilling = () => {
-    setIsYearly(!isYearly);
-  };
 
   const PricingCard = ({ offer }: { offer: typeof cleaningPricingData[0] }) => {
     return (
       <div
         className={cn(
-          "relative flex flex-col overflow-hidden rounded-3xl border shadow-sm bg-background text-left",
+          "relative flex flex-col overflow-hidden rounded-3xl border shadow-sm bg-card text-card-foreground text-left",
           offer.title.toLocaleLowerCase() === "business"
-            ? "-m-0.5 border-2 border-purple-400"
-            : "",
+            ? "-m-0.5 border-2 border-purple-500 shadow-lg"
+            : "border-border",
         )}
         key={offer.title}
       >
-        <div className="min-h-[170px] items-start space-y-3 bg-muted/50 p-6">
+        <div className="min-h-[170px] items-start space-y-3 bg-muted/40 p-6">
           <p className="flex font-urban text-sm font-bold uppercase tracking-wider text-purple-400">
             {offer.title}
           </p>
           <p className="text-xs text-muted-foreground">{offer.description}</p>
 
-          <div className="flex flex-row">
-            <div className="flex items-end">
-              <div className="flex text-left text-3xl font-semibold leading-6">
-                {isYearly && offer.prices.monthly > 0 ? (
-                  <>
-                    <span className="mr-2 text-muted-foreground/80 line-through text-xl">
-                      ${offer.prices.monthly}
-                    </span>
-                    <span>${Math.round(offer.prices.yearly / 12)}</span>
-                  </>
-                ) : (
-                  `$${offer.prices.monthly}`
-                )}
-              </div>
-              <div className="-mb-1 ml-2 text-left text-sm font-medium text-muted-foreground">
-                <div>/month</div>
-              </div>
-            </div>
+          <div className="flex items-baseline pt-2">
+            <span className="text-4xl font-extrabold text-foreground">
+              ${offer.price}
+            </span>
+            <span className="ml-2 text-sm font-medium text-muted-foreground">
+              /month
+            </span>
           </div>
-          {offer.prices.monthly > 0 ? (
-            <div className="text-left text-xs text-muted-foreground">
-              {isYearly
-                ? `$${offer.prices.yearly} will be charged when annual`
-                : "when charged monthly"}
-            </div>
-          ) : null}
+
+          <div className="text-xs text-muted-foreground font-medium">
+            Billed monthly, cancel anytime
+          </div>
         </div>
 
         <div className="flex h-full flex-col justify-between gap-8 p-6">
           <ul className="space-y-3 text-left text-sm font-medium leading-normal">
             {offer.benefits.map((feature) => (
               <li className="flex items-start gap-x-3" key={feature}>
-                <Icons.check className="size-5 shrink-0 text-purple-500" />
-                <p className="text-muted-foreground">{feature}</p>
+                <Icons.check className="size-5 shrink-0 text-purple-500 mt-0.5" />
+                <span className="text-muted-foreground">{feature}</span>
               </li>
             ))}
           </ul>
@@ -168,8 +144,8 @@ export function PricingCards({ userId, subscriptionPlan }: PricingCardsProps) {
                 </Link>
               ) : (
                 <BillingFormButton
-                  year={isYearly}
-                  offer={offer as any}
+                  year={false}
+                  offer={{ ...offer, prices: { monthly: offer.price, yearly: 0 } } as any}
                   subscriptionPlan={subscriptionPlan}
                 />
               )
@@ -196,41 +172,19 @@ export function PricingCards({ userId, subscriptionPlan }: PricingCardsProps) {
   return (
     <MaxWidthWrapper>
       <section className="flex flex-col items-center text-center">
-        <HeaderSection label="Pricing" title="Start at full speed !" />
+        <HeaderSection label="Pricing" title="Simple, transparent pricing" />
 
-        <div className="mb-4 mt-10 flex items-center gap-5">
-          <ToggleGroup
-            type="single"
-            size="sm"
-            defaultValue={isYearly ? "yearly" : "monthly"}
-            onValueChange={toggleBilling}
-            aria-label="toggle-year"
-            className="h-9 overflow-hidden rounded-full border bg-background p-1 *:h-7 *:text-muted-foreground"
-          >
-            <ToggleGroupItem
-              value="yearly"
-              className="rounded-full px-5 data-[state=on]:!bg-primary data-[state=on]:!text-primary-foreground"
-              aria-label="Toggle yearly billing"
-            >
-              Yearly (-20%)
-            </ToggleGroupItem>
-            <ToggleGroupItem
-              value="monthly"
-              className="rounded-full px-5 data-[state=on]:!bg-primary data-[state=on]:!text-primary-foreground"
-              aria-label="Toggle monthly billing"
-            >
-              Monthly
-            </ToggleGroupItem>
-          </ToggleGroup>
-        </div>
+        <p className="mt-2 text-muted-foreground text-sm">
+          Choose the perfect plan for your cleaning business. No hidden fees.
+        </p>
 
-        <div className="grid gap-6 bg-inherit py-5 lg:grid-cols-3 w-full max-w-7xl">
+        <div className="grid gap-6 bg-inherit py-10 lg:grid-cols-3 w-full max-w-7xl">
           {cleaningPricingData.map((offer) => (
             <PricingCard offer={offer} key={offer.title} />
           ))}
         </div>
 
-        <p className="mt-6 text-balance text-center text-base text-muted-foreground">
+        <p className="mt-4 text-balance text-center text-base text-muted-foreground">
           Email{" "}
           <a
             className="font-medium text-primary hover:underline"
@@ -239,10 +193,6 @@ export function PricingCards({ userId, subscriptionPlan }: PricingCardsProps) {
             support@smartcleaningdesk.com
           </a>{" "}
           to contact our support team.
-          <br />
-          <strong>
-            You can test the subscriptions and won&apos;t be charged.
-          </strong>
         </p>
       </section>
     </MaxWidthWrapper>
