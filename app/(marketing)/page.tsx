@@ -19,7 +19,9 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 type IconComponent = React.ComponentType<{
   className?: string;
@@ -482,6 +484,21 @@ function ComparisonCell({ enabled }: { enabled: boolean }) {
 
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const router = useRouter();
+  const supabase = createClientComponentClient();
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
+
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (!error) {
+          router.push("/pricing");
+        }
+      });
+    }
+  }, [router, supabase]);
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 selection:bg-blue-500 selection:text-white">
@@ -1012,53 +1029,11 @@ export default function LandingPage() {
               href="#pricing"
               className="inline-flex items-center justify-center rounded-xl border border-white/30 px-7 py-3.5 text-sm font-bold text-white transition hover:bg-white/10"
             >
-              Compare Plans
+              View Pricing
             </a>
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-800/80 bg-slate-950 text-slate-400">
-        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:px-8">
-          <div className="grid gap-10 md:grid-cols-4">
-            <div className="md:col-span-2">
-              <Link
-                href="/"
-                className="flex items-center gap-2"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/30">
-                  <Sparkles className="h-5 w-5" />
-                </div>
-                <span className="text-lg font-black tracking-tight text-white">
-                  Smart Cleaning Desk
-                </span>
-              </Link>
-              <p className="mt-4 text-sm leading-6 text-slate-400 max-w-sm">
-                AI-powered customer communication and workflow automation built specifically for cleaning businesses.
-              </p>
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-white uppercase tracking-wider">Product</h4>
-              <ul className="mt-4 space-y-2 text-sm">
-                <li><a href="#features" className="transition hover:text-white">Features</a></li>
-                <li><a href="#how-it-works" className="transition hover:text-white">How It Works</a></li>
-                <li><a href="#pricing" className="transition hover:text-white">Pricing</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-white uppercase tracking-wider">Account</h4>
-              <ul className="mt-4 space-y-2 text-sm">
-                <li><Link href="/login" className="transition hover:text-white">Log In</Link></li>
-                <li><Link href="/signup?plan=starter" className="transition hover:text-white">Sign Up</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className="mt-12 border-t border-slate-800/80 pt-8 text-center text-xs text-slate-500">
-            &copy; {new Date().getFullYear()} Smart Cleaning Desk. All rights reserved.
-          </div>
-        </div>
-      </footer>
     </main>
   );
 }
