@@ -18,13 +18,29 @@ function SignupContent() {
     setLoading(true);
 
     try {
-      // قريباً سنربط هذه النقطة بـ Stripe API لإنشاء جلسة الدفع الفعلية
-      setTimeout(() => {
-        alert(`Redirecting to secure checkout for ${selectedPlan} plan...`);
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email,
+          plan: selectedPlan,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.url) {
+        // الانتقال إلى صفحة الدفع الآمنة الخاصة بـ Stripe
+        window.location.href = data.url;
+      } else {
+        alert(data.error || "Something went wrong during checkout.");
         setLoading(false);
-      }, 1000);
+      }
     } catch (err) {
       console.error(err);
+      alert("An unexpected error occurred.");
       setLoading(false);
     }
   };
