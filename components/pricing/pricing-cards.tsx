@@ -3,9 +3,6 @@
 import { useContext, useState } from "react";
 import Link from "next/link";
 import { UserSubscriptionPlan } from "@/types";
-
-import { SubscriptionPlan } from "@/types/index";
-import { pricingData } from "@/config/subscriptions";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -20,6 +17,73 @@ interface PricingCardsProps {
   subscriptionPlan?: UserSubscriptionPlan;
 }
 
+// الخطط الحقيقية الخاصة بمنصة Smart Cleaning Desk
+const cleaningPricingData = [
+  {
+    title: "Starter",
+    description: "Essential messaging and lead capture for growing cleaning teams.",
+    prices: { monthly: 49, yearly: 470 }, // 470 سنويّاً كمثال أو حسب رغبتك
+    benefits: [
+      "AI Customer Messaging",
+      "Instagram",
+      "Facebook",
+      "WhatsApp",
+      "Lead Capture",
+      "Customer Inbox",
+      "Customer Information Collection",
+      "Business Hours & FAQ Responses",
+      "Conversation History",
+      "Basic Automations",
+      "Customer Management",
+      "Email Support",
+    ],
+    limitations: [],
+  },
+  {
+    title: "Business",
+    description: "Full automation with voice AI and advanced booking workflows.",
+    prices: { monthly: 99, yearly: 950 },
+    benefits: [
+      "Everything in Starter",
+      "AI Voice Receptionist",
+      "100 Voice Minutes / Month",
+      "Appointment Booking",
+      "Calendar Integration",
+      "Automated Lead Follow-Ups",
+      "Lead Qualification",
+      "Quote & Service Information",
+      "Booking Reminders",
+      "Review Request Automation",
+      "Lead Status Management",
+      "Custom AI Instructions",
+      "Conversation & Lead Tracking",
+    ],
+    limitations: [],
+  },
+  {
+    title: "Pro",
+    description: "Maximum power, custom phone numbers, and advanced AI behavior.",
+    prices: { monthly: 249, yearly: 2390 },
+    benefits: [
+      "Everything in Business",
+      "Dedicated Business Phone Number",
+      "500 Voice Minutes / Month",
+      "Advanced Call Handling",
+      "Call Transfer",
+      "Advanced Lead Qualification",
+      "Advanced Follow-Ups",
+      "Custom Booking Rules",
+      "Multiple Service Types",
+      "Custom AI Knowledge Base",
+      "Advanced Customer Management",
+      "Detailed Call & Conversation History",
+      "Custom AI Behavior",
+      "Priority Support",
+    ],
+    limitations: [],
+  },
+];
+
 export function PricingCards({ userId, subscriptionPlan }: PricingCardsProps) {
   const isYearlyDefault =
     !subscriptionPlan?.stripeCustomerId || subscriptionPlan.interval === "year"
@@ -32,31 +96,32 @@ export function PricingCards({ userId, subscriptionPlan }: PricingCardsProps) {
     setIsYearly(!isYearly);
   };
 
-  const PricingCard = ({ offer }: { offer: SubscriptionPlan }) => {
+  const PricingCard = ({ offer }: { offer: typeof cleaningPricingData[0] }) => {
     return (
       <div
         className={cn(
-          "relative flex flex-col overflow-hidden rounded-3xl border shadow-sm",
-          offer.title.toLocaleLowerCase() === "pro"
+          "relative flex flex-col overflow-hidden rounded-3xl border shadow-sm bg-background text-left",
+          offer.title.toLocaleLowerCase() === "business"
             ? "-m-0.5 border-2 border-purple-400"
             : "",
         )}
         key={offer.title}
       >
-        <div className="min-h-[150px] items-start space-y-4 bg-muted/50 p-6">
-          <p className="flex font-urban text-sm font-bold uppercase tracking-wider text-muted-foreground">
+        <div className="min-h-[170px] items-start space-y-3 bg-muted/50 p-6">
+          <p className="flex font-urban text-sm font-bold uppercase tracking-wider text-purple-400">
             {offer.title}
           </p>
+          <p className="text-xs text-muted-foreground">{offer.description}</p>
 
           <div className="flex flex-row">
             <div className="flex items-end">
               <div className="flex text-left text-3xl font-semibold leading-6">
                 {isYearly && offer.prices.monthly > 0 ? (
                   <>
-                    <span className="mr-2 text-muted-foreground/80 line-through">
+                    <span className="mr-2 text-muted-foreground/80 line-through text-xl">
                       ${offer.prices.monthly}
                     </span>
-                    <span>${offer.prices.yearly / 12}</span>
+                    <span>${Math.round(offer.prices.yearly / 12)}</span>
                   </>
                 ) : (
                   `$${offer.prices.monthly}`
@@ -68,7 +133,7 @@ export function PricingCards({ userId, subscriptionPlan }: PricingCardsProps) {
             </div>
           </div>
           {offer.prices.monthly > 0 ? (
-            <div className="text-left text-sm text-muted-foreground">
+            <div className="text-left text-xs text-muted-foreground">
               {isYearly
                 ? `$${offer.prices.yearly} will be charged when annual`
                 : "when charged monthly"}
@@ -76,61 +141,53 @@ export function PricingCards({ userId, subscriptionPlan }: PricingCardsProps) {
           ) : null}
         </div>
 
-        <div className="flex h-full flex-col justify-between gap-16 p-6">
-          <ul className="space-y-2 text-left text-sm font-medium leading-normal">
+        <div className="flex h-full flex-col justify-between gap-8 p-6">
+          <ul className="space-y-3 text-left text-sm font-medium leading-normal">
             {offer.benefits.map((feature) => (
               <li className="flex items-start gap-x-3" key={feature}>
                 <Icons.check className="size-5 shrink-0 text-purple-500" />
-                <p>{feature}</p>
+                <p className="text-muted-foreground">{feature}</p>
               </li>
             ))}
-
-            {offer.limitations.length > 0 &&
-              offer.limitations.map((feature) => (
-                <li
-                  className="flex items-start text-muted-foreground"
-                  key={feature}
-                >
-                  <Icons.close className="mr-3 size-5 shrink-0" />
-                  <p>{feature}</p>
-                </li>
-              ))}
           </ul>
 
-          {userId && subscriptionPlan ? (
-            offer.title === "Starter" ? (
-              <Link
-                href="/dashboard"
-                className={cn(
-                  buttonVariants({
-                    variant: "outline",
-                    rounded: "full",
-                  }),
-                  "w-full",
-                )}
-              >
-                Go to dashboard
-              </Link>
+          <div className="pt-4">
+            {userId && subscriptionPlan ? (
+              offer.title === "Starter" ? (
+                <Link
+                  href="/dashboard"
+                  className={cn(
+                    buttonVariants({
+                      variant: "outline",
+                      rounded: "full",
+                    }),
+                    "w-full",
+                  )}
+                >
+                  Go to dashboard
+                </Link>
+              ) : (
+                <BillingFormButton
+                  year={isYearly}
+                  offer={offer as any}
+                  subscriptionPlan={subscriptionPlan}
+                />
+              )
             ) : (
-              <BillingFormButton
-                year={isYearly}
-                offer={offer}
-                subscriptionPlan={subscriptionPlan}
-              />
-            )
-          ) : (
-            <Button
-              variant={
-                offer.title.toLocaleLowerCase() === "pro"
-                  ? "default"
-                  : "outline"
-              }
-              rounded="full"
-              onClick={() => setShowSignInModal(true)}
-            >
-              Sign in
-            </Button>
-          )}
+              <Button
+                variant={
+                  offer.title.toLocaleLowerCase() === "business"
+                    ? "default"
+                    : "outline"
+                }
+                rounded="full"
+                className="w-full"
+                onClick={() => setShowSignInModal(true)}
+              >
+                Choose {offer.title} →
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -167,21 +224,21 @@ export function PricingCards({ userId, subscriptionPlan }: PricingCardsProps) {
           </ToggleGroup>
         </div>
 
-        <div className="grid gap-5 bg-inherit py-5 lg:grid-cols-3">
-          {pricingData.map((offer) => (
+        <div className="grid gap-6 bg-inherit py-5 lg:grid-cols-3 w-full max-w-7xl">
+          {cleaningPricingData.map((offer) => (
             <PricingCard offer={offer} key={offer.title} />
           ))}
         </div>
 
-        <p className="mt-3 text-balance text-center text-base text-muted-foreground">
+        <p className="mt-6 text-balance text-center text-base text-muted-foreground">
           Email{" "}
           <a
             className="font-medium text-primary hover:underline"
-            href="mailto:support@saas-starter.com"
+            href="mailto:support@smartcleaningdesk.com"
           >
-            support@saas-starter.com
+            support@smartcleaningdesk.com
           </a>{" "}
-          for to contact our support team.
+          to contact our support team.
           <br />
           <strong>
             You can test the subscriptions and won&apos;t be charged.
