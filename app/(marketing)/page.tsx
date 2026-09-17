@@ -342,11 +342,11 @@ const proFeatures = [
 function CheckItem({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex items-start gap-3">
-      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-blue-400">
         <Check className="h-3.5 w-3.5" />
       </span>
 
-      <span className="text-sm leading-6 text-slate-600">{children}</span>
+      <span className="text-sm leading-6 text-slate-300">{children}</span>
     </li>
   );
 }
@@ -362,15 +362,15 @@ function SectionTitle({
 }) {
   return (
     <div className="mx-auto max-w-3xl text-center">
-      <div className="mb-4 inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700">
+      <div className="mb-4 inline-flex items-center rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-sm font-semibold text-blue-300">
         {eyebrow}
       </div>
 
-      <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
+      <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
         {title}
       </h2>
 
-      <p className="mt-5 text-lg leading-8 text-slate-600">
+      <p className="mt-5 text-lg leading-8 text-slate-400">
         {description}
       </p>
     </div>
@@ -396,10 +396,10 @@ function FeatureColumn({
 }) {
   return (
     <div
-      className={`relative flex h-full flex-col rounded-3xl border bg-white p-7 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl ${
+      className={`relative flex h-full flex-col rounded-3xl border bg-slate-900/80 p-7 shadow-xl transition duration-300 hover:-translate-y-1 ${
         popular
-          ? "border-blue-500 ring-2 ring-blue-500/10"
-          : "border-slate-200"
+          ? "border-blue-500 ring-2 ring-blue-500/20"
+          : "border-slate-800"
       }`}
     >
       {popular && (
@@ -409,22 +409,22 @@ function FeatureColumn({
       )}
 
       <div className="mb-6 flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-400">
           <Icon className="h-6 w-6" />
         </div>
 
         <div>
-          <h3 className="text-xl font-bold text-slate-900">{title}</h3>
-          <p className="text-sm text-slate-500">{description}</p>
+          <h3 className="text-xl font-bold text-white">{title}</h3>
+          <p className="text-sm text-slate-400">{description}</p>
         </div>
       </div>
 
       <div className="mb-7">
         <div className="flex items-end gap-1">
-          <span className="text-5xl font-black tracking-tight text-slate-900">
+          <span className="text-5xl font-black tracking-tight text-white">
             {price}
           </span>
-          <span className="mb-2 text-slate-500">/month</span>
+          <span className="mb-2 text-slate-400">/month</span>
         </div>
       </div>
 
@@ -432,16 +432,16 @@ function FeatureColumn({
         href={`/signup?plan=${plan}`}
         className={`mb-7 flex h-12 items-center justify-center rounded-xl px-5 text-sm font-bold transition ${
           popular
-            ? "bg-blue-600 text-white hover:bg-blue-700"
-            : "border border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
+            ? "bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20"
+            : "border border-slate-700 bg-slate-800 text-white hover:bg-slate-700"
         }`}
       >
         Choose {title}
         <ArrowRight className="ml-2 h-4 w-4" />
       </Link>
 
-      <div className="border-t border-slate-100 pt-6">
-        <p className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-400">
+      <div className="border-t border-slate-800 pt-6">
+        <p className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-500">
           Includes
         </p>
 
@@ -459,7 +459,7 @@ function ComparisonCell({ enabled }: { enabled: boolean }) {
   if (enabled) {
     return (
       <div className="flex justify-center">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20 text-blue-400">
           <Check className="h-4 w-4" />
         </span>
       </div>
@@ -468,7 +468,7 @@ function ComparisonCell({ enabled }: { enabled: boolean }) {
 
   return (
     <div className="flex justify-center">
-      <X className="h-5 w-5 text-slate-300" />
+      <X className="h-5 w-5 text-slate-700" />
     </div>
   );
 }
@@ -477,16 +477,16 @@ export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   return (
-    <main className="min-h-screen bg-white text-slate-900">
+    <main className="min-h-screen bg-slate-950 text-slate-100 selection:bg-blue-500 selection:text-white">
       {/* Navbar */}
-      <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/30">
               <Sparkles className="h-5 w-5" />
             </div>
 
-            <span className="text-lg font-black tracking-tight text-slate-900">
+            <span className="text-lg font-black tracking-tight text-white">
               Smart Cleaning Desk
             </span>
           </Link>
@@ -494,28 +494,28 @@ export default function LandingPage() {
           <nav className="hidden items-center gap-7 md:flex">
             <a
               href="#features"
-              className="text-sm font-medium text-slate-600 transition hover:text-blue-600"
+              className="text-sm font-medium text-slate-400 transition hover:text-white"
             >
               Features
             </a>
 
             <a
               href="#how-it-works"
-              className="text-sm font-medium text-slate-600 transition hover:text-blue-600"
+              className="text-sm font-medium text-slate-400 transition hover:text-white"
             >
               How It Works
             </a>
 
             <a
               href="#pricing"
-              className="text-sm font-medium text-slate-600 transition hover:text-blue-600"
+              className="text-sm font-medium text-slate-400 transition hover:text-white"
             >
               Pricing
             </a>
 
             <a
               href="#faq"
-              className="text-sm font-medium text-slate-600 transition hover:text-blue-600"
+              className="text-sm font-medium text-slate-400 transition hover:text-white"
             >
               FAQ
             </a>
@@ -524,14 +524,14 @@ export default function LandingPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/login"
-              className="hidden text-sm font-semibold text-slate-700 hover:text-blue-600 sm:inline-flex"
+              className="hidden text-sm font-semibold text-slate-300 hover:text-white sm:inline-flex"
             >
               Log In
             </Link>
 
             <Link
               href="/signup?plan=starter"
-              className="inline-flex h-10 items-center rounded-xl bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700"
+              className="inline-flex h-10 items-center rounded-xl bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-500 shadow-md shadow-blue-600/20"
             >
               Get Started
             </Link>
@@ -541,11 +541,11 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden bg-slate-950">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.35),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.18),transparent_30%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.25),transparent_40%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.12),transparent_35%)]" />
 
         <div className="relative mx-auto max-w-7xl px-5 py-24 sm:px-6 sm:py-28 lg:px-8 lg:py-32">
           <div className="mx-auto max-w-4xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-4 py-2 text-sm font-semibold text-blue-200">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-500/35 bg-blue-500/10 px-4 py-2 text-sm font-semibold text-blue-300">
               <Sparkles className="h-4 w-4" />
               AI-Powered Cleaning Business Management
             </div>
@@ -566,7 +566,7 @@ export default function LandingPage() {
             <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
               <Link
                 href="/signup?plan=starter"
-                className="inline-flex h-13 items-center justify-center rounded-xl bg-blue-600 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500"
+                className="inline-flex h-13 items-center justify-center rounded-xl bg-blue-600 px-7 py-3.5 text-sm font-bold text-white shadow-xl shadow-blue-600/30 transition hover:bg-blue-500"
               >
                 Get Started
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -574,7 +574,7 @@ export default function LandingPage() {
 
               <a
                 href="#pricing"
-                className="inline-flex h-13 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-7 py-3.5 text-sm font-bold text-white transition hover:bg-white/10"
+                className="inline-flex h-13 items-center justify-center rounded-xl border border-slate-700 bg-slate-900/60 px-7 py-3.5 text-sm font-bold text-white transition hover:bg-slate-800"
               >
                 View Pricing
               </a>
@@ -582,7 +582,7 @@ export default function LandingPage() {
 
             <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3 text-sm text-slate-400">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                <ShieldCheck className="h-4 w-4 text-blue-400" />
                 Secure subscription
               </div>
 
@@ -592,7 +592,7 @@ export default function LandingPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-purple-400" />
+                <Users className="h-4 w-4 text-blue-400" />
                 Customer management
               </div>
             </div>
@@ -601,29 +601,29 @@ export default function LandingPage() {
       </section>
 
       {/* Channels */}
-      <section className="border-b border-slate-100 bg-white">
+      <section className="border-y border-slate-800/80 bg-slate-900/40">
         <div className="mx-auto max-w-7xl px-5 py-10 sm:px-6 lg:px-8">
           <div className="grid gap-4 sm:grid-cols-3">
-            <div className="flex items-center justify-center gap-3 rounded-2xl bg-slate-50 p-5">
-              <Instagram className="h-6 w-6 text-pink-500" />
-              <span className="font-semibold text-slate-800">Instagram</span>
+            <div className="flex items-center justify-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-sm">
+              <Instagram className="h-6 w-6 text-pink-400" />
+              <span className="font-semibold text-slate-200">Instagram</span>
             </div>
 
-            <div className="flex items-center justify-center gap-3 rounded-2xl bg-slate-50 p-5">
-              <Facebook className="h-6 w-6 text-blue-600" />
-              <span className="font-semibold text-slate-800">Facebook</span>
+            <div className="flex items-center justify-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-sm">
+              <Facebook className="h-6 w-6 text-blue-400" />
+              <span className="font-semibold text-slate-200">Facebook</span>
             </div>
 
-            <div className="flex items-center justify-center gap-3 rounded-2xl bg-slate-50 p-5">
-              <MessageCircle className="h-6 w-6 text-emerald-500" />
-              <span className="font-semibold text-slate-800">WhatsApp</span>
+            <div className="flex items-center justify-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-sm">
+              <MessageCircle className="h-6 w-6 text-emerald-400" />
+              <span className="font-semibold text-slate-200">WhatsApp</span>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features */}
-      <section id="features" className="bg-slate-50 py-24">
+      <section id="features" className="bg-slate-950 py-24">
         <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
           <SectionTitle
             eyebrow="Everything in One Place"
@@ -675,17 +675,17 @@ export default function LandingPage() {
               return (
                 <div
                   key={item.title}
-                  className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm"
+                  className="rounded-3xl border border-slate-800 bg-slate-900/60 p-7 shadow-lg transition hover:border-slate-700"
                 >
-                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-400">
                     <Icon className="h-6 w-6" />
                   </div>
 
-                  <h3 className="text-xl font-bold text-slate-900">
+                  <h3 className="text-xl font-bold text-white">
                     {item.title}
                   </h3>
 
-                  <p className="mt-3 leading-7 text-slate-600">
+                  <p className="mt-3 leading-7 text-slate-400">
                     {item.description}
                   </p>
                 </div>
@@ -696,7 +696,7 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section id="how-it-works" className="bg-white py-24">
+      <section id="how-it-works" className="border-t border-slate-800/80 bg-slate-950 py-24">
         <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
           <SectionTitle
             eyebrow="Simple Workflow"
@@ -725,16 +725,16 @@ export default function LandingPage() {
                   "Move qualified customers toward appointments while keeping customer information organized.",
               },
             ].map((step) => (
-              <div key={step.number} className="relative">
-                <div className="mb-6 text-5xl font-black text-blue-100">
+              <div key={step.number} className="relative rounded-3xl border border-slate-800/80 bg-slate-900/40 p-8">
+                <div className="mb-6 text-5xl font-black text-blue-500/20">
                   {step.number}
                 </div>
 
-                <h3 className="text-2xl font-bold text-slate-900">
+                <h3 className="text-2xl font-bold text-white">
                   {step.title}
                 </h3>
 
-                <p className="mt-3 leading-7 text-slate-600">
+                <p className="mt-3 leading-7 text-slate-400">
                   {step.description}
                 </p>
               </div>
@@ -744,7 +744,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="bg-slate-50 py-24">
+      <section id="pricing" className="border-t border-slate-800/80 bg-slate-950 py-24">
         <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
           <SectionTitle
             eyebrow="Simple Pricing"
@@ -785,7 +785,7 @@ export default function LandingPage() {
       </section>
 
       {/* Comparison */}
-      <section className="bg-white py-24">
+      <section className="border-t border-slate-800/80 bg-slate-950 py-24">
         <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
           <SectionTitle
             eyebrow="Plan Comparison"
@@ -793,32 +793,32 @@ export default function LandingPage() {
             description="See exactly what is included with Starter, Business, and Pro."
           />
 
-          <div className="mt-12 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div className="mt-12 overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/60 shadow-xl">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px] border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="px-6 py-5 text-left text-sm font-bold text-slate-900">
+                  <tr className="border-b border-slate-800 bg-slate-900/90">
+                    <th className="px-6 py-5 text-left text-sm font-bold text-white">
                       Feature
                     </th>
 
-                    <th className="px-6 py-5 text-center text-sm font-bold text-slate-900">
+                    <th className="px-6 py-5 text-center text-sm font-bold text-white">
                       Starter
-                      <span className="mt-1 block text-xs font-normal text-slate-500">
+                      <span className="mt-1 block text-xs font-normal text-slate-400">
                         $49/mo
                       </span>
                     </th>
 
-                    <th className="px-6 py-5 text-center text-sm font-bold text-blue-700">
+                    <th className="px-6 py-5 text-center text-sm font-bold text-blue-400">
                       Business
-                      <span className="mt-1 block text-xs font-normal text-slate-500">
+                      <span className="mt-1 block text-xs font-normal text-slate-400">
                         $99/mo
                       </span>
                     </th>
 
-                    <th className="px-6 py-5 text-center text-sm font-bold text-slate-900">
+                    <th className="px-6 py-5 text-center text-sm font-bold text-white">
                       Pro
-                      <span className="mt-1 block text-xs font-normal text-slate-500">
+                      <span className="mt-1 block text-xs font-normal text-slate-400">
                         $249/mo
                       </span>
                     </th>
@@ -829,11 +829,11 @@ export default function LandingPage() {
                   {features.map((feature, index) => (
                     <tr
                       key={feature.name}
-                      className={`border-b border-slate-100 last:border-b-0 ${
-                        index % 2 === 0 ? "bg-white" : "bg-slate-50/50"
+                      className={`border-b border-slate-800/60 last:border-b-0 ${
+                        index % 2 === 0 ? "bg-transparent" : "bg-slate-900/30"
                       }`}
                     >
-                      <td className="px-6 py-4 text-sm font-medium text-slate-700">
+                      <td className="px-6 py-4 text-sm font-medium text-slate-300">
                         {feature.name}
                       </td>
 
@@ -858,11 +858,11 @@ export default function LandingPage() {
       </section>
 
       {/* Why us */}
-      <section className="bg-slate-950 py-24">
+      <section className="border-t border-slate-800/80 bg-slate-950 py-24">
         <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
           <div className="grid items-center gap-14 lg:grid-cols-2">
             <div>
-              <div className="mb-5 inline-flex items-center rounded-full border border-blue-400/20 bg-blue-500/10 px-4 py-2 text-sm font-semibold text-blue-300">
+              <div className="mb-5 inline-flex items-center rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-sm font-semibold text-blue-300">
                 Built for Cleaning Businesses
               </div>
 
@@ -870,7 +870,7 @@ export default function LandingPage() {
                 Spend less time managing messages.
               </h2>
 
-              <p className="mt-6 text-lg leading-8 text-slate-300">
+              <p className="mt-6 text-lg leading-8 text-slate-400">
                 Smart Cleaning Desk brings customer communication and business
                 workflows together so you can focus more of your time on
                 running and growing your cleaning company.
@@ -878,7 +878,7 @@ export default function LandingPage() {
 
               <Link
                 href="/signup?plan=business"
-                className="mt-8 inline-flex items-center rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-blue-500"
+                className="mt-8 inline-flex items-center rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500"
               >
                 Choose Business
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -913,7 +913,7 @@ export default function LandingPage() {
                 return (
                   <div
                     key={item.title}
-                    className="rounded-3xl border border-white/10 bg-white/5 p-6"
+                    className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 shadow-sm"
                   >
                     <Icon className="h-7 w-7 text-blue-400" />
 
@@ -933,7 +933,7 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="bg-white py-24">
+      <section id="faq" className="border-t border-slate-800/80 bg-slate-950 py-24">
         <div className="mx-auto max-w-3xl px-5 sm:px-6 lg:px-8">
           <SectionTitle
             eyebrow="FAQ"
@@ -948,27 +948,27 @@ export default function LandingPage() {
               return (
                 <div
                   key={faq.question}
-                  className="overflow-hidden rounded-2xl border border-slate-200"
+                  className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50"
                 >
                   <button
                     type="button"
                     onClick={() => setOpenFaq(isOpen ? null : index)}
-                    className="flex w-full items-center justify-between gap-5 px-6 py-5 text-left"
+                    className="flex w-full items-center justify-between gap-5 px-6 py-5 text-left transition hover:bg-slate-900/80"
                   >
-                    <span className="font-bold text-slate-900">
+                    <span className="font-bold text-white">
                       {faq.question}
                     </span>
 
                     <ChevronDown
-                      className={`h-5 w-5 shrink-0 text-slate-500 transition-transform ${
+                      className={`h-5 w-5 shrink-0 text-slate-400 transition-transform ${
                         isOpen ? "rotate-180" : ""
                       }`}
                     />
                   </button>
 
                   {isOpen && (
-                    <div className="border-t border-slate-100 px-6 pb-6 pt-4">
-                      <p className="leading-7 text-slate-600">{faq.answer}</p>
+                    <div className="border-t border-slate-800 px-6 pb-6 pt-4 bg-slate-900/30">
+                      <p className="leading-7 text-slate-400">{faq.answer}</p>
                     </div>
                   )}
                 </div>
@@ -979,7 +979,7 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="bg-blue-600 py-20">
+      <section className="border-t border-slate-800/80 bg-blue-600 py-20">
         <div className="mx-auto max-w-4xl px-5 text-center sm:px-6">
           <Star className="mx-auto h-10 w-10 text-blue-100" />
 
@@ -995,7 +995,7 @@ export default function LandingPage() {
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
               href="/signup?plan=starter"
-              className="inline-flex items-center justify-center rounded-xl bg-white px-7 py-3.5 text-sm font-bold text-blue-700 transition hover:bg-blue-50"
+              className="inline-flex items-center justify-center rounded-xl bg-slate-950 px-7 py-3.5 text-sm font-bold text-white shadow-xl transition hover:bg-slate-900"
             >
               Get Started
               <ArrowRight className="ml-2 h-4 w-4" />
@@ -1012,7 +1012,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-950 text-slate-400">
+      <footer className="border-t border-slate-800/80 bg-slate-950 text-slate-400">
         <div className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:px-8">
           <div className="grid gap-10 md:grid-cols-4">
             <div className="md:col-span-2">
@@ -1020,7 +1020,7 @@ export default function LandingPage() {
                 href="/"
                 className="flex items-center gap-2 text-white"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white">
                   <Sparkles className="h-5 w-5" />
                 </div>
 
@@ -1081,7 +1081,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="mt-10 border-t border-white/10 pt-7 text-sm">
+          <div className="mt-10 border-t border-slate-800/80 pt-7 text-sm text-slate-500">
             © {new Date().getFullYear()} Smart Cleaning Desk. All rights
             reserved.
           </div>
@@ -1089,4 +1089,5 @@ export default function LandingPage() {
       </footer>
     </main>
   );
+}
 }
