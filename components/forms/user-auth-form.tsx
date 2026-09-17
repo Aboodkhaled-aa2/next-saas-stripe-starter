@@ -38,12 +38,12 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
     setIsLoading(true);
 
     try {
-      // هنا تتم عملية التسجيل أو تسجيل الدخول عبر الإيميل والباسورد
       const signInResult = await signIn("credentials", {
         email: data.email.toLowerCase(),
         password: data.password,
         redirect: false,
-        callbackUrl: searchParams?.get("from") || "/dashboard",
+        // تم تغيير الرابط هنا ليذهب لصفحة الدفع مباشرة
+        callbackUrl: searchParams?.get("from") || "/api/checkout",
       });
 
       setIsLoading(false);
@@ -58,7 +58,7 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
         description: "You have successfully signed in.",
       });
       
-      window.location.href = searchParams?.get("from") || "/dashboard";
+      window.location.href = searchParams?.get("from") || "/api/checkout";
     } catch (error) {
       setIsLoading(false);
       toast.error("Error", {
@@ -72,7 +72,6 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid gap-4">
           
-          {/* حقل الاسم (يظهر فقط في حالة التسجيل Register) */}
           {type === "register" && (
             <div className="grid gap-1">
               <Label className="text-gray-300" htmlFor="name">
@@ -95,7 +94,6 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
             </div>
           )}
 
-          {/* حقل البريد الإلكتروني */}
           <div className="grid gap-1">
             <Label className="text-gray-300" htmlFor="email">
               Email
@@ -116,7 +114,6 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
             )}
           </div>
 
-          {/* حقل كلمة المرور مع التحقق الأمني */}
           <div className="grid gap-1">
             <Label className="text-gray-300" htmlFor="password">
               Password
@@ -135,7 +132,6 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
             )}
           </div>
 
-          {/* زر المتابعة */}
           <button
             className={cn(
               buttonVariants(),
@@ -158,7 +154,6 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
         </div>
       </div>
 
-      {/* زر تسجيل الدخول عبر جوجل */}
       <button
         type="button"
         className={cn(
@@ -167,7 +162,8 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
         )}
         onClick={() => {
           setIsGoogleLoading(true);
-          signIn("google", { callbackUrl: searchParams?.get("from") || "/dashboard" });
+          // تم تغيير الرابط هنا ليذهب لصفحة الدفع مباشرة بعد تسجيل الدخول بجوجل
+          signIn("google", { callbackUrl: searchParams?.get("from") || "/api/checkout" });
         }}
         disabled={isLoading || isGoogleLoading}
       >
@@ -180,4 +176,4 @@ export function UserAuthForm({ className, type = "login", ...props }: UserAuthFo
       </button>
     </div>
   );
-} 
+}
