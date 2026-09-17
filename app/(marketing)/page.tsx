@@ -1,5 +1,5 @@
-import HeroSection from '@/components/landing/HeroSection';
-import PricingSection from '@/components/landing/PricingSection';
+import HeroSection from '@/next-saas-stripe-starter/components/landing/HeroSection';
+import PricingSection from '@/next-saas-stripe-starter/components/landing/PricingSection';
 
 export default function Page() {
   return (
