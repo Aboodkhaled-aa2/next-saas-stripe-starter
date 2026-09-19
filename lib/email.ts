@@ -21,7 +21,7 @@ export const sendVerificationRequest: EmailConfig["sendVerificationRequest"] =
 
     try {
       const { data, error } = await resend.emails.send({
-        from: provider.from,
+        from: provider.from ?? "onboarding@resend.dev",
         to:
           process.env.NODE_ENV === "development"
             ? "delivered@resend.dev"
@@ -33,8 +33,6 @@ export const sendVerificationRequest: EmailConfig["sendVerificationRequest"] =
           mailType: userVerified ? "login" : "register",
           siteName: siteConfig.name,
         }),
-        // Set this to prevent Gmail from threading emails.
-        // More info: https://resend.com/changelog/custom-email-headers
         headers: {
           "X-Entity-Ref-ID": new Date().getTime() + "",
         },
@@ -43,8 +41,6 @@ export const sendVerificationRequest: EmailConfig["sendVerificationRequest"] =
       if (error || !data) {
         throw new Error(error?.message);
       }
-
-      // console.log(data)
     } catch (error) {
       throw new Error("Failed to send verification email.");
     }
