@@ -9,7 +9,7 @@ import { PricingCards } from "@/components/pricing/pricing-cards";
 import { PricingFaq } from "@/components/pricing/pricing-faq";
 
 export const metadata = constructMetadata({
-  title: "Pricing – SaaS Starter",
+  title: "Pricing – SaaS Starter",
   description: "Explore our subscription plans.",
 });
 
@@ -41,9 +41,14 @@ export default async function PricingPage() {
     );
   }
 
-  let subscriptionPlan;
+  let subscriptionPlan = null;
   if (user && user.id) {
-    subscriptionPlan = await getUserSubscriptionPlan(user.id);
+    try {
+      subscriptionPlan = await getUserSubscriptionPlan(user.id);
+    } catch (error) {
+      console.error("Failed to fetch subscription plan:", error);
+      subscriptionPlan = null;
+    }
   }
 
   return (
