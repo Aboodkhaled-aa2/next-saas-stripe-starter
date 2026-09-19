@@ -9,6 +9,7 @@ export const env = createEnv({
     AUTH_SECRET: z.string().min(1),
     GOOGLE_CLIENT_ID: z.string().min(1),
     GOOGLE_CLIENT_SECRET: z.string().min(1),
+    RESEND_API_KEY: z.string().min(1),
   },
   client: {
     NEXT_PUBLIC_APP_URL: z.string().optional(),
@@ -22,6 +23,9 @@ export const env = createEnv({
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
     AUTH_SECRET: process.env.AUTH_SECRET,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_STRIPE_STARTER_MONTHLY_PLAN_ID: process.env.NEXT_PUBLIC_STRIPE_STARTER_MONTHLY_PLAN_ID,
     NEXT_PUBLIC_STRIPE_STARTER_YEARLY_PLAN_ID: process.env.NEXT_PUBLIC_STRIPE_STARTER_YEARLY_PLAN_ID,
@@ -29,8 +33,6 @@ export const env = createEnv({
     NEXT_PUBLIC_STRIPE_PRO_YEARLY_PLAN_ID: process.env.NEXT_PUBLIC_STRIPE_PRO_YEARLY_PLAN_ID,
     NEXT_PUBLIC_STRIPE_BUSINESS_MONTHLY_PLAN_ID: process.env.NEXT_PUBLIC_STRIPE_BUSINESS_MONTHLY_PLAN_ID,
     NEXT_PUBLIC_STRIPE_BUSINESS_YEARLY_PLAN_ID: process.env.NEXT_PUBLIC_STRIPE_BUSINESS_YEARLY_PLAN_ID,
-    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 });
