@@ -41,15 +41,10 @@ export default async function PricingPage() {
     );
   }
 
-  let subscriptionPlan = null;
-  if (user && user.id) {
-    try {
-      subscriptionPlan = await getUserSubscriptionPlan(user.id);
-    } catch (error) {
-      console.error("Failed to fetch subscription plan:", error);
-      subscriptionPlan = null;
-    }
-  }
+  const subscriptionPlan =
+    user && user.id
+      ? await getUserSubscriptionPlan(user.id).catch(() => null)
+      : null;
 
   return (
     <div className="flex w-full flex-col gap-16 py-8 md:py-8">
