@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
@@ -8,43 +6,88 @@ import {
   ArrowRight,
   Lock,
   Mail,
+  User,
   Chrome,
 } from "lucide-react";
 
-export default function LoginPage() {
+export default function SignupPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
 
     setErrorMsg("");
+
+    if (password !== confirmPassword) {
+      setErrorMsg("Passwords do not match.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setErrorMsg("Password must be at least 8 characters.");
+      return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      setErrorMsg("Password must include at least one uppercase letter.");
+      return;
+    }
+
+    if (!/[a-z]/.test(password)) {
+      setErrorMsg("Password must include at least one lowercase letter.");
+      return;
+    }
+
+    if (!/[0-9]/.test(password)) {
+      setErrorMsg("Password must include at least one number.");
+      return;
+    }
+
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      setErrorMsg("Password must include at least one special character.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+        }),
       });
 
-      if (result?.error) {
-        setErrorMsg("Invalid email or password.");
+      const data = await response.json();
+
+      if (!response.ok) {
+        setErrorMsg(data.error || "Unable to create your account.");
         setLoading(false);
         return;
       }
 
-      window.location.href = "/dashboard";
+      window.location.href = `/verify-email?email=${encodeURIComponent(
+        email.trim().toLowerCase()
+      )}`;
     } catch {
       setErrorMsg("Something went wrong. Please try again.");
       setLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSignup = async () => {
     setErrorMsg("");
     setGoogleLoading(true);
 
@@ -75,22 +118,22 @@ export default function LoginPage() {
           </Link>
 
           <Link
-            href="/signup"
+            href="/login"
             className="text-sm text-slate-400 hover:text-white transition"
           >
-            Don't have an account? Sign up
+            Already have an account? Log in
           </Link>
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-4 py-16 w-full flex-1 flex flex-col justify-center">
+      <div className="max-w-md mx-auto px-4 py-12 w-full flex-1 flex flex-col justify-center">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-black text-white">
-            Welcome Back
+            Create Your Account
           </h1>
 
           <p className="mt-2 text-slate-400 text-sm">
-            Log in to manage your cleaning business.
+            Start building your AI employee for your cleaning business.
           </p>
         </div>
 
@@ -103,7 +146,7 @@ export default function LoginPage() {
 
           <button
             type="button"
-            onClick={handleGoogleLogin}
+            onClick={handleGoogleSignup}
             disabled={isLoading}
             className="w-full h-12 bg-white hover:bg-slate-100 text-slate-900 font-semibold rounded-xl transition flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -124,7 +167,28 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleSignup} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Full Name
+              </label>
+
+              <div className="relative">
+                <User className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
+
+                <input
+                  type="text"
+                  required
+                  autoComplete="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="John Smith"
+                  disabled={isLoading}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 transition disabled:opacity-50"
+                />
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Business Email
@@ -147,18 +211,9 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-slate-300">
-                  Password
-                </label>
-
-                <Link
-                  href="/forgot-password"
-                  className="text-xs text-blue-400 hover:text-blue-300 transition"
-                >
-                  Forgot password?
-                </Link>
-              </div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Password
+              </label>
 
               <div className="relative">
                 <Lock className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
@@ -166,10 +221,36 @@ export default function LoginPage() {
                 <input
                   type="password"
                   required
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  placeholder="Create a strong password"
+                  disabled={isLoading}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 transition disabled:opacity-50"
+                />
+              </div>
+
+              <p className="mt-2 text-xs text-slate-500">
+                8+ characters, uppercase, lowercase, number, and special
+                character.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Confirm Password
+              </label>
+
+              <div className="relative">
+                <Lock className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
+
+                <input
+                  type="password"
+                  required
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm your password"
                   disabled={isLoading}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 transition disabled:opacity-50"
                 />
@@ -181,26 +262,17 @@ export default function LoginPage() {
               disabled={isLoading}
               className="w-full h-12 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
             >
-              {loading ? "Signing in..." : "Log In"}
+              {loading ? "Creating Account..." : "Create Account"}
 
               {!loading && <ArrowRight className="h-4 w-4" />}
             </button>
           </form>
 
           <p className="mt-6 text-center text-xs text-slate-500">
-            By continuing, you agree to our Terms of Service and Privacy Policy.
+            By creating an account, you agree to our Terms of Service and
+            Privacy Policy.
           </p>
         </div>
-
-        <p className="mt-6 text-center text-sm text-slate-500">
-          New to Smart Cleaning Desk?{" "}
-          <Link
-            href="/signup"
-            className="text-blue-400 hover:text-blue-300 font-medium transition"
-          >
-            Create an account
-          </Link>
-        </p>
       </div>
 
       <footer className="py-6 text-center text-xs text-slate-600 border-t border-slate-900">
