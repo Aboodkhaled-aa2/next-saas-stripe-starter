@@ -36,13 +36,24 @@ export const sendVerificationCode = async ({
       },
     });
 
-    if (error || !data) {
-      throw new Error(error?.message || "Failed to send verification email.");
+    if (error) {
+      console.error("Resend API error:", error);
+      throw new Error(error.message);
+    }
+
+    if (!data) {
+      throw new Error("Resend returned no email data.");
     }
 
     return data;
-  } catch {
-    throw new Error("Failed to send verification email.");
+  } catch (error) {
+    console.error("Verification email error:", error);
+
+    throw new Error(
+      error instanceof Error
+        ? error.message
+        : "Failed to send verification email."
+    );
   }
 };
 
@@ -58,7 +69,7 @@ export const sendVerificationRequest: EmailConfig["sendVerificationRequest"] =
       100000 + Math.random() * 900000
     ).toString();
 
-    await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: provider.from ?? env.EMAIL_FROM,
       to:
         process.env.NODE_ENV === "development"
@@ -74,4 +85,13 @@ export const sendVerificationRequest: EmailConfig["sendVerificationRequest"] =
         "X-Entity-Ref-ID": new Date().getTime() + "",
       },
     });
+
+    if (error) {
+      console.error("Resend magic link error:", error);
+      throw new Error(error.message);
+    }
+
+    if (!data) {
+      throw new Error("Resend returned no email data.");
+    }
   };
