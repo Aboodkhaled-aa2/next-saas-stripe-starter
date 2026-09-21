@@ -27,6 +27,16 @@ export default function SignupPage() {
 
     setErrorMsg("");
 
+    if (!name.trim()) {
+      setErrorMsg("Please enter your full name.");
+      return;
+    }
+
+    if (!email.trim()) {
+      setErrorMsg("Please enter your business email.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setErrorMsg("Passwords do not match.");
       return;
@@ -66,8 +76,8 @@ export default function SignupPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name,
-          email,
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
           password,
         }),
       });
@@ -128,14 +138,14 @@ export default function SignupPage() {
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-4 py-12 w-full flex-1 flex flex-col justify-center">
+      <div className="max-w-md mx-auto px-4 py-16 w-full flex-1 flex flex-col justify-center">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-black text-white">
             Create Your Account
           </h1>
 
           <p className="mt-2 text-slate-400 text-sm">
-            Start building your AI employee for your cleaning business.
+            Start building your AI-powered cleaning business.
           </p>
         </div>
 
@@ -233,8 +243,7 @@ export default function SignupPage() {
               </div>
 
               <p className="mt-2 text-xs text-slate-500">
-                8+ characters, uppercase, lowercase, number, and special
-                character.
+                8+ characters with uppercase, lowercase, number, and special character.
               </p>
             </div>
 
@@ -271,10 +280,19 @@ export default function SignupPage() {
           </form>
 
           <p className="mt-6 text-center text-xs text-slate-500">
-            By creating an account, you agree to our Terms of Service and
-            Privacy Policy.
+            By creating an account, you agree to our Terms of Service and Privacy Policy.
           </p>
         </div>
+
+        <p className="mt-6 text-center text-sm text-slate-500">
+          Already have an account?{" "}
+          <Link
+            href="/login"
+            className="text-blue-400 hover:text-blue-300 font-medium transition"
+          >
+            Log in
+          </Link>
+        </p>
       </div>
 
       <footer className="py-6 text-center text-xs text-slate-600 border-t border-slate-900">
