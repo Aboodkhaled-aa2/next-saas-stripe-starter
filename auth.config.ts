@@ -22,6 +22,7 @@ export default {
 
     Credentials({
       name: "Credentials",
+
       credentials: {
         email: {
           label: "Email",
@@ -49,6 +50,10 @@ export default {
 
         if (!user || !user.passwordHash) {
           return null;
+        }
+
+        if (!user.emailVerified) {
+          throw new Error("EMAIL_NOT_VERIFIED");
         }
 
         const bcrypt = await import("bcryptjs");
