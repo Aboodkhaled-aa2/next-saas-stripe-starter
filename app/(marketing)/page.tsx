@@ -19,9 +19,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { useState } from "react";
 
 type IconComponent = React.ComponentType<{
   className?: string;
@@ -418,12 +416,14 @@ function FeatureColumn({
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-xl font-bold text-white">{title}</h3>
+
             {title === "Pro" && (
               <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/25">
                 Full AI Receptionist
               </span>
             )}
           </div>
+
           <p className="text-sm text-slate-400">{description}</p>
         </div>
       </div>
@@ -433,6 +433,7 @@ function FeatureColumn({
           <span className="text-5xl font-black tracking-tight text-white">
             {price}
           </span>
+
           <span className="mb-2 text-slate-400">/month</span>
         </div>
       </div>
@@ -484,21 +485,6 @@ function ComparisonCell({ enabled }: { enabled: boolean }) {
 
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const router = useRouter();
-  const supabase = createClientComponentClient();
-
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get("code");
-
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-        if (!error) {
-          router.push("/pricing");
-        }
-      });
-    }
-  }, [router, supabase]);
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 selection:bg-blue-500 selection:text-white">
@@ -720,7 +706,10 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section id="how-it-works" className="border-t border-slate-800/80 bg-slate-950 py-24">
+      <section
+        id="how-it-works"
+        className="border-t border-slate-800/80 bg-slate-950 py-24"
+      >
         <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
           <SectionTitle
             eyebrow="Simple Workflow"
@@ -749,7 +738,10 @@ export default function LandingPage() {
                   "Move qualified customers toward appointments while keeping customer information organized.",
               },
             ].map((step) => (
-              <div key={step.number} className="relative rounded-3xl border border-slate-800/80 bg-slate-900/40 p-8">
+              <div
+                key={step.number}
+                className="relative rounded-3xl border border-slate-800/80 bg-slate-900/40 p-8"
+              >
                 <div className="mb-6 text-5xl font-black text-blue-500/20">
                   {step.number}
                 </div>
@@ -768,7 +760,10 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="border-t border-slate-800/80 bg-slate-950 py-24">
+      <section
+        id="pricing"
+        className="border-t border-slate-800/80 bg-slate-950 py-24"
+      >
         <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
           <SectionTitle
             eyebrow="Simple Pricing"
@@ -957,7 +952,10 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="border-t border-slate-800/80 bg-slate-950 py-24">
+      <section
+        id="faq"
+        className="border-t border-slate-800/80 bg-slate-950 py-24"
+      >
         <div className="mx-auto max-w-3xl px-5 sm:px-6 lg:px-8">
           <SectionTitle
             eyebrow="FAQ"
@@ -991,8 +989,10 @@ export default function LandingPage() {
                   </button>
 
                   {isOpen && (
-                    <div className="border-t border-slate-800 px-6 pb-6 pt-4 bg-slate-900/30">
-                      <p className="leading-7 text-slate-400">{faq.answer}</p>
+                    <div className="border-t border-slate-800 bg-slate-900/30 px-6 pb-6 pt-4">
+                      <p className="leading-7 text-slate-400">
+                        {faq.answer}
+                      </p>
                     </div>
                   )}
                 </div>
