@@ -26,24 +26,37 @@ export async function POST(request: Request) {
       );
     }
 
-    const hasMinLength = password.length >= 8;
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasLowercase = /[a-z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-    const hasSpecialCharacter = /[^A-Za-z0-9]/.test(password);
-
-    if (
-      !hasMinLength ||
-      !hasUppercase ||
-      !hasLowercase ||
-      !hasNumber ||
-      !hasSpecialCharacter
-    ) {
+    if (password.length < 8) {
       return NextResponse.json(
-        {
-          error:
-            "Password must be at least 8 characters and include uppercase, lowercase, number, and special character.",
-        },
+        { error: "Password must be at least 8 characters." },
+        { status: 400 }
+      );
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      return NextResponse.json(
+        { error: "Password must include at least one uppercase letter." },
+        { status: 400 }
+      );
+    }
+
+    if (!/[a-z]/.test(password)) {
+      return NextResponse.json(
+        { error: "Password must include at least one lowercase letter." },
+        { status: 400 }
+      );
+    }
+
+    if (!/[0-9]/.test(password)) {
+      return NextResponse.json(
+        { error: "Password must include at least one number." },
+        { status: 400 }
+      );
+    }
+
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      return NextResponse.json(
+        { error: "Password must include at least one special character." },
         { status: 400 }
       );
     }
@@ -52,67 +65,44 @@ export async function POST(request: Request) {
       where: { email },
     });
 
+    if (existingUser?.emailVerified) {
+      return NextResponse.json(
+        { error: "An account with this email already exists." },
+        { status: 409 }
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    let user;
+
     if (existingUser) {
-      if (existingUser.emailVerified) {
-        return NextResponse.json(
-          { error: "An account with this email already exists." },
-          { status: 409 }
-        );
-      }
-
-      const passwordHash = await bcrypt.hash(password, 12);
-
-      await prisma.user.update({
+      user = await prisma.user.update({
         where: { id: existingUser.id },
         data: {
           name,
           passwordHash,
         },
       });
-
-      const verificationCode = Math.floor(
-        100000 + Math.random() * 900000
-      ).toString();
-
-      await prisma.verificationToken.deleteMany({
-        where: {
-          identifier: email,
-        },
-      });
-
-      await prisma.verificationToken.create({
+    } else {
+      user = await prisma.user.create({
         data: {
-          identifier: email,
-          token: verificationCode,
-          expires: new Date(Date.now() + 10 * 60 * 1000),
+          name,
+          email,
+          passwordHash,
         },
-      });
-
-      await sendVerificationCode({
-        email,
-        firstName: name,
-        verificationCode,
-      });
-
-      return NextResponse.json({
-        success: true,
-        message: "Verification code sent.",
       });
     }
-
-    const passwordHash = await bcrypt.hash(password, 12);
-
-    await prisma.user.create({
-      data: {
-        name,
-        email,
-        passwordHash,
-      },
-    });
 
     const verificationCode = Math.floor(
       100000 + Math.random() * 900000
     ).toString();
+
+    await prisma.verificationToken.deleteMany({
+      where: {
+        identifier: email,
+      },
+    });
 
     await prisma.verificationToken.create({
       data: {
@@ -124,24 +114,25 @@ export async function POST(request: Request) {
 
     await sendVerificationCode({
       email,
-      firstName: name,
+      firstName: name.split(" ")[0] || name,
       verificationCode,
     });
 
     return NextResponse.json({
       success: true,
       message: "Verification code sent.",
+      userId: user.id,
     });
   } catch (error) {
     console.error("Registration error:", error);
 
     const message =
-      error instanceof Error ? error.message : "Unknown registration error.";
+      error instanceof Error
+        ? error.message
+        : "Unable to create your account.";
 
     return NextResponse.json(
-      {
-        error: message,
-      },
+      { error: message },
       { status: 500 }
     );
   }
