@@ -1,4 +1,4 @@
-import { MagicLinkEmail } from "@/emails/magic-link-email";
+Import { MagicLinkEmail } from "@/emails/magic-link-email";
 import { EmailConfig } from "next-auth/providers/email";
 import { Resend } from "resend";
 
@@ -9,39 +9,69 @@ import { getUserByEmail } from "./user";
 
 export const resend = new Resend(env.RESEND_API_KEY);
 
-export const sendVerificationRequest: EmailConfig["sendVerificationRequest"] =
-  async ({ identifier, url, provider }) => {
-    const user = await getUserByEmail(identifier);
-    if (!user || !user.name) return;
+export const sendVerificationCode = async ({
+  email,
+  firstName,
+  verificationCode,
+}: {
+  email: string;
+  firstName: string;
+  verificationCode: string;
+}) => {
+  try {
+    const { data, error } = await resend.emails.send({
+      from: env.EMAIL_FROM,
+      to:
+        process.env.NODE_ENV === "development"
+          ? "delivered@resend.dev"
+          : email,
+      subject: `Your verification code for ${siteConfig.name}`,
+      react: MagicLinkEmail({
+        firstName,
+        verificationCode,
+        siteName: siteConfig.name,
+      }),
+      headers: {
+        "X-Entity-Ref-ID": new Date().getTime() + "",
+      },
+    });
 
-    const userVerified = user?.emailVerified ? true : false;
-    const authSubject = userVerified
-      ? `Sign-in link for ${siteConfig.name}`
-      : "Activate your account";
-
-    try {
-      const { data, error } = await resend.emails.send({
-        from: provider.from ?? "onboarding@resend.dev",
-        to:
-          process.env.NODE_ENV === "development"
-            ? "delivered@resend.dev"
-            : identifier,
-        subject: authSubject,
-        react: MagicLinkEmail({
-          firstName: user?.name as string,
-          actionUrl: url,
-          mailType: userVerified ? "login" : "register",
-          siteName: siteConfig.name,
-        }),
-        headers: {
-          "X-Entity-Ref-ID": new Date().getTime() + "",
-        },
-      });
-
-      if (error || !data) {
-        throw new Error(error?.message);
-      }
-    } catch (error) {
-      throw new Error("Failed to send verification email.");
+    if (error || !data) {
+      throw new Error(error?.message || "Failed to send verification email.");
     }
+
+    return data;
+  } catch {
+    throw new Error("Failed to send verification email.");
+  }
+};
+
+export const sendVerificationRequest: EmailConfig["sendVerificationRequest"] =
+  async ({ identifier, provider }) => {
+    const user = await getUserByEmail(identifier);
+
+    if (!user || !user.name) {
+      throw new Error("User not found.");
+    }
+
+    const verificationCode = Math.floor(
+      100000 + Math.random() * 900000
+    ).toString();
+
+    await resend.emails.send({
+      from: provider.from ?? env.EMAIL_FROM,
+      to:
+        process.env.NODE_ENV === "development"
+          ? "delivered@resend.dev"
+          : identifier,
+      subject: `Your verification code for ${siteConfig.name}`,
+      react: MagicLinkEmail({
+        firstName: user.name,
+        verificationCode,
+        siteName: siteConfig.name,
+      }),
+      headers: {
+        "X-Entity-Ref-ID": new Date().getTime() + "",
+      },
+    });
   };
