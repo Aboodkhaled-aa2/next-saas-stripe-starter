@@ -135,8 +135,13 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Registration error:", error);
 
+    const message =
+      error instanceof Error ? error.message : "Unknown registration error.";
+
     return NextResponse.json(
-      { error: "Unable to create your account. Please try again." },
+      {
+        error: message,
+      },
       { status: 500 }
     );
   }
