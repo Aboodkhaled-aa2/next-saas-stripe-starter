@@ -20,7 +20,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 export const metadata = constructMetadata({
   title: "Dashboard – Smart Cleaning Desk",
@@ -82,7 +81,9 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <DashboardHeader
         heading="Good to see you again."
-        text={`Welcome back${user?.name ? `, ${user.name}` : ""}. Here's what's happening with your cleaning business.`}
+        text={`Welcome back${
+          user?.name ? `, ${user.name}` : ""
+        }. Here's what's happening with your cleaning business.`}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -96,9 +97,11 @@ export default async function DashboardPage() {
                   <p className="text-sm font-medium text-muted-foreground">
                     {stat.title}
                   </p>
+
                   <p className="text-3xl font-bold tracking-tight">
                     {stat.value}
                   </p>
+
                   <p className="text-xs text-muted-foreground">
                     {stat.description}
                   </p>
@@ -118,6 +121,7 @@ export default async function DashboardPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <CardTitle>AI Employee</CardTitle>
+
               <CardDescription>
                 Your AI receptionist is ready to help manage customer
                 conversations.
@@ -136,8 +140,12 @@ export default async function DashboardPage() {
             <div className="rounded-lg border p-4">
               <div className="mb-3 flex items-center gap-2">
                 <Bot className="h-4 w-4" />
-                <span className="text-sm font-medium">AI Receptionist</span>
+
+                <span className="text-sm font-medium">
+                  AI Receptionist
+                </span>
               </div>
+
               <p className="text-sm text-muted-foreground">
                 Answer questions, qualify leads, and help customers book
                 cleaning services.
@@ -147,8 +155,12 @@ export default async function DashboardPage() {
             <div className="rounded-lg border p-4">
               <div className="mb-3 flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
-                <span className="text-sm font-medium">Messaging</span>
+
+                <span className="text-sm font-medium">
+                  Messaging
+                </span>
               </div>
+
               <p className="text-sm text-muted-foreground">
                 Connect your customer messaging channels and never miss a
                 potential lead.
@@ -158,8 +170,12 @@ export default async function DashboardPage() {
             <div className="rounded-lg border p-4">
               <div className="mb-3 flex items-center gap-2">
                 <Phone className="h-4 w-4" />
-                <span className="text-sm font-medium">Voice</span>
+
+                <span className="text-sm font-medium">
+                  Voice
+                </span>
               </div>
+
               <p className="text-sm text-muted-foreground">
                 Let your AI answer incoming calls and handle customer
                 conversations.
@@ -168,12 +184,13 @@ export default async function DashboardPage() {
           </div>
 
           <div className="mt-6">
-            <Button asChild>
-              <Link href="/dashboard/ai">
-                Configure AI Employee
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
+            <Link
+              href="/dashboard/ai"
+              className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Configure AI Employee
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
           </div>
         </CardContent>
       </Card>
@@ -182,6 +199,7 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Upcoming Jobs</CardTitle>
+
             <CardDescription>
               Your next scheduled cleaning appointments.
             </CardDescription>
@@ -193,17 +211,20 @@ export default async function DashboardPage() {
                 <Clock3 className="h-6 w-6 text-muted-foreground" />
               </div>
 
-              <h3 className="font-semibold">No upcoming jobs</h3>
+              <h3 className="font-semibold">
+                No upcoming jobs
+              </h3>
 
               <p className="mt-1 max-w-sm text-sm text-muted-foreground">
                 Your scheduled cleaning appointments will appear here.
               </p>
 
-              <Button asChild variant="outline" className="mt-4">
-                <Link href="/dashboard/calendar">
-                  Open Calendar
-                </Link>
-              </Button>
+              <Link
+                href="/dashboard/calendar"
+                className="mt-4 inline-flex h-10 items-center justify-center rounded-md border bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+              >
+                Open Calendar
+              </Link>
             </div>
           </CardContent>
         </Card>
@@ -211,6 +232,7 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Recent Leads</CardTitle>
+
             <CardDescription>
               Customers who recently contacted your business.
             </CardDescription>
@@ -222,17 +244,20 @@ export default async function DashboardPage() {
                 <Users className="h-6 w-6 text-muted-foreground" />
               </div>
 
-              <h3 className="font-semibold">No leads yet</h3>
+              <h3 className="font-semibold">
+                No leads yet
+              </h3>
 
               <p className="mt-1 max-w-sm text-sm text-muted-foreground">
                 New leads from your AI employee will appear here.
               </p>
 
-              <Button asChild variant="outline" className="mt-4">
-                <Link href="/dashboard/leads">
-                  View Leads
-                </Link>
-              </Button>
+              <Link
+                href="/dashboard/leads"
+                className="mt-4 inline-flex h-10 items-center justify-center rounded-md border bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+              >
+                View Leads
+              </Link>
             </div>
           </CardContent>
         </Card>
@@ -241,6 +266,7 @@ export default async function DashboardPage() {
       <Card>
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
+
           <CardDescription>
             Manage the most important parts of your AI cleaning assistant.
           </CardDescription>
@@ -265,7 +291,9 @@ export default async function DashboardPage() {
                     <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
                   </div>
 
-                  <h3 className="font-semibold">{action.title}</h3>
+                  <h3 className="font-semibold">
+                    {action.title}
+                  </h3>
 
                   <p className="mt-1 text-sm text-muted-foreground">
                     {action.description}
@@ -284,17 +312,21 @@ export default async function DashboardPage() {
           </div>
 
           <div>
-            <p className="font-medium">Your account is active</p>
+            <p className="font-medium">
+              Your account is active
+            </p>
+
             <p className="text-sm text-muted-foreground">
               Complete your business setup to start using your AI employee.
             </p>
           </div>
 
-          <Button asChild variant="outline" className="ml-auto">
-            <Link href="/dashboard/settings">
-              Business Settings
-            </Link>
-          </Button>
+          <Link
+            href="/dashboard/settings"
+            className="ml-auto inline-flex h-10 items-center justify-center rounded-md border bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            Business Settings
+          </Link>
         </CardContent>
       </Card>
     </div>
