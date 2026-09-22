@@ -8,8 +8,8 @@ import { UserNameForm } from "@/components/forms/user-name-form";
 import { UserRoleForm } from "@/components/forms/user-role-form";
 
 export const metadata = constructMetadata({
-  title: "Settings – SaaS Starter",
-  description: "Configure your account and website settings.",
+  title: "Settings – Smart Cleaning Desk",
+  description: "Manage your account and business settings.",
 });
 
 export default async function SettingsPage() {
@@ -18,16 +18,31 @@ export default async function SettingsPage() {
   if (!user?.id) redirect("/login");
 
   return (
-    <>
-      <DashboardHeader
-        heading="Settings"
-        text="Manage account and website settings."
-      />
-      <div className="divide-y divide-muted pb-10">
-        <UserNameForm user={{ id: user.id, name: user.name || "" }} />
-        <UserRoleForm user={{ id: user.id, role: user.role }} />
-        <DeleteAccountSection />
+    <div className="min-h-screen bg-[#020617] text-white">
+      <div className="space-y-2">
+        <DashboardHeader
+          heading="Settings"
+          text="Manage your account and business settings."
+        />
+
+        <div className="divide-y divide-slate-800/80 pb-10">
+          <UserNameForm
+            user={{
+              id: user.id,
+              name: user.name || "",
+            }}
+          />
+
+          <UserRoleForm
+            user={{
+              id: user.id,
+              role: user.role,
+            }}
+          />
+
+          <DeleteAccountSection />
+        </div>
       </div>
-    </>
+    </div>
   );
 }
