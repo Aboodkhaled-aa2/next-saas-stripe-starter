@@ -18,6 +18,8 @@ export const env = createEnv({
     EMAIL_FROM: z.string().min(1),
 
     STRIPE_API_KEY: z.string().min(1),
+
+    STRIPE_WEBHOOK_SECRET: z.string().min(1),
   },
 
   client: {
@@ -47,6 +49,8 @@ export const env = createEnv({
     EMAIL_FROM: process.env.EMAIL_FROM,
 
     STRIPE_API_KEY: process.env.STRIPE_API_KEY,
+
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
 
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
 
