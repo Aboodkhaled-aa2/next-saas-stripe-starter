@@ -20,6 +20,7 @@ export async function generateMetadata({
   const category = BLOG_CATEGORIES.find(
     (category) => category.slug === params.slug,
   );
+
   if (!category) {
     return;
   }
@@ -27,7 +28,7 @@ export async function generateMetadata({
   const { title, description } = category;
 
   return constructMetadata({
-    title: `${title} Posts – Next SaaS Starter`,
+    title: `${title} Posts – Smart Cleaning Desk`,
     description,
   });
 }
@@ -39,7 +40,9 @@ export default async function BlogCategory({
     slug: string;
   };
 }) {
-  const category = BLOG_CATEGORIES.find((ctg) => ctg.slug === params.slug);
+  const category = BLOG_CATEGORIES.find(
+    (ctg) => ctg.slug === params.slug,
+  );
 
   if (!category) {
     notFound();
@@ -58,7 +61,11 @@ export default async function BlogCategory({
   return (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {articles.map((article, idx) => (
-        <BlogCard key={article._id} data={article} priority={idx <= 2} />
+        <BlogCard
+          key={article._id}
+          data={article}
+          priority={idx <= 2}
+        />
       ))}
     </div>
   );
