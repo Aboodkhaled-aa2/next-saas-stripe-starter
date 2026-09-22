@@ -1,12 +1,7 @@
-import { notFound } from "next/navigation";
-import { allPosts } from "contentlayer/generated";
-
-import { Mdx } from "@/components/content/mdx-components";
-
-import "@/styles/mdx.css";
-
 import { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import { allPosts } from "contentlayer/generated";
 
 import { BLOG_CATEGORIES } from "@/config/blog";
 import { getTableOfContents } from "@/lib/toc";
@@ -17,11 +12,14 @@ import {
   getBlurDataURL,
   placeholderBlurhash,
 } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
+import { Mdx } from "@/components/content/mdx-components";
 import Author from "@/components/content/author";
+import { buttonVariants } from "@/components/ui/button";
 import BlurImage from "@/components/shared/blur-image";
 import MaxWidthWrapper from "@/components/shared/max-width-wrapper";
 import { DashboardTableOfContents } from "@/components/shared/toc";
+
+import "@/styles/mdx.css";
 
 export async function generateStaticParams() {
   return allPosts.map((post) => ({
@@ -35,6 +33,7 @@ export async function generateMetadata({
   params: { slug: string };
 }): Promise<Metadata | undefined> {
   const post = allPosts.find((post) => post.slugAsParams === params.slug);
+
   if (!post) {
     return;
   }
@@ -42,8 +41,8 @@ export async function generateMetadata({
   const { title, description, image } = post;
 
   return constructMetadata({
-    title: `${title} – SaaS Starter`,
-    description: description,
+    title: `${title} – Smart Cleaning Desk`,
+    description,
     image,
   });
 }
@@ -55,7 +54,9 @@ export default async function PostPage({
     slug: string;
   };
 }) {
-  const post = allPosts.find((post) => post.slugAsParams === params.slug);
+  const post = allPosts.find(
+    (post) => post.slugAsParams === params.slug,
+  );
 
   if (!post) {
     notFound();
@@ -76,7 +77,7 @@ export default async function PostPage({
 
   const [thumbnailBlurhash, images] = await Promise.all([
     getBlurDataURL(post.image),
-    await Promise.all(
+    Promise.all(
       post.images.map(async (src: string) => ({
         src,
         blurDataURL: await getBlurDataURL(src),
@@ -102,6 +103,7 @@ export default async function PostPage({
             >
               {category.title}
             </Link>
+
             <time
               dateTime={post.date}
               className="text-sm font-medium text-muted-foreground"
@@ -109,12 +111,15 @@ export default async function PostPage({
               {formatDate(post.date)}
             </time>
           </div>
+
           <h1 className="font-heading text-3xl text-foreground sm:text-4xl">
             {post.title}
           </h1>
+
           <p className="text-base text-muted-foreground md:text-lg">
             {post.description}
           </p>
+
           <div className="flex flex-nowrap items-center space-x-5 pt-1 md:space-x-8">
             {post.authors.map((author) => (
               <Author username={author} key={post._id + author} />
@@ -139,6 +144,7 @@ export default async function PostPage({
               src={post.image}
               sizes="(max-width: 768px) 770px, 1000px"
             />
+
             <div className="px-[.8rem] pb-10 md:px-8">
               <Mdx code={post.body.code} images={images} />
             </div>
@@ -167,9 +173,11 @@ export default async function PostPage({
                   <h3 className="font-heading text-xl text-foreground">
                     {post.title}
                   </h3>
+
                   <p className="line-clamp-2 text-[15px] text-muted-foreground">
                     {post.description}
                   </p>
+
                   <p className="text-sm text-muted-foreground">
                     {formatDate(post.date)}
                   </p>
