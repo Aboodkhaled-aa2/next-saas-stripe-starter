@@ -16,246 +16,9 @@ import {
   Sparkles,
   Star,
   Users,
-  X,
   Zap,
 } from "lucide-react";
 import { useState } from "react";
-
-type IconComponent = React.ComponentType<{
-  className?: string;
-}>;
-
-type Feature = {
-  name: string;
-  starter: boolean;
-  business: boolean;
-  pro: boolean;
-};
-
-const features: Feature[] = [
-  {
-    name: "AI Customer Messaging",
-    starter: true,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Instagram",
-    starter: true,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Facebook",
-    starter: true,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "WhatsApp",
-    starter: true,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Lead Capture",
-    starter: true,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Customer Inbox",
-    starter: true,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Customer Information Collection",
-    starter: true,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Business Hours & FAQ Responses",
-    starter: true,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Conversation History",
-    starter: true,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Basic Automations",
-    starter: true,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Customer Management",
-    starter: true,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Email Support",
-    starter: true,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "AI Voice Receptionist",
-    starter: false,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "100 Voice Minutes / Month",
-    starter: false,
-    business: true,
-    pro: false,
-  },
-  {
-    name: "500 Voice Minutes / Month",
-    starter: false,
-    business: false,
-    pro: true,
-  },
-  {
-    name: "Appointment Booking",
-    starter: false,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Calendar Integration",
-    starter: false,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Automated Lead Follow-Ups",
-    starter: false,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Lead Qualification",
-    starter: false,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Quote & Service Information",
-    starter: false,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Booking Reminders",
-    starter: false,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Review Request Automation",
-    starter: false,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Lead Status Management",
-    starter: false,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Custom AI Instructions",
-    starter: false,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Conversation & Lead Tracking",
-    starter: false,
-    business: true,
-    pro: true,
-  },
-  {
-    name: "Dedicated Business Phone Number",
-    starter: false,
-    business: false,
-    pro: true,
-  },
-  {
-    name: "Advanced Call Handling",
-    starter: false,
-    business: false,
-    pro: true,
-  },
-  {
-    name: "Call Transfer",
-    starter: false,
-    business: false,
-    pro: true,
-  },
-  {
-    name: "Advanced Lead Qualification",
-    starter: false,
-    business: false,
-    pro: true,
-  },
-  {
-    name: "Advanced Follow-Ups",
-    starter: false,
-    business: false,
-    pro: true,
-  },
-  {
-    name: "Custom Booking Rules",
-    starter: false,
-    business: false,
-    pro: true,
-  },
-  {
-    name: "Multiple Service Types",
-    starter: false,
-    business: false,
-    pro: true,
-  },
-  {
-    name: "Custom AI Knowledge Base",
-    starter: false,
-    business: false,
-    pro: true,
-  },
-  {
-    name: "Advanced Customer Management",
-    starter: false,
-    business: false,
-    pro: true,
-  },
-  {
-    name: "Detailed Call & Conversation History",
-    starter: false,
-    business: false,
-    pro: true,
-  },
-  {
-    name: "Custom AI Behavior",
-    starter: false,
-    business: false,
-    pro: true,
-  },
-  {
-    name: "Priority Support",
-    starter: false,
-    business: true,
-    pro: true,
-  },
-];
 
 const faqs = [
   {
@@ -292,34 +55,24 @@ const faqs = [
 
 const starterFeatures = [
   "AI Customer Messaging",
-  "Instagram",
-  "Facebook",
-  "WhatsApp",
+  "Instagram, Facebook & WhatsApp",
   "Lead Capture",
   "Customer Inbox",
   "Customer Information Collection",
   "Business Hours & FAQ Responses",
   "Conversation History",
   "Basic Automations",
-  "Customer Management",
-  "Email Support",
 ];
 
 const businessFeatures = [
   "Everything in Starter",
   "AI Voice Receptionist",
   "100 Voice Minutes / Month",
-  "Appointment Booking",
-  "Calendar Integration",
+  "Appointment Booking & Calendar",
   "Automated Lead Follow-Ups",
-  "Lead Qualification",
-  "Quote & Service Information",
+  "Lead Qualification & Quotes",
   "Booking Reminders",
-  "Review Request Automation",
-  "Lead Status Management",
   "Custom AI Instructions",
-  "Conversation & Lead Tracking",
-  "Priority Support",
 ];
 
 const proFeatures = [
@@ -328,15 +81,9 @@ const proFeatures = [
   "500 Voice Minutes / Month",
   "Advanced Call Handling",
   "Call Transfer",
-  "Advanced Lead Qualification",
   "Advanced Follow-Ups",
   "Custom Booking Rules",
-  "Multiple Service Types",
   "Custom AI Knowledge Base",
-  "Advanced Customer Management",
-  "Detailed Call & Conversation History",
-  "Custom AI Behavior",
-  "Priority Support",
 ];
 
 function CheckItem({ children }: { children: React.ReactNode }) {
@@ -373,112 +120,6 @@ function SectionTitle({
       <p className="mt-5 text-lg leading-8 text-slate-400">
         {description}
       </p>
-    </div>
-  );
-}
-
-function FeatureColumn({
-  title,
-  description,
-  price,
-  featuresList,
-  popular,
-  icon: Icon,
-  plan,
-}: {
-  title: string;
-  description: string;
-  price: string;
-  featuresList: string[];
-  popular?: boolean;
-  icon: IconComponent;
-  plan: "starter" | "business" | "pro";
-}) {
-  return (
-    <div
-      className={`relative flex h-full flex-col rounded-3xl border bg-slate-900/80 p-7 shadow-xl transition duration-300 hover:-translate-y-1 ${
-        popular
-          ? "border-blue-500 ring-2 ring-blue-500/20"
-          : "border-slate-800"
-      }`}
-    >
-      {popular && (
-        <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-600 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-white">
-          Most Popular
-        </div>
-      )}
-
-      <div className="mb-6 flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-400">
-          <Icon className="h-6 w-6" />
-        </div>
-
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-xl font-bold text-white">{title}</h3>
-
-            {title === "Pro" && (
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/25">
-                Full AI Receptionist
-              </span>
-            )}
-          </div>
-
-          <p className="text-sm text-slate-400">{description}</p>
-        </div>
-      </div>
-
-      <div className="mb-7">
-        <div className="flex items-end gap-1">
-          <span className="text-5xl font-black tracking-tight text-white">
-            {price}
-          </span>
-
-          <span className="mb-2 text-slate-400">/month</span>
-        </div>
-      </div>
-
-      <Link
-        href={`/signup?plan=${plan}`}
-        className={`mb-7 flex h-12 items-center justify-center rounded-xl px-5 text-sm font-bold transition ${
-          popular
-            ? "bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20"
-            : "border border-slate-700 bg-slate-800 text-white hover:bg-slate-700"
-        }`}
-      >
-        Choose {title}
-        <ArrowRight className="ml-2 h-4 w-4" />
-      </Link>
-
-      <div className="border-t border-slate-800 pt-6">
-        <p className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-500">
-          Includes
-        </p>
-
-        <ul className="space-y-3">
-          {featuresList.map((feature) => (
-            <CheckItem key={feature}>{feature}</CheckItem>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
-function ComparisonCell({ enabled }: { enabled: boolean }) {
-  if (enabled) {
-    return (
-      <div className="flex justify-center">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20 text-blue-400">
-          <Check className="h-4 w-4" />
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex justify-center">
-      <X className="h-5 w-5 text-slate-700" />
     </div>
   );
 }
@@ -557,20 +198,20 @@ export default function LandingPage() {
           <div className="mx-auto max-w-4xl text-center">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-500/35 bg-blue-500/10 px-4 py-2 text-sm font-semibold text-blue-300">
               <Sparkles className="h-4 w-4" />
-              AI-Powered Cleaning Business Management
+              Your AI Employee for Your Cleaning Business
             </div>
 
             <h1 className="text-4xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">
-              Turn More Cleaning Leads Into
+              Never Miss Another Cleaning Customer
               <span className="block text-blue-400">
-                Customers & Bookings
+                While You Are Busy Cleaning
               </span>
             </h1>
 
             <p className="mx-auto mt-7 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
-              Smart Cleaning Desk helps cleaning businesses manage customer
-              conversations, capture leads, automate follow-ups, book
-              appointments, and handle customer communication with AI.
+              Smart Cleaning Desk answers customer questions, captures leads, follows up,
+              books appointments, and helps manage your cleaning business with AI
+              across the channels your customers already use.
             </p>
 
             <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
@@ -578,7 +219,7 @@ export default function LandingPage() {
                 href="/signup?plan=starter"
                 className="inline-flex h-13 items-center justify-center rounded-xl bg-blue-600 px-7 py-3.5 text-sm font-bold text-white shadow-xl shadow-blue-600/30 transition hover:bg-blue-500"
               >
-                Get Started
+                Start Your AI Employee
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
 
@@ -767,111 +408,155 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
           <SectionTitle
             eyebrow="Simple Pricing"
-            title="Choose the plan for your business"
-            description="No free trial. Choose a paid plan, complete checkout, and access the features included in your active subscription."
+            title="Choose the AI employee for your business"
+            description="Start with customer messaging, add Voice AI when you need it, or unlock the full receptionist experience with Pro."
           />
 
-          <div className="mt-16 grid gap-7 lg:grid-cols-3">
-            <FeatureColumn
-              title="Starter"
-              description="Essential messaging and lead capture for growing cleaning teams."
-              price="$49"
-              featuresList={starterFeatures}
-              icon={Sparkles}
-              plan="starter"
-            />
+          <div className="mt-14 grid items-stretch gap-6 lg:grid-cols-3 lg:gap-7">
+            <div className="flex h-full flex-col rounded-3xl border border-slate-800 bg-slate-900/70 p-7 shadow-xl transition duration-300 hover:-translate-y-1 hover:border-slate-700">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-slate-400">Starter</p>
+                  <h3 className="mt-2 text-2xl font-black text-white">
+                    Customer Messaging
+                  </h3>
+                </div>
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-400">
+                  <MessageCircle className="h-5 w-5" />
+                </div>
+              </div>
 
-            <FeatureColumn
-              title="Business"
-              description="Full automation with voice AI and advanced booking workflows."
-              price="$99"
-              featuresList={businessFeatures}
-              popular
-              icon={Zap}
-              plan="business"
-            />
+              <p className="mt-4 min-h-[56px] text-sm leading-6 text-slate-400">
+                Capture and manage customer conversations across your main messaging channels.
+              </p>
 
-            <FeatureColumn
-              title="Pro"
-              description="Maximum power, custom phone numbers, and advanced AI behavior."
-              price="$249"
-              featuresList={proFeatures}
-              icon={Phone}
-              plan="pro"
-            />
-          </div>
-        </div>
-      </section>
+              <div className="mt-6 flex items-end gap-1">
+                <span className="text-5xl font-black tracking-tight text-white">
+                  $49
+                </span>
+                <span className="mb-2 text-sm text-slate-400">/month</span>
+              </div>
 
-      {/* Comparison */}
-      <section className="border-t border-slate-800/80 bg-slate-950 py-24">
-        <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
-          <SectionTitle
-            eyebrow="Plan Comparison"
-            title="Compare every feature"
-            description="See exactly what is included with Starter, Business, and Pro."
-          />
+              <Link
+                href="/signup?plan=starter"
+                className="mt-7 flex h-12 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 px-5 text-sm font-bold text-white transition hover:bg-slate-700"
+              >
+                Choose Starter
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
 
-          <div className="mt-12 overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/60 shadow-xl">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-800 bg-slate-900/90">
-                    <th className="px-6 py-5 text-left text-sm font-bold text-white">
-                      Feature
-                    </th>
-
-                    <th className="px-6 py-5 text-center text-sm font-bold text-white">
-                      Starter
-                      <span className="mt-1 block text-xs font-normal text-slate-400">
-                        $49/mo
-                      </span>
-                    </th>
-
-                    <th className="px-6 py-5 text-center text-sm font-bold text-blue-400">
-                      Business
-                      <span className="mt-1 block text-xs font-normal text-slate-400">
-                        $99/mo
-                      </span>
-                    </th>
-
-                    <th className="px-6 py-5 text-center text-sm font-bold text-white">
-                      Pro
-                      <span className="mt-1 block text-xs font-normal text-slate-400">
-                        $249/mo
-                      </span>
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {features.map((feature, index) => (
-                    <tr
-                      key={feature.name}
-                      className={`border-b border-slate-800/60 last:border-b-0 ${
-                        index % 2 === 0 ? "bg-transparent" : "bg-slate-900/30"
-                      }`}
-                    >
-                      <td className="px-6 py-4 text-sm font-medium text-slate-300">
-                        {feature.name}
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <ComparisonCell enabled={feature.starter} />
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <ComparisonCell enabled={feature.business} />
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <ComparisonCell enabled={feature.pro} />
-                      </td>
-                    </tr>
+              <div className="mt-7 border-t border-slate-800 pt-6">
+                <p className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Includes
+                </p>
+                <ul className="space-y-3">
+                  {starterFeatures.map((feature) => (
+                    <CheckItem key={feature}>{feature}</CheckItem>
                   ))}
-                </tbody>
-              </table>
+                </ul>
+              </div>
             </div>
+
+            <div className="relative flex h-full flex-col rounded-3xl border border-blue-500 bg-slate-900 p-7 shadow-2xl shadow-blue-950/30 ring-2 ring-blue-500/15 transition duration-300 hover:-translate-y-1">
+              <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-600 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-blue-600/20">
+                Most Popular
+              </div>
+
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-blue-400">Business</p>
+                  <h3 className="mt-2 text-2xl font-black text-white">
+                    AI Voice Receptionist
+                  </h3>
+                </div>
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-500/15 text-blue-400">
+                  <Phone className="h-5 w-5" />
+                </div>
+              </div>
+
+              <p className="mt-4 min-h-[56px] text-sm leading-6 text-slate-400">
+                Add Voice AI, appointment booking, qualification, quotes, and automated follow-ups.
+              </p>
+
+              <div className="mt-6 flex items-end gap-1">
+                <span className="text-5xl font-black tracking-tight text-white">
+                  $99
+                </span>
+                <span className="mb-2 text-sm text-slate-400">/month</span>
+              </div>
+
+              <Link
+                href="/signup?plan=business"
+                className="mt-7 flex h-12 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500"
+              >
+                Choose Business
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+
+              <div className="mt-7 border-t border-slate-800 pt-6">
+                <p className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Includes
+                </p>
+                <ul className="space-y-3">
+                  {businessFeatures.map((feature) => (
+                    <CheckItem key={feature}>{feature}</CheckItem>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex h-full flex-col rounded-3xl border border-slate-800 bg-slate-900/70 p-7 shadow-xl transition duration-300 hover:-translate-y-1 hover:border-slate-700">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-slate-400">Pro</p>
+                  <h3 className="mt-2 text-2xl font-black text-white">
+                    Full AI Receptionist
+                  </h3>
+                </div>
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-400">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+              </div>
+
+              <p className="mt-4 min-h-[56px] text-sm leading-6 text-slate-400">
+                Advanced calling, custom booking rules, deeper AI knowledge, and a dedicated business number.
+              </p>
+
+              <div className="mt-6 flex items-end gap-1">
+                <span className="text-5xl font-black tracking-tight text-white">
+                  $249
+                </span>
+                <span className="mb-2 text-sm text-slate-400">/month</span>
+              </div>
+
+              <Link
+                href="/signup?plan=pro"
+                className="mt-7 flex h-12 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 px-5 text-sm font-bold text-white transition hover:bg-slate-700"
+              >
+                Choose Pro
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+
+              <div className="mt-7 border-t border-slate-800 pt-6">
+                <p className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Includes
+                </p>
+                <ul className="space-y-3">
+                  {proFeatures.map((feature) => (
+                    <CheckItem key={feature}>{feature}</CheckItem>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="mx-auto mt-8 max-w-4xl rounded-2xl border border-slate-800 bg-slate-900/40 px-6 py-5 text-center">
+            <p className="text-sm font-semibold text-white">
+              Need Voice AI?
+              <span className="ml-2 font-normal text-slate-400">
+                Starter focuses on messaging. Business adds 100 voice minutes, while Pro includes 500 voice minutes and advanced calling.
+              </span>
+            </p>
           </div>
         </div>
       </section>
@@ -886,12 +571,12 @@ export default function LandingPage() {
               </div>
 
               <h2 className="text-3xl font-black tracking-tight text-white sm:text-5xl">
-                Spend less time managing messages.
+                Your AI employee works while you work.
               </h2>
 
               <p className="mt-6 text-lg leading-8 text-slate-400">
-                Smart Cleaning Desk brings customer communication and business
-                workflows together so you can focus more of your time on
+                Smart Cleaning Desk helps handle customer communication, lead capture,
+                follow-ups, bookings, and calls so you can spend more time
                 running and growing your cleaning company.
               </p>
 
@@ -899,7 +584,7 @@ export default function LandingPage() {
                 href="/signup?plan=business"
                 className="mt-8 inline-flex items-center rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500"
               >
-                Choose Business
+                See Business Plan
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </div>
@@ -1008,12 +693,11 @@ export default function LandingPage() {
           <Star className="mx-auto h-10 w-10 text-blue-100" />
 
           <h2 className="mt-5 text-3xl font-black tracking-tight text-white sm:text-5xl">
-            Ready to simplify your cleaning business?
+            Ready to put your customer communication on autopilot?
           </h2>
 
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-blue-100">
-            Choose a plan that fits your business and start using Smart
-            Cleaning Desk after your subscription is activated.
+            Choose your plan, complete checkout, and start setting up your AI employee.
           </p>
 
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
