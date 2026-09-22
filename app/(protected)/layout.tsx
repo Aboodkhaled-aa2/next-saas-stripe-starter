@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { sidebarLinks } from "@/config/dashboard";
 import { getCurrentUser } from "@/lib/session";
+import { getUserSubscriptionPlan } from "@/lib/subscription";
 import { SearchCommand } from "@/components/dashboard/search-command";
 import {
   DashboardSidebar,
@@ -20,7 +21,17 @@ export default async function Dashboard({
 }: ProtectedLayoutProps) {
   const user = await getCurrentUser();
 
-  if (!user) redirect("/login");
+  if (!user) {
+    redirect("/login");
+  }
+
+  if (user.role !== "ADMIN") {
+    const subscriptionPlan = await getUserSubscriptionPlan(user.id);
+
+    if (!subscriptionPlan.isPaid) {
+      redirect("/pricing");
+    }
+  }
 
   const filteredLinks = sidebarLinks.map((section) => ({
     ...section,
