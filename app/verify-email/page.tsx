@@ -17,7 +17,6 @@ export default function VerifyEmailPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-
     const emailParam = params.get("email") || "";
     const planParam = params.get("plan") || "starter";
 
@@ -83,107 +82,99 @@ export default function VerifyEmailPage() {
       <header className="border-b border-slate-800/80 bg-slate-950/90 px-6 py-4">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white">
-              <Sparkles className="h-4 w-4" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500">
+              <Sparkles className="h-5 w-5 text-white" />
             </div>
 
-            <span className="font-bold tracking-tight text-white">
+            <span className="text-lg font-bold tracking-tight">
               Smart Cleaning Desk
             </span>
-          </Link>
-
-          <Link
-            href="/login"
-            className="text-sm text-slate-400 transition hover:text-white"
-          >
-            Log in
           </Link>
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-12">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-600/10">
-            <Mail className="h-8 w-8 text-blue-400" />
-          </div>
+      <div className="flex flex-1 items-center justify-center px-6 py-16">
+        <div className="w-full max-w-md">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-8 shadow-2xl">
+            <div className="mb-8 text-center">
+              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-blue-500/10">
+                <Mail className="h-7 w-7 text-blue-400" />
+              </div>
 
-          <h1 className="text-3xl font-black text-white">
-            Verify Your Email
-          </h1>
+              <h1 className="text-2xl font-bold">
+                Verify your email
+              </h1>
 
-          <p className="mt-3 text-sm leading-6 text-slate-400">
-            We sent a 6-digit verification code to
-          </p>
-
-          <p className="mt-1 break-all font-medium text-white">
-            {email || "your email address"}
-          </p>
-        </div>
-
-        <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
-          {errorMsg && (
-            <div className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm leading-relaxed text-red-400">
-              {errorMsg}
-            </div>
-          )}
-
-          {successMsg && (
-            <div className="mb-6 rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm leading-relaxed text-green-400">
-              {successMsg}
-            </div>
-          )}
-
-          <form onSubmit={handleVerify} className="space-y-5">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300">
-                Verification Code
-              </label>
-
-              <input
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={6}
-                required
-                value={code}
-                onChange={(e) =>
-                  setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
-                }
-                placeholder="000000"
-                disabled={loading}
-                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-4 text-center text-2xl tracking-[0.5em] text-white placeholder-slate-700 transition focus:border-blue-500 focus:outline-none disabled:opacity-50"
-              />
-
-              <p className="mt-2 text-center text-xs text-slate-500">
-                The code expires in 10 minutes.
+              <p className="mt-3 text-sm leading-6 text-slate-400">
+                Enter the 6-digit verification code we sent to your email
+                address.
               </p>
+
+              {email && (
+                <p className="mt-2 break-all text-sm font-medium text-slate-300">
+                  {email}
+                </p>
+              )}
             </div>
 
-            <button
-              type="submit"
-              disabled={loading || code.length !== 6}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loading ? "Verifying..." : "Verify Email"}
+            <form onSubmit={handleVerify} className="space-y-5">
+              <div>
+                <label
+                  htmlFor="code"
+                  className="mb-2 block text-sm font-medium text-slate-200"
+                >
+                  Verification code
+                </label>
 
-              {!loading && <ArrowRight className="h-4 w-4" />}
-            </button>
-          </form>
+                <input
+                  id="code"
+                  name="code"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) =>
+                    setCode(e.target.value.replace(/\D/g, ""))
+                  }
+                  placeholder="000000"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-center text-lg tracking-[0.35em] text-white outline-none transition placeholder:text-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
 
-          <div className="mt-6 text-center">
-            <Link
-              href="/signup"
-              className="text-sm text-blue-400 transition hover:text-blue-300"
-            >
-              Back to Sign Up
-            </Link>
+              {errorMsg && (
+                <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                  {errorMsg}
+                </div>
+              )}
+
+              {successMsg && (
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
+                  {successMsg}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-500 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? "Verifying..." : "Verify email"}
+                {!loading && <ArrowRight className="h-4 w-4" />}
+              </button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <Link
+                href="/login"
+                className="text-sm text-slate-400 transition hover:text-white"
+              >
+                Back to login
+              </Link>
+            </div>
           </div>
         </div>
       </div>
-
-      <footer className="border-t border-slate-900 py-6 text-center text-xs text-slate-600">
-        © {new Date().getFullYear()} Smart Cleaning Desk. All rights reserved.
-      </footer>
     </main>
   );
 }
