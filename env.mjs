@@ -16,6 +16,8 @@ export const env = createEnv({
     RESEND_API_KEY: z.string().min(1),
 
     EMAIL_FROM: z.string().min(1),
+
+    STRIPE_API_KEY: z.string().min(1),
   },
 
   client: {
@@ -43,6 +45,8 @@ export const env = createEnv({
     RESEND_API_KEY: process.env.RESEND_API_KEY,
 
     EMAIL_FROM: process.env.EMAIL_FROM,
+
+    STRIPE_API_KEY: process.env.STRIPE_API_KEY,
 
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
 
