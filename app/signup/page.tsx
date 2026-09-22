@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
-<<<<<<< ours
 type Plan = "starter" | "business" | "pro";
 
 const validPlans: Plan[] = ["starter", "business", "pro"];
@@ -22,28 +21,21 @@ function SignupForm() {
   const searchParams = useSearchParams();
 
   const planParam = searchParams.get("plan");
+
   const selectedPlan: Plan = validPlans.includes(planParam as Plan)
     ? (planParam as Plan)
     : "starter";
 
-=======
-export default function SignupPage() {
->>>>>>> theirs
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-<<<<<<< ours
-
-=======
->>>>>>> theirs
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setErrorMsg("");
 
     if (!name.trim()) {
@@ -98,7 +90,6 @@ export default function SignupPage() {
           name: name.trim(),
           email: email.trim().toLowerCase(),
           password,
-<<<<<<< ours
           plan: selectedPlan,
         }),
       });
@@ -125,22 +116,12 @@ export default function SignupPage() {
           `Registration failed with status ${response.status}.`;
 
         setErrorMsg(serverMessage);
-=======
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setErrorMsg(data.error || "Unable to create your account.");
->>>>>>> theirs
         setLoading(false);
         return;
       }
 
       window.location.href = `/verify-email?email=${encodeURIComponent(
         email.trim().toLowerCase()
-<<<<<<< ours
       )}&plan=${selectedPlan}`;
     } catch (error) {
       console.error("Signup request error:", error);
@@ -150,11 +131,7 @@ export default function SignupPage() {
           ? error.message
           : "Something went wrong. Please try again."
       );
-=======
-      )}`;
-    } catch {
-      setErrorMsg("Something went wrong. Please try again.");
->>>>>>> theirs
+
       setLoading(false);
     }
   };
@@ -223,7 +200,6 @@ export default function SignupPage() {
             className="w-full h-12 bg-white hover:bg-slate-100 text-slate-900 font-semibold rounded-xl transition flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Chrome className="h-5 w-5" />
-
             {googleLoading ? "Connecting..." : "Continue with Google"}
           </button>
 
@@ -303,12 +279,8 @@ export default function SignupPage() {
               </div>
 
               <p className="mt-2 text-xs text-slate-500">
-<<<<<<< ours
                 8+ characters with uppercase, lowercase, number, and special
                 character.
-=======
-                8+ characters with uppercase, lowercase, number, and special character.
->>>>>>> theirs
               </p>
             </div>
 
@@ -339,18 +311,13 @@ export default function SignupPage() {
               className="w-full h-12 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
             >
               {loading ? "Creating Account..." : "Create Account"}
-
               {!loading && <ArrowRight className="h-4 w-4" />}
             </button>
           </form>
 
           <p className="mt-6 text-center text-xs text-slate-500">
-<<<<<<< ours
             By creating an account, you agree to our Terms of Service and
             Privacy Policy.
-=======
-            By creating an account, you agree to our Terms of Service and Privacy Policy.
->>>>>>> theirs
           </p>
         </div>
 
