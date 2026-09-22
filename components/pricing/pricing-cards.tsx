@@ -2,9 +2,11 @@
 
 import { useContext } from "react";
 import Link from "next/link";
+
+import { pricingData } from "@/config/subscriptions";
 import { UserSubscriptionPlan } from "@/types";
 import { cn } from "@/lib/utils";
-import { Button, buttonVariants } from "@/components/ui/button";
+
 import { BillingFormButton } from "@/components/forms/billing-form-button";
 import { ModalContext } from "@/components/modals/providers";
 import { HeaderSection } from "@/components/shared/header-section";
@@ -16,138 +18,83 @@ interface PricingCardsProps {
   subscriptionPlan?: UserSubscriptionPlan;
 }
 
-// الخطط الشهرية بتصميم الداكن المخصص لمنصة Smart Cleaning Desk
-const cleaningPricingData = [
-  {
-    title: "Starter",
-    description: "Essential messaging and lead capture for growing cleaning teams.",
-    price: 49,
-    benefits: [
-      "AI Customer Messaging",
-      "Instagram",
-      "Facebook",
-      "WhatsApp",
-      "Lead Capture",
-      "Customer Inbox",
-      "Customer Information Collection",
-      "Business Hours & FAQ Responses",
-      "Conversation History",
-      "Basic Automations",
-      "Customer Management",
-      "Email Support",
-    ],
-  },
-  {
-    title: "Business",
-    description: "Full automation with voice AI and advanced booking workflows.",
-    price: 99,
-    benefits: [
-      "Everything in Starter",
-      "AI Voice Receptionist",
-      "100 Voice Minutes / Month",
-      "Appointment Booking",
-      "Calendar Integration",
-      "Automated Lead Follow-Ups",
-      "Lead Qualification",
-      "Quote & Service Information",
-      "Booking Reminders",
-      "Review Request Automation",
-      "Lead Status Management",
-      "Custom AI Instructions",
-      "Conversation & Lead Tracking",
-    ],
-  },
-  {
-    title: "Pro",
-    description: "Maximum power, custom phone numbers, and advanced AI behavior.",
-    price: 249,
-    benefits: [
-      "Everything in Business",
-      "Dedicated Business Phone Number",
-      "500 Voice Minutes / Month",
-      "Advanced Call Handling",
-      "Call Transfer",
-      "Advanced Lead Qualification",
-      "Advanced Follow-Ups",
-      "Custom Booking Rules",
-      "Multiple Service Types",
-      "Custom AI Knowledge Base",
-      "Advanced Customer Management",
-      "Detailed Call & Conversation History",
-      "Custom AI Behavior",
-      "Priority Support",
-    ],
-  },
-];
-
-export function PricingCards({ userId, subscriptionPlan }: PricingCardsProps) {
+export function PricingCards({
+  userId,
+  subscriptionPlan,
+}: PricingCardsProps) {
   const { setShowSignInModal } = useContext(ModalContext);
 
-  const PricingCard = ({ offer }: { offer: typeof cleaningPricingData[0] }) => {
-    const isBusiness = offer.title.toLocaleLowerCase() === "business";
+  const PricingCard = ({
+    offer,
+  }: {
+    offer: (typeof pricingData)[number];
+  }) => {
+    const isBusiness = offer.title.toLowerCase() === "business";
 
     return (
       <div
         className={cn(
-          "relative flex flex-col overflow-hidden rounded-3xl p-8 text-left transition-all",
-          "bg-[#0a0f1d] border", // لون خلفية غامق جداً متناسق مع التصميم
-          isBusiness
-            ? "border-2 border-blue-600 shadow-2xl shadow-blue-900/20"
-            : "border-gray-800 hover:border-gray-700"
+          "relative flex flex-col overflow-hidden rounded-3xl border p-8 text-left transition-all",
+          "border-gray-800 bg-[#0a0f1d] hover:border-gray-700",
+          isBusiness &&
+            "border-2 border-blue-600 shadow-2xl shadow-blue-900/20",
         )}
         key={offer.title}
       >
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-lg font-bold text-white uppercase tracking-wider">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-lg font-bold uppercase tracking-wider text-white">
               {offer.title}
             </span>
           </div>
-          <p className="text-sm text-gray-400 min-h-[40px]">{offer.description}</p>
+
+          <p className="min-h-[40px] text-sm text-gray-400">
+            {offer.description}
+          </p>
         </div>
 
-        <div className="flex items-baseline mb-6">
-          <span className="text-5xl font-extrabold text-white">${offer.price}</span>
-          <span className="ml-2 text-sm text-gray-400">/month</span>
+        <div className="mb-6 flex items-baseline">
+          <span className="text-5xl font-extrabold text-white">
+            ${offer.prices.monthly}
+          </span>
+
+          <span className="ml-2 text-sm text-gray-400">
+            /month
+          </span>
         </div>
 
-        {/* زر الاختيار بنفس لون وتصميم الصورة */}
         <div className="mb-8">
           {userId && subscriptionPlan ? (
-            offer.title === "Starter" ? (
-              <Link
-                href="/dashboard"
-                className="w-full inline-block py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl text-center transition-colors shadow-lg shadow-blue-600/30"
-              >
-                Go to dashboard
-              </Link>
-            ) : (
-              <BillingFormButton
-                year={false}
-                offer={{ ...offer, prices: { monthly: offer.price, yearly: 0 } } as any}
-                subscriptionPlan={subscriptionPlan}
-              />
-            )
+            <BillingFormButton
+              year={false}
+              offer={offer}
+              subscriptionPlan={subscriptionPlan}
+            />
           ) : (
-            <button
-              onClick={() => setShowSignInModal(true)}
-              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl text-center transition-colors shadow-lg shadow-blue-600/30"
+            <Link
+              href={`/signup?plan=${offer.title.toLowerCase()}`}
+              className="inline-block w-full rounded-xl bg-blue-600 px-4 py-3 text-center font-medium text-white shadow-lg shadow-blue-600/30 transition-colors hover:bg-blue-500"
             >
               Choose {offer.title} →
-            </button>
+            </Link>
           )}
         </div>
 
-        <div className="border-t border-gray-800/80 pt-6 mt-auto">
-          <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">
+        <div className="mt-auto border-t border-gray-800/80 pt-6">
+          <p className="mb-4 text-xs font-bold uppercase tracking-wider text-gray-400">
             INCLUDES
           </p>
+
           <ul className="space-y-3 text-sm text-gray-300">
             {offer.benefits.map((feature) => (
-              <li className="flex items-start gap-x-3" key={feature}>
-                <div className="size-5 shrink-0 rounded-full bg-blue-950 flex items-center justify-center mt-0.5 border border-blue-800">
+              <li
+                className="flex items-start gap-x-3"
+                key={feature}
+              >
+                <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-blue-800 bg-blue-950">
                   <Icons.check className="size-3.5 text-blue-400" />
                 </div>
+
                 <span>{feature}</span>
               </li>
             ))}
@@ -159,16 +106,22 @@ export function PricingCards({ userId, subscriptionPlan }: PricingCardsProps) {
 
   return (
     <MaxWidthWrapper>
-      <section className="flex flex-col items-center text-center py-10">
-        <HeaderSection label="Pricing" title="Start at full speed !" />
+      <section className="flex flex-col items-center py-10 text-center">
+        <HeaderSection
+          label="Pricing"
+          title="Start at full speed!"
+        />
 
-        <div className="grid gap-8 bg-inherit py-10 lg:grid-cols-3 w-full max-w-7xl items-stretch">
-          {cleaningPricingData.map((offer) => (
-            <PricingCard offer={offer} key={offer.title} />
+        <div className="grid w-full max-w-7xl items-stretch gap-8 bg-inherit py-10 lg:grid-cols-3">
+          {pricingData.map((offer) => (
+            <PricingCard
+              offer={offer}
+              key={offer.title}
+            />
           ))}
         </div>
 
-        <p className="mt-6 text-balance text-center text-base text-gray-400">
+        <p className="mt-6 text-center text-base text-gray-400">
           Email{" "}
           <a
             className="font-medium text-blue-400 hover:underline"
