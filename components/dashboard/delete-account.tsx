@@ -15,34 +15,43 @@ export function DeleteAccountSection() {
   return (
     <>
       <DeleteAccountModal />
+
       <SectionColumns
         title="Delete Account"
-        description="This is a danger zone - Be careful !"
+        description="Permanently remove your account and associated data."
       >
-        <div className="flex flex-col gap-4 rounded-xl border border-red-400 p-4 dark:border-red-900">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-[15px] font-medium">Are you sure ?</span>
+        <div className="flex flex-col gap-5 rounded-xl border border-red-500/20 bg-red-500/[0.03] p-5">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-sm font-semibold text-white">
+                Delete your account
+              </span>
 
               {userPaidPlan ? (
-                <div className="flex items-center gap-1 rounded-md bg-red-600/10 p-1 pr-2 text-xs font-medium text-red-600 dark:bg-red-500/10 dark:text-red-500">
-                  <div className="m-0.5 rounded-full bg-red-600 p-[3px]">
-                    <Icons.close size={10} className="text-background" />
+                <div className="flex items-center gap-1.5 rounded-md border border-red-500/20 bg-red-500/10 px-2 py-1 text-xs font-medium text-red-400">
+                  <div className="flex items-center justify-center rounded-full bg-red-500/20 p-1">
+                    <Icons.close
+                      size={9}
+                      className="text-red-400"
+                    />
                   </div>
                   Active Subscription
                 </div>
               ) : null}
             </div>
-            <div className="text-balance text-sm text-muted-foreground">
+
+            <p className="max-w-2xl text-sm leading-6 text-slate-400">
               Permanently delete your {siteConfig.name} account
-              {userPaidPlan ? " and your subscription" : ""}. This action cannot
-              be undone - please proceed with caution.
-            </div>
+              {userPaidPlan ? " and your subscription" : ""}. This action
+              cannot be undone. Please make sure you want to continue.
+            </p>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center">
             <Button
-              type="submit"
+              type="button"
               variant="destructive"
+              className="bg-red-600 text-white hover:bg-red-500"
               onClick={() => setShowDeleteAccountModal(true)}
             >
               <Icons.trash className="mr-2 size-4" />
