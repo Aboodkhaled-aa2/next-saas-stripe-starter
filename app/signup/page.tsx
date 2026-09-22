@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
+<<<<<<< ours
 type Plan = "starter" | "business" | "pro";
 
 const validPlans: Plan[] = ["starter", "business", "pro"];
@@ -25,11 +26,17 @@ function SignupForm() {
     ? (planParam as Plan)
     : "starter";
 
+=======
+export default function SignupPage() {
+>>>>>>> theirs
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+<<<<<<< ours
 
+=======
+>>>>>>> theirs
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -91,6 +98,7 @@ function SignupForm() {
           name: name.trim(),
           email: email.trim().toLowerCase(),
           password,
+<<<<<<< ours
           plan: selectedPlan,
         }),
       });
@@ -117,12 +125,22 @@ function SignupForm() {
           `Registration failed with status ${response.status}.`;
 
         setErrorMsg(serverMessage);
+=======
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setErrorMsg(data.error || "Unable to create your account.");
+>>>>>>> theirs
         setLoading(false);
         return;
       }
 
       window.location.href = `/verify-email?email=${encodeURIComponent(
         email.trim().toLowerCase()
+<<<<<<< ours
       )}&plan=${selectedPlan}`;
     } catch (error) {
       console.error("Signup request error:", error);
@@ -132,6 +150,11 @@ function SignupForm() {
           ? error.message
           : "Something went wrong. Please try again."
       );
+=======
+      )}`;
+    } catch {
+      setErrorMsg("Something went wrong. Please try again.");
+>>>>>>> theirs
       setLoading(false);
     }
   };
@@ -280,8 +303,12 @@ function SignupForm() {
               </div>
 
               <p className="mt-2 text-xs text-slate-500">
+<<<<<<< ours
                 8+ characters with uppercase, lowercase, number, and special
                 character.
+=======
+                8+ characters with uppercase, lowercase, number, and special character.
+>>>>>>> theirs
               </p>
             </div>
 
@@ -318,8 +345,12 @@ function SignupForm() {
           </form>
 
           <p className="mt-6 text-center text-xs text-slate-500">
+<<<<<<< ours
             By creating an account, you agree to our Terms of Service and
             Privacy Policy.
+=======
+            By creating an account, you agree to our Terms of Service and Privacy Policy.
+>>>>>>> theirs
           </p>
         </div>
 
