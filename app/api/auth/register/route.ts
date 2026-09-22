@@ -4,6 +4,10 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { sendVerificationCode } from "@/lib/email";
 
+const validPlans = ["starter", "business", "pro"] as const;
+
+type Plan = (typeof validPlans)[number];
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -11,6 +15,7 @@ export async function POST(request: Request) {
     const name = String(body.name || "").trim();
     const email = String(body.email || "").toLowerCase().trim();
     const password = String(body.password || "");
+    const plan = String(body.plan || "starter").toLowerCase();
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -22,6 +27,13 @@ export async function POST(request: Request) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json(
         { error: "Please enter a valid email address." },
+        { status: 400 }
+      );
+    }
+
+    if (!validPlans.includes(plan as Plan)) {
+      return NextResponse.json(
+        { error: "Invalid plan selected." },
         { status: 400 }
       );
     }
@@ -74,6 +86,8 @@ export async function POST(request: Request) {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
+    const prismaPlan = plan.toUpperCase() as "STARTER" | "BUSINESS" | "PRO";
+
     let user;
 
     if (existingUser) {
@@ -82,6 +96,7 @@ export async function POST(request: Request) {
         data: {
           name,
           passwordHash,
+          plan: prismaPlan,
         },
       });
     } else {
@@ -90,6 +105,7 @@ export async function POST(request: Request) {
           name,
           email,
           passwordHash,
+          plan: prismaPlan,
         },
       });
     }
@@ -122,6 +138,7 @@ export async function POST(request: Request) {
       success: true,
       message: "Verification code sent.",
       userId: user.id,
+      plan,
     });
   } catch (error) {
     console.error("Registration error:", error);
