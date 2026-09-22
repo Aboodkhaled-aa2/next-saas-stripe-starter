@@ -9,37 +9,38 @@ import { redirect } from "next/navigation";
 export type responseAction = {
   status: "success" | "error";
   stripeUrl?: string;
-}
+};
 
-// const billingUrl = absoluteUrl("/dashboard/billing")
-const billingUrl = absoluteUrl("/pricing")
+const billingUrl = absoluteUrl("/pricing");
+const successUrl = absoluteUrl("/payment-success");
+const cancelUrl = absoluteUrl("/pricing");
 
-export async function generateUserStripe(priceId: string): Promise<responseAction> {
-  let redirectUrl: string = "";
+export async function generateUserStripe(
+  priceId: string,
+): Promise<responseAction> {
+  let redirectUrl = "";
 
   try {
-    const session = await auth()
+    const session = await auth();
     const user = session?.user;
 
     if (!user || !user.email || !user.id) {
       throw new Error("Unauthorized");
     }
 
-    const subscriptionPlan = await getUserSubscriptionPlan(user.id)
+    const subscriptionPlan = await getUserSubscriptionPlan(user.id);
 
     if (subscriptionPlan.isPaid && subscriptionPlan.stripeCustomerId) {
-      // User on Paid Plan - Create a portal session to manage subscription.
       const stripeSession = await stripe.billingPortal.sessions.create({
         customer: subscriptionPlan.stripeCustomerId,
         return_url: billingUrl,
-      })
+      });
 
-      redirectUrl = stripeSession.url as string
+      redirectUrl = stripeSession.url as string;
     } else {
-      // User on Free Plan - Create a checkout session to upgrade.
       const stripeSession = await stripe.checkout.sessions.create({
-        success_url: billingUrl,
-        cancel_url: billingUrl,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
         payment_method_types: ["card"],
         mode: "subscription",
         billing_address_collection: "auto",
@@ -53,14 +54,14 @@ export async function generateUserStripe(priceId: string): Promise<responseActio
         metadata: {
           userId: user.id,
         },
-      })
+      });
 
-      redirectUrl = stripeSession.url as string
+      redirectUrl = stripeSession.url as string;
     }
   } catch (error) {
+    console.error("Stripe session error:", error);
     throw new Error("Failed to generate user stripe session");
   }
 
-  // no revalidatePath because redirect
-  redirect(redirectUrl)
+  redirect(redirectUrl);
 }
