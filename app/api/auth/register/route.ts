@@ -8,6 +8,12 @@ const validPlans = ["starter", "business", "pro"] as const;
 
 type Plan = (typeof validPlans)[number];
 
+const planMap = {
+  starter: "STARTER",
+  business: "BUSINESS",
+  pro: "PRO",
+} as const;
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -73,6 +79,8 @@ export async function POST(request: Request) {
       );
     }
 
+    const selectedPlan = planMap[plan as Plan];
+
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -86,8 +94,6 @@ export async function POST(request: Request) {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    const prismaPlan = plan.toUpperCase() as "STARTER" | "BUSINESS" | "PRO";
-
     let user;
 
     if (existingUser) {
@@ -96,7 +102,7 @@ export async function POST(request: Request) {
         data: {
           name,
           passwordHash,
-          plan: prismaPlan,
+          plan: selectedPlan,
         },
       });
     } else {
@@ -105,7 +111,7 @@ export async function POST(request: Request) {
           name,
           email,
           passwordHash,
-          plan: prismaPlan,
+          plan: selectedPlan,
         },
       });
     }
