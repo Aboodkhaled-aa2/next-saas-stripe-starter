@@ -12,8 +12,6 @@ export type responseAction = {
 };
 
 const billingUrl = absoluteUrl("/pricing");
-const successUrl = absoluteUrl("/payment-success");
-const cancelUrl = absoluteUrl("/pricing");
 
 export async function generateUserStripe(
   priceId: string,
@@ -39,8 +37,8 @@ export async function generateUserStripe(
       redirectUrl = stripeSession.url as string;
     } else {
       const stripeSession = await stripe.checkout.sessions.create({
-        success_url: successUrl,
-        cancel_url: cancelUrl,
+        success_url: absoluteUrl("/payment-success"),
+        cancel_url: billingUrl,
         payment_method_types: ["card"],
         mode: "subscription",
         billing_address_collection: "auto",
