@@ -30,25 +30,6 @@ interface DashboardSidebarProps {
 export function DashboardSidebar({ links }: DashboardSidebarProps) {
   const path = usePathname();
 
-  // NOTE: Use this if you want save in local storage -- Credits: Hosna Qasmei
-  //
-  // const [isSidebarExpanded, setIsSidebarExpanded] = useState(() => {
-  //   if (typeof window !== "undefined") {
-  //     const saved = window.localStorage.getItem("sidebarExpanded");
-  //     return saved !== null ? JSON.parse(saved) : true;
-  //   }
-  //   return true;
-  // });
-
-  // useEffect(() => {
-  //   if (typeof window !== "undefined") {
-  //     window.localStorage.setItem(
-  //       "sidebarExpanded",
-  //       JSON.stringify(isSidebarExpanded),
-  //     );
-  //   }
-  // }, [isSidebarExpanded]);
-
   const { isTablet } = useMediaQuery();
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(!isTablet);
 
@@ -62,35 +43,36 @@ export function DashboardSidebar({ links }: DashboardSidebarProps) {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="sticky top-0 h-full">
-        <ScrollArea className="h-full overflow-y-auto border-r">
+      <div className="sticky top-0 h-full bg-[#020617]">
+        <ScrollArea className="h-full overflow-y-auto border-r border-[#17233d] bg-[#020617]">
           <aside
             className={cn(
               isSidebarExpanded ? "w-[220px] xl:w-[260px]" : "w-[68px]",
-              "hidden h-screen md:block",
+              "hidden h-screen bg-[#020617] md:block",
             )}
           >
             <div className="flex h-full max-h-screen flex-1 flex-col gap-2">
-              <div className="flex h-14 items-center p-4 lg:h-[60px]">
+              <div className="flex h-14 items-center border-b border-[#17233d] p-4 lg:h-[60px]">
                 {isSidebarExpanded ? <ProjectSwitcher /> : null}
 
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="ml-auto size-9 lg:size-8"
+                  className="ml-auto size-9 text-[#94a3b8] hover:bg-[#0b1938] hover:text-white lg:size-8"
                   onClick={toggleSidebar}
                 >
                   {isSidebarExpanded ? (
                     <PanelLeftClose
                       size={18}
-                      className="stroke-muted-foreground"
+                      className="stroke-[#94a3b8]"
                     />
                   ) : (
                     <PanelRightClose
                       size={18}
-                      className="stroke-muted-foreground"
+                      className="stroke-[#94a3b8]"
                     />
                   )}
+
                   <span className="sr-only">Toggle Sidebar</span>
                 </Button>
               </div>
@@ -102,14 +84,16 @@ export function DashboardSidebar({ links }: DashboardSidebarProps) {
                     className="flex flex-col gap-0.5"
                   >
                     {isSidebarExpanded ? (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#475569]">
                         {section.title}
                       </p>
                     ) : (
                       <div className="h-4" />
                     )}
+
                     {section.items.map((item) => {
                       const Icon = Icons[item.icon || "arrowRight"];
+
                       return (
                         item.href && (
                           <Fragment key={`link-fragment-${item.title}`}>
@@ -118,18 +102,27 @@ export function DashboardSidebar({ links }: DashboardSidebarProps) {
                                 key={`link-${item.title}`}
                                 href={item.disabled ? "#" : item.href}
                                 className={cn(
-                                  "flex items-center gap-3 rounded-md p-2 text-sm font-medium hover:bg-muted",
+                                  "flex items-center gap-3 rounded-lg p-2.5 text-sm font-medium transition-colors",
                                   path === item.href
-                                    ? "bg-muted"
-                                    : "text-muted-foreground hover:text-accent-foreground",
+                                    ? "bg-[#0b1938] text-[#60a5fa]"
+                                    : "text-[#94a3b8] hover:bg-[#0a1224] hover:text-white",
                                   item.disabled &&
-                                    "cursor-not-allowed opacity-80 hover:bg-transparent hover:text-muted-foreground",
+                                    "cursor-not-allowed opacity-50 hover:bg-transparent hover:text-[#94a3b8]",
                                 )}
                               >
-                                <Icon className="size-5" />
+                                <Icon
+                                  className={cn(
+                                    "size-5",
+                                    path === item.href
+                                      ? "text-[#60a5fa]"
+                                      : "text-[#64748b]",
+                                  )}
+                                />
+
                                 {item.title}
+
                                 {item.badge && (
-                                  <Badge className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-full">
+                                  <Badge className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-full border-[#28549a] bg-[#0b1938] text-[#60a5fa]">
                                     {item.badge}
                                   </Badge>
                                 )}
@@ -141,20 +134,31 @@ export function DashboardSidebar({ links }: DashboardSidebarProps) {
                                     key={`link-tooltip-${item.title}`}
                                     href={item.disabled ? "#" : item.href}
                                     className={cn(
-                                      "flex items-center gap-3 rounded-md py-2 text-sm font-medium hover:bg-muted",
+                                      "flex items-center justify-center rounded-lg py-2.5 text-sm font-medium transition-colors",
                                       path === item.href
-                                        ? "bg-muted"
-                                        : "text-muted-foreground hover:text-accent-foreground",
+                                        ? "bg-[#0b1938] text-[#60a5fa]"
+                                        : "text-[#64748b] hover:bg-[#0a1224] hover:text-white",
                                       item.disabled &&
-                                        "cursor-not-allowed opacity-80 hover:bg-transparent hover:text-muted-foreground",
+                                        "cursor-not-allowed opacity-50 hover:bg-transparent hover:text-[#64748b]",
                                     )}
                                   >
                                     <span className="flex size-full items-center justify-center">
-                                      <Icon className="size-5" />
+                                      <Icon
+                                        className={cn(
+                                          "size-5",
+                                          path === item.href
+                                            ? "text-[#60a5fa]"
+                                            : "text-[#64748b]",
+                                        )}
+                                      />
                                     </span>
                                   </Link>
                                 </TooltipTrigger>
-                                <TooltipContent side="right">
+
+                                <TooltipContent
+                                  side="right"
+                                  className="border-[#243858] bg-[#080f21] text-white"
+                                >
                                   {item.title}
                                 </TooltipContent>
                               </Tooltip>
@@ -190,21 +194,27 @@ export function MobileSheetSidebar({ links }: DashboardSidebarProps) {
           <Button
             variant="outline"
             size="icon"
-            className="size-9 shrink-0 md:hidden"
+            className="size-9 shrink-0 border-[#243858] bg-[#080f21] text-white hover:bg-[#0b1938] hover:text-white md:hidden"
           >
             <Menu className="size-5" />
             <span className="sr-only">Toggle navigation menu</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="flex flex-col p-0">
+
+        <SheetContent
+          side="left"
+          className="flex w-[280px] flex-col border-[#17233d] bg-[#020617] p-0 text-white"
+        >
           <ScrollArea className="h-full overflow-y-auto">
             <div className="flex h-screen flex-col">
               <nav className="flex flex-1 flex-col gap-y-8 p-6 text-lg font-medium">
                 <Link
-                  href="#"
-                  className="flex items-center gap-2 text-lg font-semibold"
+                  href="/"
+                  className="flex items-center gap-2 text-lg font-semibold text-white"
+                  onClick={() => setOpen(false)}
                 >
-                  <Icons.logo className="size-6" />
+                  <Icons.logo className="size-6 text-[#60a5fa]" />
+
                   <span className="font-urban text-xl font-bold">
                     {siteConfig.name}
                   </span>
@@ -217,12 +227,13 @@ export function MobileSheetSidebar({ links }: DashboardSidebarProps) {
                     key={section.title}
                     className="flex flex-col gap-0.5"
                   >
-                    <p className="text-xs text-muted-foreground">
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#475569]">
                       {section.title}
                     </p>
 
                     {section.items.map((item) => {
                       const Icon = Icons[item.icon || "arrowRight"];
+
                       return (
                         item.href && (
                           <Fragment key={`link-fragment-${item.title}`}>
@@ -233,18 +244,27 @@ export function MobileSheetSidebar({ links }: DashboardSidebarProps) {
                               }}
                               href={item.disabled ? "#" : item.href}
                               className={cn(
-                                "flex items-center gap-3 rounded-md p-2 text-sm font-medium hover:bg-muted",
+                                "flex items-center gap-3 rounded-lg p-2.5 text-sm font-medium transition-colors",
                                 path === item.href
-                                  ? "bg-muted"
-                                  : "text-muted-foreground hover:text-accent-foreground",
+                                  ? "bg-[#0b1938] text-[#60a5fa]"
+                                  : "text-[#94a3b8] hover:bg-[#0a1224] hover:text-white",
                                 item.disabled &&
-                                  "cursor-not-allowed opacity-80 hover:bg-transparent hover:text-muted-foreground",
+                                  "cursor-not-allowed opacity-50 hover:bg-transparent hover:text-[#94a3b8]",
                               )}
                             >
-                              <Icon className="size-5" />
+                              <Icon
+                                className={cn(
+                                  "size-5",
+                                  path === item.href
+                                    ? "text-[#60a5fa]"
+                                    : "text-[#64748b]",
+                                )}
+                              />
+
                               {item.title}
+
                               {item.badge && (
-                                <Badge className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-full">
+                                <Badge className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-full border-[#28549a] bg-[#0b1938] text-[#60a5fa]">
                                   {item.badge}
                                 </Badge>
                               )}
@@ -268,6 +288,6 @@ export function MobileSheetSidebar({ links }: DashboardSidebarProps) {
   }
 
   return (
-    <div className="flex size-9 animate-pulse rounded-lg bg-muted md:hidden" />
+    <div className="flex size-9 animate-pulse rounded-lg bg-[#080f21] md:hidden" />
   );
 }
