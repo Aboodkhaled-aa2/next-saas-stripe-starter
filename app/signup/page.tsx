@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import {
@@ -17,7 +17,7 @@ type Plan = "starter" | "business" | "pro";
 
 const validPlans: Plan[] = ["starter", "business", "pro"];
 
-export default function SignupPage() {
+function SignupForm() {
   const searchParams = useSearchParams();
 
   const planParam = searchParams.get("plan");
@@ -338,5 +338,19 @@ export default function SignupPage() {
         © {new Date().getFullYear()} Smart Cleaning Desk. All rights reserved.
       </footer>
     </main>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
+          <div className="text-sm text-slate-400">Loading...</div>
+        </main>
+      }
+    >
+      <SignupForm />
+    </Suspense>
   );
 }
