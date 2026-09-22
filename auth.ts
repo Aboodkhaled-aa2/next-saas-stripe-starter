@@ -6,11 +6,11 @@ import NextAuth, { type DefaultSession } from "next-auth";
 import { prisma } from "@/lib/db";
 import { getUserById } from "@/lib/user";
 
-declare module "next-auth" {
-  interface Session {
-    user: {
-      role: UserRole;
-      plan: Plan;
+declare module "next-auth/jwt" {
+  interface JWT {
+    plan?: Plan;
+  }
+}
     } & DefaultSession["user"];
   }
 }
