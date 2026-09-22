@@ -27,7 +27,9 @@ export function SearchCommand({ links }: { links: SidebarNavItem[] }) {
         setOpen((open) => !open);
       }
     };
+
     document.addEventListener("keydown", down);
+
     return () => document.removeEventListener("keydown", down);
   }, []);
 
@@ -41,27 +43,32 @@ export function SearchCommand({ links }: { links: SidebarNavItem[] }) {
       <Button
         variant="outline"
         className={cn(
-          "relative h-9 w-full justify-start rounded-md bg-muted/50 text-sm font-normal text-muted-foreground shadow-none sm:pr-12 md:w-72",
+          "relative h-10 w-full justify-start rounded-xl border-slate-800 bg-slate-950/70 text-sm font-normal text-slate-500 shadow-none transition-colors hover:border-slate-700 hover:bg-slate-900 hover:text-slate-300 sm:pr-14 md:w-80",
         )}
         onClick={() => setOpen(true)}
       >
-        <span className="inline-flex">
+        <span className="inline-flex items-center gap-1">
           Search
-          <span className="hidden sm:inline-flex">&nbsp;documentation</span>...
+          <span className="hidden sm:inline-flex">documentation</span>...
         </span>
-        <kbd className="pointer-events-none absolute right-[0.3rem] top-[0.45rem] hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-          <span className="text-xs">⌘</span>K
+
+        <kbd className="pointer-events-none absolute right-2 top-2 hidden h-6 select-none items-center gap-1 rounded-md border border-slate-800 bg-slate-900 px-2 font-mono text-[10px] font-medium text-slate-500 sm:flex">
+          <span className="text-xs text-slate-400">⌘</span>
+          K
         </kbd>
       </Button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder="Type a command or search..." />
+
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
+
           {links.map((section) => (
             <CommandGroup key={section.title} heading={section.title}>
               {section.items.map((item) => {
                 const Icon = Icons[item.icon || "arrowRight"];
+
                 return (
                   <CommandItem
                     key={item.title}
