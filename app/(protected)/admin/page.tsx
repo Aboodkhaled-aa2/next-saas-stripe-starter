@@ -7,30 +7,37 @@ import InfoCard from "@/components/dashboard/info-card";
 import TransactionsList from "@/components/dashboard/transactions-list";
 
 export const metadata = constructMetadata({
-  title: "Admin – SaaS Starter",
-  description: "Admin page for only admin management.",
+  title: "Admin Panel – Smart Cleaning Desk",
+  description: "Manage Smart Cleaning Desk from the admin panel.",
 });
 
 export default async function AdminPage() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "ADMIN") redirect("/login");
+
+  if (!user || user.role !== "ADMIN") {
+    redirect("/login");
+  }
 
   return (
-    <>
-      <DashboardHeader
-        heading="Admin Panel"
-        text="Access only for users with ADMIN role."
-      />
-      <div className="flex flex-col gap-5">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <InfoCard />
-          <InfoCard />
-          <InfoCard />
-          <InfoCard />
+    <div className="min-h-screen bg-[#020617] text-white">
+      <div className="space-y-8">
+        <DashboardHeader
+          heading="Admin Panel"
+          text="Manage your platform and monitor business activity."
+        />
+
+        <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <InfoCard />
+            <InfoCard />
+            <InfoCard />
+            <InfoCard />
+          </div>
+
+          <TransactionsList />
+          <TransactionsList />
         </div>
-        <TransactionsList />
-        <TransactionsList />
       </div>
-    </>
+    </div>
   );
 }
