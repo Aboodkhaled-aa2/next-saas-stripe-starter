@@ -21,6 +21,7 @@ function SignupForm() {
   const searchParams = useSearchParams();
 
   const planParam = searchParams.get("plan");
+
   const selectedPlan: Plan = validPlans.includes(planParam as Plan)
     ? (planParam as Plan)
     : "starter";
@@ -29,14 +30,12 @@ function SignupForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setErrorMsg("");
 
     if (!name.trim()) {
@@ -132,6 +131,7 @@ function SignupForm() {
           ? error.message
           : "Something went wrong. Please try again."
       );
+
       setLoading(false);
     }
   };
@@ -200,7 +200,6 @@ function SignupForm() {
             className="w-full h-12 bg-white hover:bg-slate-100 text-slate-900 font-semibold rounded-xl transition flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Chrome className="h-5 w-5" />
-
             {googleLoading ? "Connecting..." : "Continue with Google"}
           </button>
 
@@ -312,7 +311,6 @@ function SignupForm() {
               className="w-full h-12 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
             >
               {loading ? "Creating Account..." : "Create Account"}
-
               {!loading && <ArrowRight className="h-4 w-4" />}
             </button>
           </form>
