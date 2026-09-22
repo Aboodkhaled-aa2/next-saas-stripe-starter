@@ -1,5 +1,4 @@
 import { constructMetadata } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
 import { AreaChartStacked } from "@/components/charts/area-chart-stacked";
 import { BarChartMixed } from "@/components/charts/bar-chart-mixed";
 import { InteractiveBarChart } from "@/components/charts/interactive-bar-chart";
@@ -12,31 +11,37 @@ import { RadialTextChart } from "@/components/charts/radial-text-chart";
 import { DashboardHeader } from "@/components/dashboard/header";
 
 export const metadata = constructMetadata({
-  title: "Charts – SaaS Starter",
-  description: "List of charts by shadcn-ui",
+  title: "Analytics – Smart Cleaning Desk",
+  description: "Business analytics and performance insights.",
 });
 
 export default function ChartsPage() {
   return (
-    <>
-      <DashboardHeader heading="Charts" text="List of charts by shadcn-ui." />
-      <div className="flex flex-col gap-5">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4">
-          <RadialTextChart />
-          <AreaChartStacked />
-          <BarChartMixed />
-          <RadarChartSimple />
-        </div>
+    <div className="min-h-screen bg-[#020617] text-white">
+      <div className="space-y-8">
+        <DashboardHeader
+          heading="Analytics"
+          text="Track your cleaning business performance and activity."
+        />
 
-        <InteractiveBarChart />
+        <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+            <RadialTextChart />
+            <AreaChartStacked />
+            <BarChartMixed />
+            <RadarChartSimple />
+          </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4">
-          <RadialChartGrid />
-          <RadialShapeChart />
-          <LineChartMultiple />
-          <RadialStackedChart />
+          <InteractiveBarChart />
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+            <RadialChartGrid />
+            <RadialShapeChart />
+            <LineChartMultiple />
+            <RadialStackedChart />
+          </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
