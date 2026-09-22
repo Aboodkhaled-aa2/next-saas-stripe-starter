@@ -26,16 +26,16 @@ export default async function Dashboard({
   }
 
   if (user.role !== "ADMIN") {
-  if (!user.id) {
-    redirect("/login");
-  }
+    if (!user.id) {
+      redirect("/login");
+    }
 
-  const subscriptionPlan = await getUserSubscriptionPlan(user.id);
+    const subscriptionPlan = await getUserSubscriptionPlan(user.id);
 
-  if (!subscriptionPlan.isPaid) {
-    redirect("/pricing");
+    if (!subscriptionPlan.isPaid) {
+      redirect("/pricing");
+    }
   }
-}
 
   const filteredLinks = sidebarLinks.map((section) => ({
     ...section,
@@ -50,21 +50,23 @@ export default async function Dashboard({
       <DashboardSidebar links={filteredLinks} />
 
       <div className="flex min-w-0 flex-1 flex-col bg-[#020617]">
-        <header className="sticky top-0 z-50 flex h-14 border-b border-[#17233d] bg-[#020617] px-4 text-white lg:h-[60px] xl:px-8">
-          <MaxWidthWrapper className="flex max-w-7xl items-center gap-x-3 px-0">
+        <header className="sticky top-0 z-50 flex h-14 border-b border-slate-800/80 bg-[#020617]/95 px-4 text-white backdrop-blur-xl lg:h-[60px] xl:px-8">
+          <MaxWidthWrapper className="flex max-w-7xl items-center gap-3 px-0">
             <MobileSheetSidebar links={filteredLinks} />
 
-            <div className="w-full flex-1">
+            <div className="min-w-0 flex-1">
               <SearchCommand links={filteredLinks} />
             </div>
 
-            <ModeToggle />
-            <UserAccountNav />
+            <div className="flex shrink-0 items-center gap-1.5">
+              <ModeToggle />
+              <UserAccountNav />
+            </div>
           </MaxWidthWrapper>
         </header>
 
-        <main className="flex-1 bg-[#020617] p-4 xl:px-8">
-          <MaxWidthWrapper className="flex h-full max-w-7xl flex-col gap-4 px-0 lg:gap-6">
+        <main className="min-w-0 flex-1 bg-[#020617] p-4 sm:p-6 xl:px-8">
+          <MaxWidthWrapper className="flex h-full max-w-7xl flex-col gap-6 px-0">
             {children}
           </MaxWidthWrapper>
         </main>
