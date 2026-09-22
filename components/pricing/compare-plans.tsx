@@ -1,7 +1,7 @@
 import { PlansRow } from "@/types";
-import { CircleCheck, Info } from "lucide-react";
+import { Check, Info } from "lucide-react";
 
-import { comparePlans, plansColumns } from "@/config/subscriptions";
+import { comparePlans } from "@/config/subscriptions";
 import {
   Popover,
   PopoverContent,
@@ -10,76 +10,117 @@ import {
 import { HeaderSection } from "@/components/shared/header-section";
 import MaxWidthWrapper from "@/components/shared/max-width-wrapper";
 
+const planColumns = ["starter", "business", "pro"] as const;
+
 export function ComparePlans() {
   const renderCell = (value: string | boolean | null) => {
-    if (value === null) return "—";
-    if (typeof value === "boolean")
-      return value ? <CircleCheck className="mx-auto size-[22px]" /> : "—";
-    return value;
+    if (value === null || value === false) {
+      return <span className="text-slate-600">—</span>;
+    }
+
+    if (value === true) {
+      return (
+        <div className="flex justify-center">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500/10">
+            <Check className="h-4 w-4 text-blue-400" />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <span className="font-medium text-slate-300">
+        {value}
+      </span>
+    );
   };
 
   return (
-    <MaxWidthWrapper>
-      <HeaderSection
-        label="Plans"
-        title="Compare Our Plans"
-        subtitle="Find the perfect plan tailored for your business needs!"
-      />
+    <section className="bg-[#020617] py-20 text-white">
+      <MaxWidthWrapper>
+        <HeaderSection
+          label="Plans & Pricing"
+          title="Compare Your AI Employee Plans"
+          subtitle="Choose the automation level that fits your cleaning business."
+        />
 
-      <div className="my-10 overflow-x-scroll max-lg:mx-[-0.8rem] md:overflow-x-visible">
-        <table className="w-full table-fixed">
-          <thead>
-            <tr className="divide-x divide-border border">
-              <th className="sticky left-0 z-20 w-40 bg-accent p-5 md:w-1/4 lg:top-14"></th>
-              {plansColumns.map((col) => (
-                <th
-                  key={col}
-                  className="sticky z-10 w-40 bg-accent p-5 font-heading text-xl capitalize tracking-wide md:w-auto lg:top-14 lg:text-2xl"
-                >
-                  {col}
+        <div className="mt-12 overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/70 shadow-2xl">
+          <table className="w-full min-w-[760px] table-fixed border-collapse">
+            <thead>
+              <tr className="border-b border-slate-800">
+                <th className="w-[34%] p-5 text-left">
+                  <span className="text-sm font-medium uppercase tracking-wider text-slate-500">
+                    Features
+                  </span>
                 </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-x divide-border border">
-            {comparePlans.map((row: PlansRow, index: number) => (
-              <tr key={index} className="divide-x divide-border border">
-                <td
-                  data-tip={row.tooltip ? row.tooltip : ""}
-                  className="sticky left-0 bg-accent md:bg-transparent"
-                >
-                  <div className="flex items-center justify-between space-x-2 p-4">
-                    <span className="text-[15px] font-medium lg:text-base">
-                      {row.feature}
-                    </span>
-                    {row.tooltip && (
-                      <Popover>
-                        <PopoverTrigger className="rounded p-1 hover:bg-muted">
-                          <Info className="size-[18px] text-muted-foreground" />
-                        </PopoverTrigger>
-                        <PopoverContent
-                          side="top"
-                          className="max-w-80 p-3 text-sm"
-                        >
-                          {row.tooltip}
-                        </PopoverContent>
-                      </Popover>
-                    )}
-                  </div>
-                </td>
-                {plansColumns.map((col) => (
-                  <td
-                    key={col}
-                    className="p-4 text-center text-[15px] text-muted-foreground lg:text-base"
+
+                {planColumns.map((plan) => (
+                  <th
+                    key={plan}
+                    className="border-l border-slate-800 p-5 text-center"
                   >
-                    {renderCell(row[col])}
-                  </td>
+                    <div className="text-lg font-bold capitalize text-white">
+                      {plan}
+                    </div>
+
+                    <div className="mt-1 text-sm font-normal text-slate-500">
+                      {plan === "starter" && "$49 / month"}
+                      {plan === "business" && "$99 / month"}
+                      {plan === "pro" && "$249 / month"}
+                    </div>
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </MaxWidthWrapper>
+            </thead>
+
+            <tbody>
+              {comparePlans.map((row: PlansRow, index: number) => (
+                <tr
+                  key={index}
+                  className="border-b border-slate-800 last:border-b-0"
+                >
+                  <td className="p-5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-slate-300 lg:text-base">
+                        {row.feature}
+                      </span>
+
+                      {row.tooltip && (
+                        <Popover>
+                          <PopoverTrigger className="rounded-full p-1 transition hover:bg-slate-800">
+                            <Info className="h-4 w-4 text-slate-500" />
+                          </PopoverTrigger>
+
+                          <PopoverContent
+                            side="top"
+                            className="max-w-80 border-slate-700 bg-slate-900 p-3 text-sm text-slate-300"
+                          >
+                            {row.tooltip}
+                          </PopoverContent>
+                        </Popover>
+                      )}
+                    </div>
+                  </td>
+
+                  {planColumns.map((plan) => (
+                    <td
+                      key={plan}
+                      className="border-l border-slate-800 p-5 text-center text-sm lg:text-base"
+                    >
+                      {renderCell(row[plan])}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <p className="mt-6 text-center text-sm text-slate-500">
+          All plans are built for cleaning businesses and can be upgraded as
+          your business grows.
+        </p>
+      </MaxWidthWrapper>
+    </section>
   );
 }
