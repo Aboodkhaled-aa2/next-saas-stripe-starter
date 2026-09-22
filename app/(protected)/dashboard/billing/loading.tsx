@@ -4,15 +4,18 @@ import { CardSkeleton } from "@/components/shared/card-skeleton";
 
 export default function DashboardBillingLoading() {
   return (
-    <>
-      <DashboardHeader
-        heading="Billing"
-        text="Manage billing and your subscription plan."
-      />
-      <div className="grid gap-8">
-        <Skeleton className="h-28 w-full rounded-lg md:h-24" />
-        <CardSkeleton />
+    <div className="min-h-screen bg-[#020617] text-white">
+      <div className="space-y-8">
+        <DashboardHeader
+          heading="Billing"
+          text="Manage your subscription and billing."
+        />
+
+        <div className="grid gap-8">
+          <Skeleton className="h-24 w-full rounded-xl border border-slate-800 bg-slate-900/60" />
+          <CardSkeleton />
+        </div>
       </div>
-    </>
+    </div>
   );
 }
