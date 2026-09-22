@@ -9,6 +9,7 @@ export default function VerifyEmailPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
+  const [plan, setPlan] = useState("starter");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -16,9 +17,12 @@ export default function VerifyEmailPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+
     const emailParam = params.get("email") || "";
+    const planParam = params.get("plan") || "starter";
 
     setEmail(emailParam.toLowerCase().trim());
+    setPlan(planParam);
   }, []);
 
   const handleVerify = async (e: React.FormEvent) => {
@@ -61,9 +65,13 @@ export default function VerifyEmailPage() {
 
       setSuccessMsg("Email verified successfully.");
 
+      const callbackUrl = `/pricing?plan=${encodeURIComponent(plan)}`;
+
       setTimeout(() => {
-        router.push("/login");
-      }, 1200);
+        router.push(
+          `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`,
+        );
+      }, 1000);
     } catch {
       setErrorMsg("Something went wrong. Please try again.");
       setLoading(false);
@@ -71,9 +79,9 @@ export default function VerifyEmailPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      <header className="border-b border-slate-800/80 bg-slate-950/90 py-4 px-6">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
+    <main className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
+      <header className="border-b border-slate-800/80 bg-slate-950/90 px-6 py-4">
+        <div className="mx-auto flex max-w-7xl items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white">
               <Sparkles className="h-4 w-4" />
@@ -86,16 +94,16 @@ export default function VerifyEmailPage() {
 
           <Link
             href="/login"
-            className="text-sm text-slate-400 hover:text-white transition"
+            className="text-sm text-slate-400 transition hover:text-white"
           >
             Log in
           </Link>
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-4 py-12 w-full flex-1 flex flex-col justify-center">
-        <div className="text-center mb-8">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600/10 border border-blue-500/20">
+      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-12">
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-600/10">
             <Mail className="h-8 w-8 text-blue-400" />
           </div>
 
@@ -103,31 +111,31 @@ export default function VerifyEmailPage() {
             Verify Your Email
           </h1>
 
-          <p className="mt-3 text-slate-400 text-sm leading-6">
+          <p className="mt-3 text-sm leading-6 text-slate-400">
             We sent a 6-digit verification code to
           </p>
 
-          <p className="mt-1 text-white font-medium break-all">
+          <p className="mt-1 break-all font-medium text-white">
             {email || "your email address"}
           </p>
         </div>
 
-        <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-8 shadow-2xl">
+        <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl">
           {errorMsg && (
-            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm leading-relaxed">
+            <div className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm leading-relaxed text-red-400">
               {errorMsg}
             </div>
           )}
 
           {successMsg && (
-            <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-xl text-green-400 text-sm leading-relaxed">
+            <div className="mb-6 rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm leading-relaxed text-green-400">
               {successMsg}
             </div>
           )}
 
           <form onSubmit={handleVerify} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-300">
                 Verification Code
               </label>
 
@@ -143,10 +151,10 @@ export default function VerifyEmailPage() {
                 }
                 placeholder="000000"
                 disabled={loading}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-4 text-center text-2xl tracking-[0.5em] text-white placeholder-slate-700 focus:outline-none focus:border-blue-500 transition disabled:opacity-50"
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-4 text-center text-2xl tracking-[0.5em] text-white placeholder-slate-700 transition focus:border-blue-500 focus:outline-none disabled:opacity-50"
               />
 
-              <p className="mt-2 text-xs text-slate-500 text-center">
+              <p className="mt-2 text-center text-xs text-slate-500">
                 The code expires in 10 minutes.
               </p>
             </div>
@@ -154,7 +162,7 @@ export default function VerifyEmailPage() {
             <button
               type="submit"
               disabled={loading || code.length !== 6}
-              className="w-full h-12 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? "Verifying..." : "Verify Email"}
 
@@ -165,7 +173,7 @@ export default function VerifyEmailPage() {
           <div className="mt-6 text-center">
             <Link
               href="/signup"
-              className="text-sm text-blue-400 hover:text-blue-300 transition"
+              className="text-sm text-blue-400 transition hover:text-blue-300"
             >
               Back to Sign Up
             </Link>
@@ -173,7 +181,7 @@ export default function VerifyEmailPage() {
         </div>
       </div>
 
-      <footer className="py-6 text-center text-xs text-slate-600 border-t border-slate-900">
+      <footer className="border-t border-slate-900 py-6 text-center text-xs text-slate-600">
         © {new Date().getFullYear()} Smart Cleaning Desk. All rights reserved.
       </footer>
     </main>
