@@ -7,7 +7,12 @@ import { stripe } from "@/lib/stripe";
 
 export async function POST(req: Request) {
   const body = await req.text();
-  const signature = headers().get("Stripe-Signature") as string;
+  const signature = headers().get("Stripe-Signature");
+
+  if (!signature) {
+    console.error("Stripe webhook error: Missing Stripe-Signature header");
+    return new Response("Missing Stripe-Signature header", { status: 400 });
+  }
 
   let event: Stripe.Event;
 
@@ -18,52 +23,43 @@ export async function POST(req: Request) {
       env.STRIPE_WEBHOOK_SECRET,
     );
   } catch (error) {
-    return new Response(`Webhook Error: ${error.message}`, { status: 400 });
-  }
-
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
-
-    // Retrieve the subscription details from Stripe.
-    const subscription = await stripe.subscriptions.retrieve(
-      session.subscription as string,
+    console.error(
+      "Stripe webhook signature verification error:",
+      error instanceof Error ? error.message : String(error),
     );
 
-    // Update the user stripe into in our database.
-    // Since this is the initial subscription, we need to update
-    // the subscription id and customer id.
-    await prisma.user.update({
-      where: {
-        id: session?.metadata?.userId,
-      },
-      data: {
-        stripeSubscriptionId: subscription.id,
-        stripeCustomerId: subscription.customer as string,
-        stripePriceId: subscription.items.data[0].price.id,
-        stripeCurrentPeriodEnd: new Date(
-          subscription.current_period_end * 1000,
-        ),
-      },
+    return new Response("Webhook signature verification failed", {
+      status: 400,
     });
   }
 
-  if (event.type === "invoice.payment_succeeded") {
-    const session = event.data.object as Stripe.Invoice;
+  try {
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
 
-    // If the billing reason is not subscription_create, it means the customer has updated their subscription.
-    // If it is subscription_create, we don't need to update the subscription id and it will handle by the checkout.session.completed event.
-    if (session.billing_reason != "subscription_create") {
-      // Retrieve the subscription details from Stripe.
+      if (!session.subscription) {
+        console.error("Stripe webhook error: Missing subscription ID");
+        return new Response("Missing subscription ID", { status: 400 });
+      }
+
+      const userId = session.metadata?.userId;
+
+      if (!userId) {
+        console.error("Stripe webhook error: Missing userId metadata");
+        return new Response("Missing userId metadata", { status: 400 });
+      }
+
       const subscription = await stripe.subscriptions.retrieve(
         session.subscription as string,
       );
 
-      // Update the price id and set the new period end.
       await prisma.user.update({
         where: {
-          stripeSubscriptionId: subscription.id,
+          id: userId,
         },
         data: {
+          stripeSubscriptionId: subscription.id,
+          stripeCustomerId: subscription.customer as string,
           stripePriceId: subscription.items.data[0].price.id,
           stripeCurrentPeriodEnd: new Date(
             subscription.current_period_end * 1000,
@@ -71,7 +67,39 @@ export async function POST(req: Request) {
         },
       });
     }
-  }
 
-  return new Response(null, { status: 200 });
+    if (event.type === "invoice.payment_succeeded") {
+      const invoice = event.data.object as Stripe.Invoice;
+
+      if (
+        invoice.billing_reason !== "subscription_create" &&
+        invoice.subscription
+      ) {
+        const subscription = await stripe.subscriptions.retrieve(
+          invoice.subscription as string,
+        );
+
+        await prisma.user.update({
+          where: {
+            stripeSubscriptionId: subscription.id,
+          },
+          data: {
+            stripePriceId: subscription.items.data[0].price.id,
+            stripeCurrentPeriodEnd: new Date(
+              subscription.current_period_end * 1000,
+            ),
+          },
+        });
+      }
+    }
+
+    return new Response(null, { status: 200 });
+  } catch (error) {
+    console.error(
+      "Stripe webhook processing error:",
+      error instanceof Error ? error.message : String(error),
+    );
+
+    return new Response("Webhook processing failed", { status: 500 });
+  }
 }
