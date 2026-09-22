@@ -9,8 +9,8 @@ import { PricingCards } from "@/components/pricing/pricing-cards";
 import { PricingFaq } from "@/components/pricing/pricing-faq";
 
 export const metadata = constructMetadata({
-  title: "Pricing – SaaS Starter",
-  description: "Explore our subscription plans.",
+  title: "Pricing – Smart Cleaning Desk",
+  description: "Choose the right AI employee plan for your cleaning business.",
 });
 
 export default async function PricingPage() {
@@ -18,20 +18,22 @@ export default async function PricingPage() {
 
   if (user?.role === "ADMIN") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#020617] text-white">
         <h1 className="text-5xl font-bold">Seriously?</h1>
+
         <Image
           src="/_static/illustrations/call-waiting.svg"
           alt="403"
           width={560}
           height={560}
-          className="pointer-events-none -my-20 dark:invert"
+          className="pointer-events-none -my-20"
         />
-        <p className="text-balance px-4 text-center text-2xl font-medium">
+
+        <p className="text-balance px-4 text-center text-2xl font-medium text-slate-200">
           You are an {user.role}. Back to{" "}
           <Link
             href="/admin"
-            className="text-muted-foreground underline underline-offset-4 hover:text-purple-500"
+            className="text-slate-400 underline underline-offset-4 transition-colors hover:text-blue-400"
           >
             Dashboard
           </Link>
@@ -47,10 +49,16 @@ export default async function PricingPage() {
       : null;
 
   return (
-    <div className="flex w-full flex-col gap-16 py-8 md:py-8">
-      <PricingCards userId={user?.id} subscriptionPlan={subscriptionPlan ?? undefined} />
-      <hr className="container" />
+    <div className="flex w-full flex-col gap-16 bg-[#020617] py-8 text-white md:py-12">
+      <PricingCards
+        userId={user?.id}
+        subscriptionPlan={subscriptionPlan ?? undefined}
+      />
+
+      <hr className="container border-slate-800" />
+
       <ComparePlans />
+
       <PricingFaq />
     </div>
   );
