@@ -1,17 +1,24 @@
 import authConfig from "@/auth.config";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { UserRole } from "@prisma/client";
+import { Plan, UserRole } from "@prisma/client";
 import NextAuth, { type DefaultSession } from "next-auth";
 
 import { prisma } from "@/lib/db";
 import { getUserById } from "@/lib/user";
 
-// More info: https://authjs.dev/getting-started/typescript#module-augmentation
 declare module "next-auth" {
   interface Session {
     user: {
       role: UserRole;
+      plan: Plan;
     } & DefaultSession["user"];
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    role?: UserRole;
+    plan?: Plan;
   }
 }
 
@@ -23,7 +30,6 @@ export const {
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
-    // error: "/auth/error",
   },
   callbacks: {
     async session({ token, session }) {
@@ -38,6 +44,10 @@ export const {
 
         if (token.role) {
           session.user.role = token.role;
+        }
+
+        if (token.plan) {
+          session.user.plan = token.plan;
         }
 
         session.user.name = token.name;
@@ -58,10 +68,10 @@ export const {
       token.email = dbUser.email;
       token.picture = dbUser.image;
       token.role = dbUser.role;
+      token.plan = dbUser.plan;
 
       return token;
     },
   },
   ...authConfig,
-  // debug: process.env.NODE_ENV !== "production"
 });
