@@ -11,8 +11,20 @@ import {
   User,
   Chrome,
 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+
+type Plan = "starter" | "business" | "pro";
+
+const validPlans: Plan[] = ["starter", "business", "pro"];
 
 export default function SignupPage() {
+  const searchParams = useSearchParams();
+
+  const planParam = searchParams.get("plan");
+  const selectedPlan: Plan = validPlans.includes(planParam as Plan)
+    ? (planParam as Plan)
+    : "starter";
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -79,6 +91,7 @@ export default function SignupPage() {
           name: name.trim(),
           email: email.trim().toLowerCase(),
           password,
+          plan: selectedPlan,
         }),
       });
 
@@ -110,7 +123,7 @@ export default function SignupPage() {
 
       window.location.href = `/verify-email?email=${encodeURIComponent(
         email.trim().toLowerCase()
-      )}`;
+      )}&plan=${selectedPlan}`;
     } catch (error) {
       console.error("Signup request error:", error);
 
@@ -129,7 +142,7 @@ export default function SignupPage() {
 
     try {
       await signIn("google", {
-        callbackUrl: "/dashboard",
+        callbackUrl: `/dashboard?plan=${selectedPlan}`,
       });
     } catch {
       setErrorMsg("Unable to continue with Google.");
