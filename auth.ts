@@ -6,18 +6,18 @@ import NextAuth, { type DefaultSession } from "next-auth";
 import { prisma } from "@/lib/db";
 import { getUserById } from "@/lib/user";
 
-declare module "next-auth/jwt" {
-  interface JWT {
-    plan?: Plan;
-  }
-}
+// More info: https://authjs.dev/getting-started/typescript#module-augmentation
+declare module "next-auth" {
+  interface Session {
+    user: {
+      role: UserRole;
+      plan: Plan;
     } & DefaultSession["user"];
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
-    role?: UserRole;
     plan?: Plan;
   }
 }
@@ -30,6 +30,7 @@ export const {
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
+    // error: "/auth/error",
   },
   callbacks: {
     async session({ token, session }) {
@@ -74,4 +75,5 @@ export const {
     },
   },
   ...authConfig,
+  // debug: process.env.NODE_ENV !== "production"
 });
