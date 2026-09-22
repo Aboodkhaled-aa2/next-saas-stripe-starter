@@ -26,12 +26,16 @@ export default async function Dashboard({
   }
 
   if (user.role !== "ADMIN") {
-    const subscriptionPlan = await getUserSubscriptionPlan(user.id);
-
-    if (!subscriptionPlan.isPaid) {
-      redirect("/pricing");
-    }
+  if (!user.id) {
+    redirect("/login");
   }
+
+  const subscriptionPlan = await getUserSubscriptionPlan(user.id);
+
+  if (!subscriptionPlan.isPaid) {
+    redirect("/pricing");
+  }
+}
 
   const filteredLinks = sidebarLinks.map((section) => ({
     ...section,
