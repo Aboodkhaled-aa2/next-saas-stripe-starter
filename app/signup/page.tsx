@@ -82,10 +82,28 @@ export default function SignupPage() {
         }),
       });
 
-      const data = await response.json();
+      const responseText = await response.text();
+
+      let data: {
+        error?: string;
+        message?: string;
+        success?: boolean;
+      } = {};
+
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch {
+        data = {};
+      }
 
       if (!response.ok) {
-        setErrorMsg(data.error || "Unable to create your account.");
+        const serverMessage =
+          data.error ||
+          data.message ||
+          responseText ||
+          `Registration failed with status ${response.status}.`;
+
+        setErrorMsg(serverMessage);
         setLoading(false);
         return;
       }
@@ -93,8 +111,14 @@ export default function SignupPage() {
       window.location.href = `/verify-email?email=${encodeURIComponent(
         email.trim().toLowerCase()
       )}`;
-    } catch {
-      setErrorMsg("Something went wrong. Please try again.");
+    } catch (error) {
+      console.error("Signup request error:", error);
+
+      setErrorMsg(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Please try again."
+      );
       setLoading(false);
     }
   };
@@ -151,7 +175,7 @@ export default function SignupPage() {
 
         <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-8 shadow-2xl">
           {errorMsg && (
-            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm leading-relaxed">
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm leading-relaxed break-words">
               {errorMsg}
             </div>
           )}
@@ -243,7 +267,8 @@ export default function SignupPage() {
               </div>
 
               <p className="mt-2 text-xs text-slate-500">
-                8+ characters with uppercase, lowercase, number, and special character.
+                8+ characters with uppercase, lowercase, number, and special
+                character.
               </p>
             </div>
 
@@ -280,7 +305,8 @@ export default function SignupPage() {
           </form>
 
           <p className="mt-6 text-center text-xs text-slate-500">
-            By creating an account, you agree to our Terms of Service and Privacy Policy.
+            By creating an account, you agree to our Terms of Service and
+            Privacy Policy.
           </p>
         </div>
 
