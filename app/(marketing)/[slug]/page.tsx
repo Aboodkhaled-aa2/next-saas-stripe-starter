@@ -1,13 +1,11 @@
+import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { allPages } from "contentlayer/generated";
 
+import { constructMetadata, getBlurDataURL } from "@/lib/utils";
 import { Mdx } from "@/components/content/mdx-components";
 
 import "@/styles/mdx.css";
-
-import { Metadata } from "next";
-
-import { constructMetadata, getBlurDataURL } from "@/lib/utils";
 
 export async function generateStaticParams() {
   return allPages.map((page) => ({
@@ -21,6 +19,7 @@ export async function generateMetadata({
   params: { slug: string };
 }): Promise<Metadata | undefined> {
   const page = allPages.find((page) => page.slugAsParams === params.slug);
+
   if (!page) {
     return;
   }
@@ -28,8 +27,8 @@ export async function generateMetadata({
   const { title, description } = page;
 
   return constructMetadata({
-    title: `${title} – SaaS Starter`,
-    description: description,
+    title: `${title} – Smart Cleaning Desk`,
+    description,
   });
 }
 
@@ -40,7 +39,9 @@ export default async function PagePage({
     slug: string;
   };
 }) {
-  const page = allPages.find((page) => page.slugAsParams === params.slug);
+  const page = allPages.find(
+    (page) => page.slugAsParams === params.slug,
+  );
 
   if (!page) {
     notFound();
@@ -54,16 +55,19 @@ export default async function PagePage({
   );
 
   return (
-    <article className="container max-w-3xl py-6 lg:py-12">
+    <article className="container max-w-3xl bg-[#020617] py-6 text-white lg:py-12">
       <div className="space-y-4">
-        <h1 className="inline-block font-heading text-4xl lg:text-5xl">
+        <h1 className="inline-block font-heading text-4xl text-white lg:text-5xl">
           {page.title}
         </h1>
+
         {page.description && (
-          <p className="text-xl text-muted-foreground">{page.description}</p>
+          <p className="text-xl text-slate-400">{page.description}</p>
         )}
       </div>
-      <hr className="my-4" />
+
+      <hr className="my-6 border-slate-800" />
+
       <Mdx code={page.body.code} images={images} />
     </article>
   );
