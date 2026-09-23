@@ -33,6 +33,7 @@ type FormData = {
   aiInstructions: string;
   aiTone: string;
   humanHandoffInstructions: string;
+  additionalNotes: string;
 };
 
 const initialFormData: FormData = {
@@ -51,6 +52,7 @@ const initialFormData: FormData = {
   aiInstructions: "",
   aiTone: "Professional and friendly",
   humanHandoffInstructions: "",
+  additionalNotes: "",
 };
 
 const steps = [
@@ -83,6 +85,11 @@ const steps = [
     title: "AI behavior",
     description: "Customize how your AI employee communicates.",
     icon: Bot,
+  },
+  {
+    title: "Additional notes",
+    description: "Add anything else your AI employee should know.",
+    icon: MessageSquare,
   },
 ];
 
@@ -304,7 +311,7 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        <div className="mb-8 grid gap-2 sm:grid-cols-6">
+        <div className="mb-8 grid gap-2 sm:grid-cols-7">
           {steps.map((item, index) => {
             const Icon = item.icon;
             const active = index === currentStep;
@@ -694,6 +701,54 @@ export default function OnboardingPage() {
                           We&apos;ll use your business information to help
                           your AI answer questions, qualify leads, and handle
                           customer conversations according to your rules.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {currentStep === 6 && (
+                <div className="space-y-6">
+                  <div>
+                    <Label
+                      text="Is there anything else you'd like your AI employee to know?"
+                      optional
+                    />
+
+                    <textarea
+                      value={formData.additionalNotes}
+                      onChange={(event) =>
+                        updateField(
+                          "additionalNotes",
+                          event.target.value,
+                        )
+                      }
+                      placeholder="Example: We are family-owned, we have a no-shoes policy, customers should mention gate codes before appointments, or anything else important about your business."
+                      rows={8}
+                      className="mt-3 w-full resize-none rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
+                    />
+
+                    <p className="mt-2 text-xs leading-5 text-slate-600">
+                      This is optional. Add any extra information, preferences,
+                      special instructions, or business details that may help
+                      your AI employee serve customers better.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+                    <div className="flex gap-3">
+                      <MessageSquare className="mt-0.5 h-5 w-5 shrink-0 text-blue-400" />
+
+                      <div>
+                        <p className="font-medium text-white">
+                          One last thing
+                        </p>
+
+                        <p className="mt-1 text-sm leading-6 text-slate-400">
+                          You can leave this blank if you have nothing else to
+                          add. You can update this information later from your
+                          business settings.
                         </p>
                       </div>
                     </div>
