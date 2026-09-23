@@ -80,6 +80,7 @@ model User {
 
   businessProfile BusinessProfile?
   leads           Lead[]
+  customers       Customer[]
 
   stripeCustomerId       String?   @unique @map("stripe_customer_id")
   stripeSubscriptionId   String?   @unique @map("stripe_subscription_id")
@@ -104,9 +105,9 @@ model BusinessProfile {
   businessHours Json?
 
   paymentMethods        Json?
-  bookingRules         Json?
-  cancellationPolicy   String? @db.Text
-  reschedulingPolicy   String? @db.Text
+  bookingRules          Json?
+  cancellationPolicy    String? @db.Text
+  reschedulingPolicy    String? @db.Text
 
   aiInstructions           String? @db.Text
   aiTone                   String?
@@ -138,9 +139,12 @@ model Lead {
 
   status LeadStatus @default(NEW)
 
-  quoteAmount     Float?
-  followUpAt      DateTime?
-  notes           String? @db.Text
+  quoteAmount Float?
+  followUpAt  DateTime?
+  notes       String? @db.Text
+
+  customerId String? @unique
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt
@@ -151,6 +155,35 @@ model Lead {
   @@index([userId, status])
   @@index([userId, createdAt])
   @@map("leads")
+}
+
+model Customer {
+  id String @id @default(cuid())
+
+  userId String
+
+  name        String
+  phone       String?
+  email       String?
+  address     String?
+  source      String?
+  notes       String? @db.Text
+
+  totalBookings Int @default(0)
+  lastContactAt DateTime?
+
+  lead Lead?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, phone])
+  @@index([userId, email])
+  @@index([userId, createdAt])
+  @@map("customers")
 }
 
 model VerificationToken {
