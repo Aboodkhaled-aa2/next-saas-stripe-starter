@@ -99,7 +99,7 @@ export default async function AIEmployeePage() {
 
                 <p className="mt-2 max-w-xl text-sm leading-6 text-slate-400">
                   {isConfigured
-                    ? `Your AI employee is configured for ${businessProfile.businessName}.`
+                    ? `Your AI employee is configured for ${businessProfile?.businessName}.`
                     : "Complete your business setup so your AI employee knows your services, pricing, policies, and communication preferences."}
                 </p>
               </div>
@@ -183,7 +183,9 @@ export default async function AIEmployeePage() {
 
             <InfoRow
               label="Pricing"
-              value={businessProfile?.pricing ? "Configured" : "Not configured"}
+              value={
+                businessProfile?.pricing ? "Configured" : "Not configured"
+              }
             />
 
             <InfoRow
