@@ -7,12 +7,12 @@ import {
   Clock3,
   MessageSquare,
   Phone,
+  Settings2,
   Users,
 } from "lucide-react";
 
 import { getCurrentUser } from "@/lib/session";
 import { constructMetadata } from "@/lib/utils";
-import { DashboardHeader } from "@/components/dashboard/header";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const metadata = constructMetadata({
@@ -22,13 +22,13 @@ export const metadata = constructMetadata({
 
 const stats = [
   {
-    title: "Total Leads",
+    title: "New Leads",
     value: "0",
     description: "No new leads yet",
     icon: Users,
   },
   {
-    title: "Booked Jobs",
+    title: "Bookings",
     value: "0",
     description: "No bookings yet",
     icon: CalendarDays,
@@ -47,24 +47,30 @@ const stats = [
   },
 ];
 
-const quickActions = [
+const setupSteps = [
   {
-    title: "AI Employee",
-    description: "Configure how your AI handles customers.",
+    number: "01",
+    title: "Complete business setup",
+    description:
+      "Tell your AI employee about your services, pricing, service area, and business rules.",
+    href: "/onboarding",
+    action: "Complete setup",
+  },
+  {
+    number: "02",
+    title: "Configure your AI employee",
+    description:
+      "Define how your AI should communicate with customers and handle incoming leads.",
     href: "/dashboard/ai",
-    icon: Bot,
+    action: "Configure AI",
   },
   {
-    title: "Calendar",
-    description: "View and manage upcoming cleaning jobs.",
-    href: "/dashboard/calendar",
-    icon: CalendarDays,
-  },
-  {
-    title: "Leads",
-    description: "Review customers and potential bookings.",
-    href: "/dashboard/leads",
-    icon: Users,
+    number: "03",
+    title: "Start receiving leads",
+    description:
+      "Connect your customer channels and let your AI employee handle incoming conversations.",
+    href: "/dashboard/integrations",
+    action: "View integrations",
   },
 ];
 
@@ -74,136 +80,173 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#020617] text-white">
       <div className="space-y-8 p-4 sm:p-6 lg:p-8">
-        <DashboardHeader
-          heading="Dashboard"
-          text={`Welcome back${
-            user?.name ? `, ${user.name}` : ""
-          }. Here's what's happening with your cleaning business.`}
-        />
+        <div>
+          <p className="mb-2 text-sm font-medium text-blue-400">
+            SMART CLEANING DESK
+          </p>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
+          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            Welcome back{user?.name ? `, ${user.name}` : ""}
+          </h1>
 
-            return (
-              <Card
-                key={stat.title}
-                className="border-slate-800 bg-slate-950/70 text-white shadow-lg"
-              >
-                <CardContent className="flex items-center justify-between p-5">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-slate-400">
-                      {stat.title}
-                    </p>
-
-                    <p className="text-3xl font-bold tracking-tight text-white">
-                      {stat.value}
-                    </p>
-
-                    <p className="text-xs text-slate-500">
-                      {stat.description}
-                    </p>
-                  </div>
-
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10">
-                    <Icon className="h-5 w-5 text-blue-400" />
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
+            Your AI employee is ready to help manage customer conversations,
+            leads, bookings, and follow-ups.
+          </p>
         </div>
 
-        <Card className="border-slate-800 bg-slate-950/70 text-white shadow-lg">
-          <CardContent className="p-6 sm:p-7">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-400">
+        <Card className="overflow-hidden border-blue-500/20 bg-gradient-to-br from-blue-950/50 via-slate-950 to-slate-950 text-white shadow-2xl shadow-blue-950/20">
+          <CardContent className="p-6 sm:p-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="max-w-3xl">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-300">
                   <Bot className="h-3.5 w-3.5" />
-                  AI Employee
+                  AI EMPLOYEE
                 </div>
 
-                <h2 className="text-2xl font-bold tracking-tight text-white">
-                  Your AI Employee is ready
+                <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                  Your AI employee is ready to work.
                 </h2>
 
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-                  Your AI receptionist can answer customer questions,
-                  qualify leads, follow up, and help book cleaning jobs.
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
+                  Let your AI handle customer questions, qualify leads,
+                  collect job details, follow up with prospects, and help
+                  manage your cleaning business.
                 </p>
+
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Link
+                    href="/dashboard/ai"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
+                  >
+                    Configure AI Employee
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+
+                  <Link
+                    href="/onboarding"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900/70 px-5 text-sm font-semibold text-white transition-colors hover:border-slate-600 hover:bg-slate-800"
+                  >
+                    Business Setup
+                    <Settings2 className="h-4 w-4" />
+                  </Link>
+                </div>
               </div>
 
-              <div className="flex w-fit items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-400">
-                <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                Ready
-              </div>
-            </div>
-
-            <div className="mt-7 grid gap-4 md:grid-cols-3">
-              <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-5 transition-colors hover:border-slate-700">
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
-                  <Bot className="h-5 w-5 text-blue-400" />
+              <div className="flex shrink-0 items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10">
+                  <span className="h-3 w-3 rounded-full bg-emerald-400 shadow-lg shadow-emerald-400/40" />
                 </div>
 
-                <h3 className="font-semibold text-white">
-                  AI Receptionist
-                </h3>
+                <div>
+                  <p className="text-sm font-semibold text-emerald-300">
+                    AI Employee
+                  </p>
 
-                <p className="mt-2 text-sm leading-6 text-slate-400">
-                  Answer questions, qualify leads, and help customers book
-                  cleaning services.
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-5 transition-colors hover:border-slate-700">
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
-                  <MessageSquare className="h-5 w-5 text-blue-400" />
+                  <p className="text-xs text-emerald-400/70">
+                    Ready to configure
+                  </p>
                 </div>
-
-                <h3 className="font-semibold text-white">
-                  Customer Messaging
-                </h3>
-
-                <p className="mt-2 text-sm leading-6 text-slate-400">
-                  Keep customer conversations organized across your connected
-                  messaging channels.
-                </p>
               </div>
-
-              <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-5 transition-colors hover:border-slate-700">
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
-                  <Phone className="h-5 w-5 text-blue-400" />
-                </div>
-
-                <h3 className="font-semibold text-white">
-                  Voice AI
-                </h3>
-
-                <p className="mt-2 text-sm leading-6 text-slate-400">
-                  Let your AI answer incoming calls and handle customer
-                  conversations.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <Link
-                href="/dashboard/ai"
-                className="inline-flex h-11 items-center justify-center rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white shadow-lg shadow-blue-500/10 transition-all hover:bg-blue-500"
-              >
-                Configure AI Employee
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
             </div>
           </CardContent>
         </Card>
+
+        <section>
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-white">
+              Business Overview
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              A quick look at your customer activity.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {stats.map((stat) => {
+              const Icon = stat.icon;
+
+              return (
+                <Card
+                  key={stat.title}
+                  className="border-slate-800 bg-slate-950/70 text-white shadow-lg"
+                >
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-slate-400">
+                          {stat.title}
+                        </p>
+
+                        <p className="mt-3 text-3xl font-bold tracking-tight text-white">
+                          {stat.value}
+                        </p>
+
+                        <p className="mt-1 text-xs text-slate-500">
+                          {stat.description}
+                        </p>
+                      </div>
+
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10">
+                        <Icon className="h-5 w-5 text-blue-400" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-white">
+              Get Your AI Employee Working
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Complete these steps to start automating your cleaning business.
+            </p>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            {setupSteps.map((step) => (
+              <Link
+                key={step.number}
+                href={step.href}
+                className="group rounded-2xl border border-slate-800 bg-slate-950/70 p-6 transition-all hover:border-blue-500/30 hover:bg-slate-900/80"
+              >
+                <div className="flex items-start justify-between">
+                  <span className="text-xs font-bold tracking-widest text-blue-400">
+                    {step.number}
+                  </span>
+
+                  <ArrowRight className="h-4 w-4 text-slate-600 transition-transform group-hover:translate-x-1 group-hover:text-blue-400" />
+                </div>
+
+                <h3 className="mt-6 font-semibold text-white">
+                  {step.title}
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  {step.description}
+                </p>
+
+                <div className="mt-5 text-sm font-medium text-blue-400">
+                  {step.action}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
 
         <div className="grid gap-6 lg:grid-cols-2">
           <Card className="border-slate-800 bg-slate-950/70 text-white shadow-lg">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-white">
+                  <h2 className="text-lg font-semibold">
                     Upcoming Jobs
                   </h2>
 
@@ -222,7 +265,7 @@ export default async function DashboardPage() {
                   <Clock3 className="h-6 w-6 text-slate-500" />
                 </div>
 
-                <h3 className="font-semibold text-white">
+                <h3 className="font-semibold">
                   No upcoming jobs
                 </h3>
 
@@ -244,7 +287,7 @@ export default async function DashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-white">
+                  <h2 className="text-lg font-semibold">
                     Recent Leads
                   </h2>
 
@@ -263,7 +306,7 @@ export default async function DashboardPage() {
                   <Users className="h-6 w-6 text-slate-500" />
                 </div>
 
-                <h3 className="font-semibold text-white">
+                <h3 className="font-semibold">
                   No leads yet
                 </h3>
 
@@ -282,71 +325,21 @@ export default async function DashboardPage() {
           </Card>
         </div>
 
-        <Card className="border-slate-800 bg-slate-950/70 text-white shadow-lg">
-          <CardContent className="p-6">
-            <div className="mb-5">
-              <h2 className="text-lg font-semibold text-white">
-                Quick Actions
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Manage the most important parts of your AI cleaning assistant.
-              </p>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-3">
-              {quickActions.map((action) => {
-                const Icon = action.icon;
-
-                return (
-                  <Link
-                    key={action.title}
-                    href={action.href}
-                    className="group rounded-xl border border-slate-800 bg-slate-900/40 p-5 transition-all hover:border-blue-500/30 hover:bg-slate-900/70"
-                  >
-                    <div className="mb-5 flex items-center justify-between">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
-                        <Icon className="h-5 w-5 text-blue-400" />
-                      </div>
-
-                      <ArrowRight className="h-4 w-4 text-slate-600 transition-transform group-hover:translate-x-1 group-hover:text-blue-400" />
-                    </div>
-
-                    <h3 className="font-semibold text-white">
-                      {action.title}
-                    </h3>
-
-                    <p className="mt-2 text-sm leading-6 text-slate-500">
-                      {action.description}
-                    </p>
-                  </Link>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-950/70 p-5">
+        <div className="flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
             <CheckCircle2 className="h-5 w-5 text-emerald-400" />
           </div>
 
           <div>
             <p className="font-medium text-white">
-              Your account is active
+              Smart Cleaning Desk is ready
             </p>
 
             <p className="mt-1 text-sm text-slate-500">
-              Complete your business setup to start using your AI employee.
+              Your workspace is ready. Complete your setup to start training
+              your AI employee.
             </p>
           </div>
-
-          <Link
-            href="/dashboard/settings"
-            className="ml-auto hidden h-10 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/70 px-4 text-sm font-medium text-white transition-colors hover:border-slate-700 hover:bg-slate-800 sm:inline-flex"
-          >
-            Business Settings
-          </Link>
         </div>
       </div>
     </div>
