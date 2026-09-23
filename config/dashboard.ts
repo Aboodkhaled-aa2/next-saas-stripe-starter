@@ -73,7 +73,7 @@ export const sidebarLinks: SidebarNavItem[] = [
     title: "SETTINGS",
     items: [
       {
-        href: "/dashboard/onboarding",
+        href: "/onboarding",
         icon: "settings",
         title: "Business Setup",
       },
@@ -92,13 +92,6 @@ export const sidebarLinks: SidebarNavItem[] = [
         href: "/dashboard/settings",
         icon: "settings",
         title: "Settings",
-      },
-      {
-        href: "/admin/orders",
-        icon: "package",
-        title: "Orders",
-        badge: 2,
-        authorizeOnly: UserRole.ADMIN,
       },
     ],
   },
