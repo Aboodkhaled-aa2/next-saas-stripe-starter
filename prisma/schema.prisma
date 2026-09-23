@@ -84,24 +84,25 @@ model BusinessProfile {
   id     String @id @default(cuid())
   userId String @unique
 
-  businessName String?
+  businessName  String?
   businessPhone String?
   businessEmail String?
-  websiteUrl String?
+  websiteUrl    String?
 
-  services Json?
-  serviceAreas Json?
-  pricing Json?
+  services      Json?
+  serviceAreas  Json?
+  pricing       Json?
   businessHours Json?
 
-  paymentMethods Json?
-  bookingRules Json?
-  cancellationPolicy String? @db.Text
-  reschedulingPolicy String? @db.Text
+  paymentMethods       Json?
+  bookingRules         Json?
+  cancellationPolicy   String? @db.Text
+  reschedulingPolicy   String? @db.Text
 
-  aiInstructions String? @db.Text
-  aiTone String?
+  aiInstructions          String? @db.Text
+  aiTone                  String?
   humanHandoffInstructions String? @db.Text
+  additionalNotes         String? @db.Text
 
   onboardingCompleted Boolean @default(false)
 
