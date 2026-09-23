@@ -3,6 +3,47 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 
+export async function GET() {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized." },
+        { status: 401 },
+      );
+    }
+
+    const businessProfile = await prisma.businessProfile.findUnique({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    if (!businessProfile) {
+      return NextResponse.json(
+        {
+          success: true,
+          businessProfile: null,
+        },
+        { status: 200 },
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      businessProfile,
+    });
+  } catch (error) {
+    console.error("Business profile fetch error:", error);
+
+    return NextResponse.json(
+      { error: "Unable to load your business profile." },
+      { status: 500 },
+    );
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const user = await getCurrentUser();
