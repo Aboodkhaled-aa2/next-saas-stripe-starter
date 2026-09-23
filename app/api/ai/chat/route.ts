@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { openai } from "@/lib/openai";
 import { buildEmployeeSystemPrompt } from "@/lib/ai/employee";
