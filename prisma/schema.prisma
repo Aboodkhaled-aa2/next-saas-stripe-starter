@@ -21,6 +21,14 @@ enum Plan {
   PRO
 }
 
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  BOOKED
+  LOST
+}
+
 model Account {
   id                String   @id @default(cuid())
   userId            String
@@ -71,6 +79,7 @@ model User {
   sessions Session[]
 
   businessProfile BusinessProfile?
+  leads           Lead[]
 
   stripeCustomerId       String?   @unique @map("stripe_customer_id")
   stripeSubscriptionId   String?   @unique @map("stripe_subscription_id")
@@ -94,15 +103,15 @@ model BusinessProfile {
   pricing       Json?
   businessHours Json?
 
-  paymentMethods       Json?
+  paymentMethods        Json?
   bookingRules         Json?
   cancellationPolicy   String? @db.Text
   reschedulingPolicy   String? @db.Text
 
-  aiInstructions          String? @db.Text
-  aiTone                  String?
+  aiInstructions           String? @db.Text
+  aiTone                   String?
   humanHandoffInstructions String? @db.Text
-  additionalNotes         String? @db.Text
+  additionalNotes          String? @db.Text
 
   onboardingCompleted Boolean @default(false)
 
@@ -112,6 +121,36 @@ model BusinessProfile {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("business_profiles")
+}
+
+model Lead {
+  id String @id @default(cuid())
+
+  userId String
+
+  name        String?
+  phone       String?
+  email       String?
+  source      String?
+  service     String?
+  location    String?
+  lastMessage String? @db.Text
+
+  status LeadStatus @default(NEW)
+
+  quoteAmount     Float?
+  followUpAt      DateTime?
+  notes           String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@map("leads")
 }
 
 model VerificationToken {
