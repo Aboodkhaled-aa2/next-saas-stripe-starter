@@ -32,6 +32,7 @@ export async function POST(request: Request) {
       aiInstructions,
       aiTone,
       humanHandoffInstructions,
+      additionalNotes,
     } = body;
 
     if (
@@ -105,6 +106,7 @@ export async function POST(request: Request) {
         aiTone: aiTone?.trim() || "Professional and friendly",
         humanHandoffInstructions:
           humanHandoffInstructions?.trim() || null,
+        additionalNotes: additionalNotes?.trim() || null,
         onboardingCompleted: true,
       },
       update: {
@@ -124,6 +126,7 @@ export async function POST(request: Request) {
         aiTone: aiTone?.trim() || "Professional and friendly",
         humanHandoffInstructions:
           humanHandoffInstructions?.trim() || null,
+        additionalNotes: additionalNotes?.trim() || null,
         onboardingCompleted: true,
       },
     });
