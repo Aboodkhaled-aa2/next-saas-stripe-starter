@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { LayoutDashboard, Lock, LogOut, Settings } from "lucide-react";
+import {
+  LayoutDashboard,
+  Lock,
+  LogOut,
+  Settings,
+  User,
+} from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { Drawer } from "vaul";
 
@@ -15,6 +21,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "@/components/shared/user-avatar";
+
+function AccountCircle() {
+  return (
+    <span className="flex size-10 items-center justify-center rounded-full border border-blue-400/30 bg-[#071a3a] text-blue-300 shadow-lg shadow-blue-950/20">
+      <User className="size-5" strokeWidth={2} />
+    </span>
+  );
+}
 
 export function UserAccountNav() {
   const { data: session } = useSession();
@@ -29,18 +43,26 @@ export function UserAccountNav() {
 
   if (!user) {
     return (
-      <div className="size-8 animate-pulse rounded-full border border-slate-800 bg-slate-900" />
+      <div className="flex size-10 items-center justify-center rounded-full border border-slate-800 bg-slate-900">
+        <User className="size-5 text-slate-500" />
+      </div>
     );
   }
 
   if (isMobile) {
     return (
       <Drawer.Root open={open} onClose={closeDrawer}>
-        <Drawer.Trigger onClick={() => setOpen(true)}>
-          <UserAvatar
-            user={{ name: user.name || null, image: user.image || null }}
-            className="size-9 border border-slate-700"
-          />
+        <Drawer.Trigger
+          asChild
+          onClick={() => setOpen(true)}
+        >
+          <button
+            type="button"
+            aria-label="Open account menu"
+            className="rounded-full outline-none transition-all focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020617]"
+          >
+            <AccountCircle />
+          </button>
         </Drawer.Trigger>
 
         <Drawer.Portal>
@@ -55,10 +77,7 @@ export function UserAccountNav() {
             </div>
 
             <div className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/70 p-3">
-              <UserAvatar
-                user={{ name: user.name || null, image: user.image || null }}
-                className="size-10 border border-slate-700"
-              />
+              <AccountCircle />
 
               <div className="flex min-w-0 flex-col">
                 {user.name && (
@@ -140,12 +159,10 @@ export function UserAccountNav() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="rounded-full outline-none ring-offset-slate-950 transition-all focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          aria-label="Open account menu"
+          className="rounded-full outline-none transition-all focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020617]"
         >
-          <UserAvatar
-            user={{ name: user.name || null, image: user.image || null }}
-            className="size-8 border border-slate-700"
-          />
+          <AccountCircle />
         </button>
       </DropdownMenuTrigger>
 
