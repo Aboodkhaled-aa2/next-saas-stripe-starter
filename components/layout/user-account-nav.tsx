@@ -27,10 +27,11 @@ export function UserAccountNav() {
 
   const { isMobile } = useMediaQuery();
 
-  if (!user)
+  if (!user) {
     return (
-      <div className="size-8 animate-pulse rounded-full border bg-muted" />
+      <div className="size-8 animate-pulse rounded-full border border-slate-800 bg-slate-900" />
     );
+  }
 
   if (isMobile) {
     return (
@@ -38,68 +39,83 @@ export function UserAccountNav() {
         <Drawer.Trigger onClick={() => setOpen(true)}>
           <UserAvatar
             user={{ name: user.name || null, image: user.image || null }}
-            className="size-9 border"
+            className="size-9 border border-slate-700"
           />
         </Drawer.Trigger>
+
         <Drawer.Portal>
           <Drawer.Overlay
-            className="fixed inset-0 z-40 h-full bg-background/80 backdrop-blur-sm"
+            className="fixed inset-0 z-40 h-full bg-black/70 backdrop-blur-sm"
             onClick={closeDrawer}
           />
-          <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 mt-24 overflow-hidden rounded-t-[10px] border bg-background px-3 text-sm">
-            <div className="sticky top-0 z-20 flex w-full items-center justify-center bg-inherit">
-              <div className="my-3 h-1.5 w-16 rounded-full bg-muted-foreground/20" />
+
+          <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 mt-24 overflow-hidden rounded-t-2xl border border-slate-800 bg-[#020617] px-3 text-sm text-white shadow-2xl">
+            <div className="sticky top-0 z-20 flex w-full items-center justify-center bg-[#020617]">
+              <div className="my-3 h-1.5 w-16 rounded-full bg-slate-700" />
             </div>
 
-            <div className="flex items-center justify-start gap-2 p-2">
-              <div className="flex flex-col">
-                {user.name && <p className="font-medium">{user.name}</p>}
+            <div className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+              <UserAvatar
+                user={{ name: user.name || null, image: user.image || null }}
+                className="size-10 border border-slate-700"
+              />
+
+              <div className="flex min-w-0 flex-col">
+                {user.name && (
+                  <p className="truncate font-medium text-white">
+                    {user.name}
+                  </p>
+                )}
+
                 {user.email && (
-                  <p className="w-[200px] truncate text-muted-foreground">
-                    {user?.email}
+                  <p className="w-[220px] truncate text-sm text-slate-500">
+                    {user.email}
                   </p>
                 )}
               </div>
             </div>
 
-            <ul role="list" className="mb-14 mt-1 w-full text-muted-foreground">
+            <ul
+              role="list"
+              className="mb-8 mt-3 w-full space-y-1 text-slate-400"
+            >
               {user.role === "ADMIN" ? (
-                <li className="rounded-lg text-foreground hover:bg-muted">
+                <li className="rounded-xl text-slate-300 transition-colors hover:bg-slate-900 hover:text-white">
                   <Link
                     href="/admin"
                     onClick={closeDrawer}
-                    className="flex w-full items-center gap-3 px-2.5 py-2"
+                    className="flex w-full items-center gap-3 px-3 py-3"
                   >
-                    <Lock className="size-4" />
+                    <Lock className="size-4 text-slate-500" />
                     <p className="text-sm">Admin</p>
                   </Link>
                 </li>
               ) : null}
 
-              <li className="rounded-lg text-foreground hover:bg-muted">
+              <li className="rounded-xl text-slate-300 transition-colors hover:bg-slate-900 hover:text-white">
                 <Link
                   href="/dashboard"
                   onClick={closeDrawer}
-                  className="flex w-full items-center gap-3 px-2.5 py-2"
+                  className="flex w-full items-center gap-3 px-3 py-3"
                 >
-                  <LayoutDashboard className="size-4" />
+                  <LayoutDashboard className="size-4 text-slate-500" />
                   <p className="text-sm">Dashboard</p>
                 </Link>
               </li>
 
-              <li className="rounded-lg text-foreground hover:bg-muted">
+              <li className="rounded-xl text-slate-300 transition-colors hover:bg-slate-900 hover:text-white">
                 <Link
                   href="/dashboard/settings"
                   onClick={closeDrawer}
-                  className="flex w-full items-center gap-3 px-2.5 py-2"
+                  className="flex w-full items-center gap-3 px-3 py-3"
                 >
-                  <Settings className="size-4" />
+                  <Settings className="size-4 text-slate-500" />
                   <p className="text-sm">Settings</p>
                 </Link>
               </li>
 
               <li
-                className="rounded-lg text-foreground hover:bg-muted"
+                className="rounded-xl text-slate-300 transition-colors hover:bg-red-500/10 hover:text-red-400"
                 onClick={(event) => {
                   event.preventDefault();
                   signOut({
@@ -107,14 +123,13 @@ export function UserAccountNav() {
                   });
                 }}
               >
-                <div className="flex w-full items-center gap-3 px-2.5 py-2">
-                  <LogOut className="size-4" />
-                  <p className="text-sm">Log out </p>
+                <div className="flex w-full items-center gap-3 px-3 py-3">
+                  <LogOut className="size-4 text-slate-500" />
+                  <p className="text-sm">Log out</p>
                 </div>
               </li>
             </ul>
           </Drawer.Content>
-          <Drawer.Overlay />
         </Drawer.Portal>
       </Drawer.Root>
     );
@@ -122,53 +137,83 @@ export function UserAccountNav() {
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger>
-        <UserAvatar
-          user={{ name: user.name || null, image: user.image || null }}
-          className="size-8 border"
-        />
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="rounded-full outline-none ring-offset-slate-950 transition-all focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+        >
+          <UserAvatar
+            user={{ name: user.name || null, image: user.image || null }}
+            className="size-8 border border-slate-700"
+          />
+        </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <div className="flex items-center justify-start gap-2 p-2">
-          <div className="flex flex-col space-y-1 leading-none">
-            {user.name && <p className="font-medium">{user.name}</p>}
+
+      <DropdownMenuContent
+        align="end"
+        sideOffset={8}
+        className="w-60 rounded-xl border-slate-800 bg-slate-950 p-1.5 text-white shadow-2xl"
+      >
+        <div className="flex items-center gap-3 rounded-lg p-2.5">
+          <UserAvatar
+            user={{ name: user.name || null, image: user.image || null }}
+            className="size-9 border border-slate-700"
+          />
+
+          <div className="flex min-w-0 flex-col space-y-1 leading-none">
+            {user.name && (
+              <p className="truncate font-medium text-white">{user.name}</p>
+            )}
+
             {user.email && (
-              <p className="w-[200px] truncate text-sm text-muted-foreground">
-                {user?.email}
+              <p className="w-[175px] truncate text-xs text-slate-500">
+                {user.email}
               </p>
             )}
           </div>
         </div>
-        <DropdownMenuSeparator />
+
+        <DropdownMenuSeparator className="bg-slate-800" />
 
         {user.role === "ADMIN" ? (
-          <DropdownMenuItem asChild>
+          <DropdownMenuItem
+            asChild
+            className="cursor-pointer rounded-lg text-slate-300 focus:bg-slate-900 focus:text-white"
+          >
             <Link href="/admin" className="flex items-center space-x-2.5">
-              <Lock className="size-4" />
+              <Lock className="size-4 text-slate-500" />
               <p className="text-sm">Admin</p>
             </Link>
           </DropdownMenuItem>
         ) : null}
 
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem
+          asChild
+          className="cursor-pointer rounded-lg text-slate-300 focus:bg-slate-900 focus:text-white"
+        >
           <Link href="/dashboard" className="flex items-center space-x-2.5">
-            <LayoutDashboard className="size-4" />
+            <LayoutDashboard className="size-4 text-slate-500" />
             <p className="text-sm">Dashboard</p>
           </Link>
         </DropdownMenuItem>
 
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem
+          asChild
+          className="cursor-pointer rounded-lg text-slate-300 focus:bg-slate-900 focus:text-white"
+        >
           <Link
             href="/dashboard/settings"
             className="flex items-center space-x-2.5"
           >
-            <Settings className="size-4" />
+            <Settings className="size-4 text-slate-500" />
             <p className="text-sm">Settings</p>
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
+
+        <DropdownMenuSeparator className="bg-slate-800" />
+
         <DropdownMenuItem
-          className="cursor-pointer"
+          className="cursor-pointer rounded-lg text-slate-300 focus:bg-red-500/10 focus:text-red-400"
           onSelect={(event) => {
             event.preventDefault();
             signOut({
@@ -177,8 +222,8 @@ export function UserAccountNav() {
           }}
         >
           <div className="flex items-center space-x-2.5">
-            <LogOut className="size-4" />
-            <p className="text-sm">Log out </p>
+            <LogOut className="size-4 text-slate-500" />
+            <p className="text-sm">Log out</p>
           </div>
         </DropdownMenuItem>
       </DropdownMenuContent>
