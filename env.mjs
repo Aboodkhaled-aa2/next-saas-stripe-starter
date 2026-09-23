@@ -20,6 +20,8 @@ export const env = createEnv({
     STRIPE_API_KEY: z.string().min(1),
 
     STRIPE_WEBHOOK_SECRET: z.string().min(1),
+
+    OPENAI_API_KEY: z.string().min(1),
   },
 
   client: {
@@ -51,6 +53,8 @@ export const env = createEnv({
     STRIPE_API_KEY: process.env.STRIPE_API_KEY,
 
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
 
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
 
