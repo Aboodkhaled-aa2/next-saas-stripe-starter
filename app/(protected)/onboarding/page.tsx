@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -113,8 +114,12 @@ const aiToneOptions = [
 ];
 
 export default function OnboardingPage() {
+  const router = useRouter();
+
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const step = steps[currentStep];
   const StepIcon = step.icon;
@@ -132,6 +137,8 @@ export default function OnboardingPage() {
       ...current,
       [field]: value,
     }));
+
+    setError("");
   };
 
   const toggleArrayValue = (
@@ -148,6 +155,8 @@ export default function OnboardingPage() {
           : [...values, value],
       };
     });
+
+    setError("");
   };
 
   const canContinue = () => {
@@ -160,12 +169,16 @@ export default function OnboardingPage() {
     }
 
     if (currentStep === 1) {
-      return formData.services.length > 0 && formData.pricing.trim().length > 0;
+      return (
+        formData.services.length > 0 &&
+        formData.pricing.trim().length > 0
+      );
     }
 
     if (currentStep === 2) {
       return Boolean(
-        formData.serviceAreas.trim() && formData.businessHours.trim(),
+        formData.serviceAreas.trim() &&
+          formData.businessHours.trim(),
       );
     }
 
@@ -194,17 +207,53 @@ export default function OnboardingPage() {
   };
 
   const handleBack = () => {
+    if (isSaving) {
+      return;
+    }
+
     if (currentStep > 0) {
       setCurrentStep((current) => current - 1);
     }
   };
 
-  const handleSubmit = () => {
-    if (!canContinue()) {
+  const handleSubmit = async () => {
+    if (!canContinue() || isSaving) {
       return;
     }
 
-    console.log("Onboarding data:", formData);
+    setIsSaving(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/business-profile", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || "Unable to save your business profile.",
+        );
+      }
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch (error) {
+      console.error("Onboarding submission error:", error);
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Unable to save your business profile. Please try again.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -220,6 +269,7 @@ export default function OnboardingPage() {
               <p className="text-sm font-semibold text-white">
                 Smart Cleaning Desk
               </p>
+
               <p className="text-xs text-slate-500">
                 AI Employee Setup
               </p>
@@ -228,6 +278,7 @@ export default function OnboardingPage() {
 
           <div className="hidden text-right sm:block">
             <p className="text-xs text-slate-500">Step</p>
+
             <p className="text-sm font-semibold text-white">
               {currentStep + 1} of {steps.length}
             </p>
@@ -263,6 +314,7 @@ export default function OnboardingPage() {
               <button
                 key={item.title}
                 type="button"
+                disabled={isSaving}
                 onClick={() => {
                   if (index <= currentStep) {
                     setCurrentStep(index);
@@ -357,7 +409,9 @@ export default function OnboardingPage() {
                     label="Website"
                     placeholder="https://yourbusiness.com"
                     value={formData.websiteUrl}
-                    onChange={(value) => updateField("websiteUrl", value)}
+                    onChange={(value) =>
+                      updateField("websiteUrl", value)
+                    }
                     optional
                   />
                 </div>
@@ -373,7 +427,8 @@ export default function OnboardingPage() {
 
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
                       {serviceOptions.map((service) => {
-                        const selected = formData.services.includes(service);
+                        const selected =
+                          formData.services.includes(service);
 
                         return (
                           <SelectableButton
@@ -417,12 +472,18 @@ export default function OnboardingPage() {
               {currentStep === 2 && (
                 <div className="space-y-6">
                   <div>
-                    <Label text="Where do you provide services?" required />
+                    <Label
+                      text="Where do you provide services?"
+                      required
+                    />
 
                     <textarea
                       value={formData.serviceAreas}
                       onChange={(event) =>
-                        updateField("serviceAreas", event.target.value)
+                        updateField(
+                          "serviceAreas",
+                          event.target.value,
+                        )
                       }
                       placeholder="Example: Austin, Round Rock, Cedar Park, and nearby areas within 25 miles."
                       rows={4}
@@ -431,12 +492,18 @@ export default function OnboardingPage() {
                   </div>
 
                   <div>
-                    <Label text="What are your business hours?" required />
+                    <Label
+                      text="What are your business hours?"
+                      required
+                    />
 
                     <textarea
                       value={formData.businessHours}
                       onChange={(event) =>
-                        updateField("businessHours", event.target.value)
+                        updateField(
+                          "businessHours",
+                          event.target.value,
+                        )
                       }
                       placeholder="Example: Monday-Friday 8 AM-6 PM. Saturday 9 AM-3 PM. Closed Sunday."
                       rows={4}
@@ -449,7 +516,10 @@ export default function OnboardingPage() {
               {currentStep === 3 && (
                 <div className="space-y-7">
                   <div>
-                    <Label text="How do customers pay you?" required />
+                    <Label
+                      text="How do customers pay you?"
+                      required
+                    />
 
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
                       {paymentOptions.map((method) => {
@@ -461,7 +531,10 @@ export default function OnboardingPage() {
                             key={method}
                             selected={selected}
                             onClick={() =>
-                              toggleArrayValue("paymentMethods", method)
+                              toggleArrayValue(
+                                "paymentMethods",
+                                method,
+                              )
                             }
                             icon={
                               <CreditCard className="h-4 w-4" />
@@ -475,12 +548,18 @@ export default function OnboardingPage() {
                   </div>
 
                   <div>
-                    <Label text="Booking rules" optional />
+                    <Label
+                      text="Booking rules"
+                      optional
+                    />
 
                     <textarea
                       value={formData.bookingRules}
                       onChange={(event) =>
-                        updateField("bookingRules", event.target.value)
+                        updateField(
+                          "bookingRules",
+                          event.target.value,
+                        )
                       }
                       placeholder="Example: Same-day bookings are allowed before 2 PM. A minimum of 24 hours notice is preferred."
                       rows={5}
@@ -493,7 +572,10 @@ export default function OnboardingPage() {
               {currentStep === 4 && (
                 <div className="space-y-6">
                   <div>
-                    <Label text="Cancellation policy" required />
+                    <Label
+                      text="Cancellation policy"
+                      required
+                    />
 
                     <textarea
                       value={formData.cancellationPolicy}
@@ -510,7 +592,10 @@ export default function OnboardingPage() {
                   </div>
 
                   <div>
-                    <Label text="Rescheduling policy" required />
+                    <Label
+                      text="Rescheduling policy"
+                      required
+                    />
 
                     <textarea
                       value={formData.reschedulingPolicy}
@@ -535,13 +620,16 @@ export default function OnboardingPage() {
 
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
                       {aiToneOptions.map((tone) => {
-                        const selected = formData.aiTone === tone;
+                        const selected =
+                          formData.aiTone === tone;
 
                         return (
                           <SelectableButton
                             key={tone}
                             selected={selected}
-                            onClick={() => updateField("aiTone", tone)}
+                            onClick={() =>
+                              updateField("aiTone", tone)
+                            }
                             icon={
                               <MessageSquare className="h-4 w-4" />
                             }
@@ -554,12 +642,18 @@ export default function OnboardingPage() {
                   </div>
 
                   <div>
-                    <Label text="Anything your AI should know?" optional />
+                    <Label
+                      text="Anything your AI should know?"
+                      optional
+                    />
 
                     <textarea
                       value={formData.aiInstructions}
                       onChange={(event) =>
-                        updateField("aiInstructions", event.target.value)
+                        updateField(
+                          "aiInstructions",
+                          event.target.value,
+                        )
                       }
                       placeholder="Example: Always mention that we are locally owned. Never promise a specific cleaner unless confirmed."
                       rows={5}
@@ -597,13 +691,19 @@ export default function OnboardingPage() {
                         </p>
 
                         <p className="mt-1 text-sm leading-6 text-slate-400">
-                          We&apos;ll use your business information to help your
-                          AI answer questions, qualify leads, and handle
+                          We&apos;ll use your business information to help
+                          your AI answer questions, qualify leads, and handle
                           customer conversations according to your rules.
                         </p>
                       </div>
                     </div>
                   </div>
+
+                  {error ? (
+                    <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+                      {error}
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>
@@ -612,7 +712,7 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={handleBack}
-                disabled={currentStep === 0}
+                disabled={currentStep === 0 || isSaving}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-800 bg-slate-900/70 px-5 text-sm font-medium text-slate-300 transition-colors hover:border-slate-700 hover:bg-slate-800 hover:text-white disabled:pointer-events-none disabled:opacity-30"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -623,7 +723,7 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={handleNext}
-                  disabled={!canContinue()}
+                  disabled={!canContinue() || isSaving}
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 text-sm font-semibold text-white shadow-lg shadow-blue-500/10 transition-colors hover:bg-blue-500 disabled:pointer-events-none disabled:opacity-40"
                 >
                   Continue
@@ -633,11 +733,20 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  disabled={!canContinue()}
+                  disabled={!canContinue() || isSaving}
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 text-sm font-semibold text-white shadow-lg shadow-blue-500/10 transition-colors hover:bg-blue-500 disabled:pointer-events-none disabled:opacity-40"
                 >
-                  Complete Setup
-                  <Check className="h-4 w-4" />
+                  {isSaving ? (
+                    <>
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      Complete Setup
+                      <Check className="h-4 w-4" />
+                    </>
+                  )}
                 </button>
               )}
             </div>
@@ -674,7 +783,11 @@ function Field({
 }) {
   return (
     <div>
-      <Label text={label} required={required} optional={optional} />
+      <Label
+        text={label}
+        required={required}
+        optional={optional}
+      />
 
       <div className="relative mt-3">
         {icon ? (
@@ -708,7 +821,9 @@ function Label({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <label className="text-sm font-medium text-slate-200">{text}</label>
+      <label className="text-sm font-medium text-slate-200">
+        {text}
+      </label>
 
       {required ? (
         <span className="text-xs text-blue-400">Required</span>
@@ -744,7 +859,9 @@ function SelectableButton({
         {icon ? (
           <span
             className={
-              selected ? "text-blue-400" : "text-slate-600"
+              selected
+                ? "text-blue-400"
+                : "text-slate-600"
             }
           >
             {icon}
