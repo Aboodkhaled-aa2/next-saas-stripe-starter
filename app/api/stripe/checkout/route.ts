@@ -74,8 +74,8 @@ export async function POST(req: Request) {
         userId: user.id,
         plan,
       },
-      success_url: `${baseUrl}/dashboard?success=true`,
-      cancel_url: `${baseUrl}/signup?plan=${plan.toLowerCase()}&canceled=true`,
+      success_url: `${baseUrl}/payment-success`,
+      cancel_url: `${baseUrl}/pricing?plan=${plan.toLowerCase()}&canceled=true`,
     });
 
     return NextResponse.json({
