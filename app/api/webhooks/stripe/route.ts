@@ -4,6 +4,12 @@ import Stripe from "stripe";
 import { env } from "@/env.mjs";
 import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
+import { pricingData } from "@/config/subscriptions";
+
+const allowedStripePriceIds = new Set(
+  pricingData.flatMap((plan) => [plan.stripeIds.monthly, plan.stripeIds.yearly])
+    .filter((priceId) => priceId && !priceId.startsWith("price_placeholder_")),
+);
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -53,6 +59,13 @@ export async function POST(req: Request) {
         session.subscription as string,
       );
 
+      const priceId = subscription.items.data[0]?.price.id;
+
+      if (!priceId || !allowedStripePriceIds.has(priceId)) {
+        console.error("Stripe webhook error: Unknown subscription price", priceId);
+        return new Response("Unknown subscription price", { status: 400 });
+      }
+
       await prisma.user.update({
         where: {
           id: userId,
@@ -60,7 +73,7 @@ export async function POST(req: Request) {
         data: {
           stripeSubscriptionId: subscription.id,
           stripeCustomerId: subscription.customer as string,
-          stripePriceId: subscription.items.data[0].price.id,
+          stripePriceId: priceId,
           stripeCurrentPeriodEnd: new Date(
             subscription.current_period_end * 1000,
           ),
@@ -84,7 +97,11 @@ export async function POST(req: Request) {
             stripeSubscriptionId: subscription.id,
           },
           data: {
-            stripePriceId: subscription.items.data[0].price.id,
+            stripePriceId: allowedStripePriceIds.has(
+              subscription.items.data[0]?.price.id ?? "",
+            )
+              ? subscription.items.data[0]?.price.id
+              : null,
             stripeCurrentPeriodEnd: new Date(
               subscription.current_period_end * 1000,
             ),
