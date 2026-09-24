@@ -93,6 +93,40 @@ export async function POST(req: Request) {
       }
     }
 
+    if (
+      event.type === "customer.subscription.deleted" ||
+      event.type === "customer.subscription.updated"
+    ) {
+      const subscription = event.data.object as Stripe.Subscription;
+
+      const user = await prisma.user.findFirst({
+        where: {
+          stripeSubscriptionId: subscription.id,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (user) {
+        await prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            stripePriceId:
+              subscription.status === "active" ||
+              subscription.status === "trialing"
+                ? subscription.items.data[0]?.price.id ?? null
+                : null,
+            stripeCurrentPeriodEnd: new Date(
+              subscription.current_period_end * 1000,
+            ),
+          },
+        });
+      }
+    }
+
     return new Response(null, { status: 200 });
   } catch (error) {
     console.error(
