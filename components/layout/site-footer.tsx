@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { ModeToggle } from "@/components/layout/mode-toggle";
 
 import { NewsletterForm } from "../forms/newsletter-form";
-import { Icons } from "../shared/icons";
 
 export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
   return (
@@ -17,6 +16,7 @@ export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
             <span className="text-sm font-medium text-foreground">
               {section.title}
             </span>
+
             <ul className="mt-4 list-inside space-y-3">
               {section.items?.map((link) => (
                 <li key={link.title}>
@@ -31,55 +31,32 @@ export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
             </ul>
           </div>
         ))}
-        <div className="col-span-full flex flex-col items-end sm:col-span-1 md:col-span-2">
+
+        <div className="col-span-full flex flex-col items-start gap-5 sm:col-span-1 md:col-span-2 md:items-end">
+          <div className="text-left md:text-right">
+            <p className="text-sm font-medium text-foreground">
+              Need help?
+            </p>
+
+            <a
+              href="mailto:supportsmartcleaningdesk@gmail.com"
+              className="mt-2 inline-block text-sm text-muted-foreground hover:text-primary"
+            >
+              supportsmartcleaningdesk@gmail.com
+            </a>
+          </div>
+
           <NewsletterForm />
         </div>
       </div>
 
       <div className="border-t py-4">
-        <div className="container flex max-w-6xl items-center justify-between">
-          {/* <span className="text-muted-foreground text-sm">
-            Copyright &copy; 2024. All rights reserved.
-          </span> */}
+        <div className="container flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-left text-sm text-muted-foreground">
-            Built by{" "}
-            <Link
-              href={siteConfig.links.twitter}
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium underline underline-offset-4"
-            >
-              mickasmt
-            </Link>
-            . Hosted on{" "}
-            <Link
-              href="https://vercel.com"
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium underline underline-offset-4"
-            >
-              Vercel
-            </Link>
-            . Illustrations by{" "}
-            <Link
-              href="https://popsy.co"
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium underline underline-offset-4"
-            >
-              Popsy
-            </Link>
+            © {new Date().getFullYear()} Smart Cleaning Desk. All rights reserved.
           </p>
 
           <div className="flex items-center gap-3">
-            <Link
-              href={siteConfig.links.github}
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium underline underline-offset-4"
-            >
-              <Icons.gitHub className="size-5" />
-            </Link>
             <ModeToggle />
           </div>
         </div>
