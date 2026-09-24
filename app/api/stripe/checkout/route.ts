@@ -5,9 +5,9 @@ import { stripe } from "@/lib/stripe";
 import { env } from "@/env.mjs";
 
 const planPrices = {
-  STARTER: "price_1UGfnw2M5bpEgchA0Unbwzg2",
-  BUSINESS: "price_1UGfqo2M5bpEgchAc37UEGLh",
-  PRO: "price_1UGfrS2M5bpEgchA5lBSFEPr",
+  STARTER: env.NEXT_PUBLIC_STRIPE_STARTER_MONTHLY_PLAN_ID,
+  BUSINESS: env.NEXT_PUBLIC_STRIPE_BUSINESS_MONTHLY_PLAN_ID,
+  PRO: env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PLAN_ID,
 } as const;
 
 type Plan = keyof typeof planPrices;
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -29,7 +29,18 @@ export async function POST(req: Request) {
     if (!plan || !planPrices[plan]) {
       return NextResponse.json(
         { error: "Invalid plan selected." },
-        { status: 400 }
+        { status: 400 },
+      );
+    }
+
+    const priceId = planPrices[plan];
+
+    if (!priceId) {
+      console.error(`Missing Stripe price ID for plan: ${plan}`);
+
+      return NextResponse.json(
+        { error: "This plan is not configured for checkout." },
+        { status: 500 },
       );
     }
 
@@ -42,34 +53,27 @@ export async function POST(req: Request) {
     if (!user) {
       return NextResponse.json(
         { error: "User not found." },
-        { status: 404 }
+        { status: 404 },
       );
     }
-
-    const priceId = planPrices[plan];
 
     const baseUrl =
       env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
     const stripeSession = await stripe.checkout.sessions.create({
       mode: "subscription",
-
       customer_email: user.email ?? undefined,
-
       payment_method_types: ["card"],
-
       line_items: [
         {
           price: priceId,
           quantity: 1,
         },
       ],
-
       metadata: {
         userId: user.id,
         plan,
       },
-
       success_url: `${baseUrl}/dashboard?success=true`,
       cancel_url: `${baseUrl}/signup?plan=${plan.toLowerCase()}&canceled=true`,
     });
@@ -82,7 +86,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       { error: "Unable to create checkout session." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
