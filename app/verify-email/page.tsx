@@ -64,12 +64,8 @@ export default function VerifyEmailPage() {
 
       setSuccessMsg("Email verified successfully.");
 
-      const callbackUrl = `/pricing?plan=${encodeURIComponent(plan)}`;
-
       setTimeout(() => {
-        router.push(
-          `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`,
-        );
+        router.push(`/login?plan=${encodeURIComponent(plan)}`);
       }, 1000);
     } catch {
       setErrorMsg("Something went wrong. Please try again.");
