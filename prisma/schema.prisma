@@ -150,11 +150,7 @@ model AIPhoneSettings {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt
 
-  businessProfile BusinessProfile @relation(
-    fields: [businessProfileId],
-    references: [id],
-    onDelete: Cascade
-  )
+  businessProfile BusinessProfile @relation(fields: [businessProfileId], references: [id], onDelete: Cascade)
 
   @@map("ai_phone_settings")
 }
