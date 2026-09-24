@@ -11,6 +11,7 @@ import {
   UserRound,
 } from "lucide-react";
 
+import { AIChat } from "@/components/dashboard/ai-chat";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
@@ -243,6 +244,8 @@ export default async function AIEmployeePage() {
           />
         </div>
       </section>
+
+      <AIChat />
     </div>
   );
 }
@@ -307,6 +310,7 @@ function InfoRow({
   return (
     <div className="flex items-center justify-between gap-4 border-b border-slate-800/70 pb-3 last:border-0 last:pb-0">
       <span className="text-sm text-slate-500">{label}</span>
+
       <span className="max-w-[60%] truncate text-right text-sm font-medium text-slate-200">
         {value}
       </span>
