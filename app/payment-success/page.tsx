@@ -18,8 +18,7 @@ export default function PaymentSuccessPage() {
         </h1>
 
         <p className="mx-auto mt-5 max-w-md text-base leading-7 text-slate-400">
-          Your subscription is now active. Your AI employee is ready to help
-          you manage leads, customers, calls, and bookings.
+          Your payment was received. Your subscription is being activated, and your AI employee will be ready once setup is complete.
         </p>
 
         <div className="mt-10">
@@ -33,7 +32,7 @@ export default function PaymentSuccessPage() {
         </div>
 
         <p className="mt-6 text-sm text-slate-500">
-          Welcome to Smart Cleaning Desk.
+          Continue to your dashboard to complete your business setup.
         </p>
       </div>
     </main>
