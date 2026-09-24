@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { getCurrentUser } from "@/lib/session";
+import { prisma } from "@/lib/db";
 import { constructMetadata } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -76,6 +78,17 @@ const setupSteps = [
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
+
+  if (user?.id && user.role !== "ADMIN") {
+    const businessProfile = await prisma.businessProfile.findUnique({
+      where: { userId: user.id },
+      select: { onboardingCompleted: true },
+    });
+
+    if (!businessProfile?.onboardingCompleted) {
+      redirect("/onboarding");
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#020617] text-white">
