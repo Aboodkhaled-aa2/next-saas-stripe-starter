@@ -21,7 +21,7 @@ export default function VerifyEmailPage() {
     const planParam = params.get("plan") || "starter";
 
     setEmail(emailParam.toLowerCase().trim());
-    setPlan(planParam);
+    setPlan(planParam.toLowerCase().trim());
   }, []);
 
   const handleVerify = async (e: React.FormEvent) => {
