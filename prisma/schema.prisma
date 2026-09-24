@@ -111,10 +111,10 @@ model BusinessProfile {
   pricing       Json?
   businessHours Json?
 
-  paymentMethods        Json?
-  bookingRules          Json?
-  cancellationPolicy    String? @db.Text
-  reschedulingPolicy    String? @db.Text
+  paymentMethods     Json?
+  bookingRules       Json?
+  cancellationPolicy String? @db.Text
+  reschedulingPolicy String? @db.Text
 
   aiInstructions           String? @db.Text
   aiTone                   String?
@@ -140,12 +140,12 @@ model AIPhoneSettings {
 
   status AIPhoneStatus @default(NOT_CONFIGURED)
 
-  provider String?
+  provider    String?
   phoneNumber String?
 
   assistantName String?
-  greeting String?
-  enabled Boolean @default(false)
+  greeting     String?
+  enabled      Boolean @default(false)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt
@@ -178,7 +178,7 @@ model Lead {
   followUpAt  DateTime?
   notes       String? @db.Text
 
-  customerId String? @unique
+  customerId String?   @unique
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -197,12 +197,12 @@ model Customer {
 
   userId String
 
-  name        String
-  phone       String?
-  email       String?
-  address     String?
-  source      String?
-  notes       String? @db.Text
+  name    String
+  phone   String?
+  email   String?
+  address String?
+  source  String?
+  notes   String? @db.Text
 
   totalBookings Int @default(0)
   lastContactAt DateTime?
