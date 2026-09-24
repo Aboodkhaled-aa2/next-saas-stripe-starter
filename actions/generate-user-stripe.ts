@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { stripe } from "@/lib/stripe";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
+import { pricingData } from "@/config/subscriptions";
 import { absoluteUrl } from "@/lib/utils";
 import { redirect } from "next/navigation";
 
@@ -12,6 +13,11 @@ export type responseAction = {
 };
 
 const billingUrl = absoluteUrl("/pricing");
+
+const allowedStripePriceIds = new Set(
+  pricingData.flatMap((offer) => [offer.stripeIds.monthly, offer.stripeIds.yearly])
+    .filter((priceId) => priceId && !priceId.startsWith("price_placeholder_")),
+);
 
 export async function generateUserStripe(
   priceId: string,
@@ -24,6 +30,10 @@ export async function generateUserStripe(
 
     if (!user || !user.email || !user.id) {
       throw new Error("Unauthorized");
+    }
+
+    if (!allowedStripePriceIds.has(priceId)) {
+      throw new Error("Invalid Stripe price selected");
     }
 
     const subscriptionPlan = await getUserSubscriptionPlan(user.id);
