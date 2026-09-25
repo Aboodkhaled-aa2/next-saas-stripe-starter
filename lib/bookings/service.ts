@@ -10,6 +10,7 @@ export type BookingWindow = {
 
 export type CreateBookingInput = {
   userId: string;
+  customerId?: string | null;
   customerName: string;
   customerPhone?: string | null;
   customerEmail?: string | null;
@@ -138,6 +139,7 @@ export async function createBooking(input: CreateBookingInput) {
   return prisma.booking.create({
     data: {
       userId: input.userId,
+      customerId: input.customerId ?? null,
       customerName: input.customerName,
       customerPhone: input.customerPhone ?? null,
       customerEmail: input.customerEmail ?? null,
