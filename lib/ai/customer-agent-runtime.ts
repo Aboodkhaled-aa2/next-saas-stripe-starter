@@ -712,6 +712,10 @@ async function executeCustomerAgentTool(
       typeof args.endAt === "string" ? new Date(args.endAt) : null;
     const employeeId =
       typeof args.employeeId === "string" ? args.employeeId : null;
+    const travelBufferMinutes =
+      typeof args.travelBufferMinutes === "number"
+        ? Math.max(0, args.travelBufferMinutes)
+        : 0;
 
     if (
       !startAt ||
