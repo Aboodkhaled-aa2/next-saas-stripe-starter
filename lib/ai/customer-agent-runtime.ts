@@ -176,6 +176,43 @@ async function resolveConfiguredDuration(
   return { success: true, durationMinutes: minutes };
 }
 
+async function findAlternativeBookingTimes(
+  userId: string,
+  requestedStartAt: Date,
+  durationMinutes: number,
+  employeeId: string | null,
+  travelBufferMinutes: number,
+) {
+  const offsetsMinutes = [30, -30, 60, -60, 90, -90, 120, -120, 180, -180];
+  const alternatives: Date[] = [];
+
+  for (const offsetMinutes of offsetsMinutes) {
+    const candidateStartAt = new Date(
+      requestedStartAt.getTime() + offsetMinutes * 60_000,
+    );
+    const candidateEndAt = new Date(
+      candidateStartAt.getTime() + durationMinutes * 60_000,
+    );
+
+    const conflicts = await findBookingConflicts(
+      userId,
+      { startAt: candidateStartAt, endAt: candidateEndAt },
+      employeeId,
+      travelBufferMinutes,
+    );
+
+    if (conflicts.length === 0) {
+      alternatives.push(candidateStartAt);
+    }
+
+    if (alternatives.length >= 3) {
+      break;
+    }
+  }
+
+  return alternatives;
+}
+
 const customerAgentTools = [
   {
     type: "function" as const,
@@ -1004,14 +1041,31 @@ async function executeCustomerAgentTool(
       travelBufferMinutes,
     );
 
+    const available = conflicts.length === 0;
+    const alternativeStartAt = available
+      ? []
+      : await findAlternativeBookingTimes(
+          userId,
+          startAt,
+          resolvedDuration.durationMinutes,
+          employeeId,
+          travelBufferMinutes,
+        );
+
     return {
       success: true,
-      available: conflicts.length === 0,
+      available,
       startAt: startAt.toISOString(),
       endAt: endAt.toISOString(),
       durationMinutes: Math.round(
         (endAt.getTime() - startAt.getTime()) / 60_000,
       ),
+      alternativeTimes: alternativeStartAt.map((alternativeStart) => ({
+        startAt: alternativeStart.toISOString(),
+        endAt: new Date(
+          alternativeStart.getTime() + resolvedDuration.durationMinutes! * 60_000,
+        ).toISOString(),
+      })),
       conflicts: conflicts.map((booking) => ({
         id: booking.id,
         customerName: booking.customerName,
