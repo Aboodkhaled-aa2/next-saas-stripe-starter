@@ -16,6 +16,10 @@ export async function POST(req: Request) {
     const body = await req.json();
     const message =
       typeof body.message === "string" ? body.message.trim() : "";
+    const previousResponseId =
+      typeof body.previousResponseId === "string"
+        ? body.previousResponseId.trim()
+        : undefined;
 
     if (!message) {
       return NextResponse.json(
@@ -34,6 +38,7 @@ export async function POST(req: Request) {
     const result = await runCustomerAgent({
       userId: user.id,
       message,
+      ...(previousResponseId ? { previousResponseId } : {}),
     });
 
     return NextResponse.json({
