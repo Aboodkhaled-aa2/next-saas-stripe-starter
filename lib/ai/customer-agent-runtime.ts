@@ -26,6 +26,26 @@ export type CustomerAgentRunResult = {
 const customerAgentTools = [
   {
     type: "function" as const,
+    name: "save_customer_lead",
+    description:
+      "Save or update a cleaning business lead when a customer provides contact information or requests a service. Use this during customer qualification.",
+    parameters: {
+      type: "object",
+      properties: {
+        name: { type: ["string", "null"] },
+        phone: { type: ["string", "null"] },
+        email: { type: ["string", "null"] },
+        service: { type: ["string", "null"] },
+        location: { type: ["string", "null"] },
+        notes: { type: ["string", "null"] }
+      },
+      required: ["name", "phone", "email", "service", "location", "notes"],
+      additionalProperties: false
+    },
+    strict: true
+  },
+  {
+    type: "function" as const,
     name: "reschedule_booking",
     description:
       "Move an existing customer booking to a new appointment time after checking the new time for conflicts.",
@@ -186,6 +206,79 @@ async function executeCustomerAgentTool(
     args = JSON.parse(argumentsJson) as Record<string, unknown>;
   } catch {
     return { success: false, error: "Invalid tool arguments." };
+  }
+
+  if (name === "save_customer_lead") {
+    const nameValue =
+      typeof args.name === "string" ? args.name.trim() : null;
+    const phone =
+      typeof args.phone === "string" ? args.phone.trim() : null;
+    const email =
+      typeof args.email === "string"
+        ? args.email.trim().toLowerCase()
+        : null;
+    const service =
+      typeof args.service === "string" ? args.service.trim() : null;
+    const location =
+      typeof args.location === "string" ? args.location.trim() : null;
+    const notes =
+      typeof args.notes === "string" ? args.notes.trim() : null;
+
+    if (!nameValue && !phone && !email) {
+      return {
+        success: false,
+        error: "A customer name, phone number, or email is required.",
+      };
+    }
+
+    const existingLead = await prisma.lead.findFirst({
+      where: {
+        userId,
+        OR: [
+          ...(phone ? [{ phone }] : []),
+          ...(email ? [{ email }] : []),
+        ],
+      },
+    });
+
+    const lead = existingLead
+      ? await prisma.lead.update({
+          where: { id: existingLead.id },
+          data: {
+            name: nameValue ?? existingLead.name,
+            phone: phone ?? existingLead.phone,
+            email: email ?? existingLead.email,
+            service: service ?? existingLead.service,
+            location: location ?? existingLead.location,
+            notes: notes ?? existingLead.notes,
+            lastMessage: "Customer captured by AI employee",
+            status:
+              existingLead.status === "BOOKED"
+                ? existingLead.status
+                : "QUALIFIED",
+          },
+        })
+      : await prisma.lead.create({
+          data: {
+            userId,
+            name: nameValue,
+            phone,
+            email,
+            service,
+            location,
+            notes,
+            source: "ai_employee",
+            lastMessage: "Customer captured by AI employee",
+            status: "QUALIFIED",
+          },
+        });
+
+    return {
+      success: true,
+      leadId: lead.id,
+      status: lead.status,
+      message: "Customer lead saved successfully.",
+    };
   }
 
   if (name === "reschedule_booking") {
