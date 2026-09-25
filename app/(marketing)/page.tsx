@@ -222,6 +222,30 @@ export default function LandingPage() {
               </a>
             </div>
 
+            <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-slate-800 bg-slate-900/80 p-4 text-left shadow-2xl shadow-black/20 sm:p-5">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600">
+                    <Sparkles className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">AI Customer Service</p>
+                    <p className="text-xs text-emerald-400">Available 24/7</p>
+                  </div>
+                </div>
+                <MessageCircle className="h-5 w-5 text-slate-500" />
+              </div>
+              <div className="grid gap-3 pt-4 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+                <div className="rounded-2xl bg-blue-600 px-4 py-3 text-sm text-white">
+                  I need a deep cleaning for a 3-bedroom home this Saturday.
+                </div>
+                <ArrowRight className="hidden h-5 w-5 text-slate-600 sm:block" />
+                <div className="rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-slate-200">
+                  AI collects the details, checks your rules, and moves the customer toward booking.
+                </div>
+              </div>
+            </div>
+
             <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3 text-sm text-slate-400">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-blue-400" />
