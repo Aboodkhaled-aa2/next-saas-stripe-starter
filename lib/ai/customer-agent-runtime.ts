@@ -553,10 +553,6 @@ async function executeCustomerAgentTool(
       typeof args.startAt === "string" ? new Date(args.startAt) : null;
     const durationMinutes =
       typeof args.durationMinutes === "number" ? args.durationMinutes : 0;
-    const travelBufferMinutes =
-      typeof args.travelBufferMinutes === "number"
-        ? args.travelBufferMinutes
-        : 0;
     const employeeId =
       typeof args.employeeId === "string" ? args.employeeId : null;
     const travelBufferMinutes =
