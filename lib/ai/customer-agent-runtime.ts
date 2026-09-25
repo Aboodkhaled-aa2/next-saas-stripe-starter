@@ -866,9 +866,23 @@ async function executeCustomerAgentTool(
     );
 
     if (conflicts.length > 0) {
+      const alternativeStartAt = await findAlternativeBookingTimes(
+        userId,
+        startAt,
+        durationMinutes,
+        employeeId,
+        travelBufferMinutes,
+      );
+
       return {
         success: false,
         error: "The requested appointment is no longer available.",
+        alternativeTimes: alternativeStartAt.map((alternativeStart) => ({
+          startAt: alternativeStart.toISOString(),
+          endAt: new Date(
+            alternativeStart.getTime() + durationMinutes * 60_000,
+          ).toISOString(),
+        })),
         conflicts: conflicts.map((booking) => ({
           id: booking.id,
           customerName: booking.customerName,
