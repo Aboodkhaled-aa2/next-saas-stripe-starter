@@ -135,6 +135,49 @@ export default async function DashboardPage() {
     employees,
   });
 
+  const [upcomingJobs, recentLeads] = await Promise.all([
+    prisma.booking.findMany({
+      where: {
+        userId: user?.id ?? "",
+        startAt: {
+          gte: new Date(),
+        },
+        status: {
+          not: "CANCELLED",
+        },
+      },
+      orderBy: {
+        startAt: "asc",
+      },
+      take: 3,
+      select: {
+        id: true,
+        customerName: true,
+        service: true,
+        startAt: true,
+        endAt: true,
+        status: true,
+      },
+    }),
+    prisma.lead.findMany({
+      where: {
+        userId: user?.id ?? "",
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 3,
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        service: true,
+        status: true,
+        createdAt: true,
+      },
+    }),
+  ]);
+
   return (
     <div className="min-h-screen bg-[#020617] text-white">
       <div className="space-y-8 p-4 sm:p-6 lg:p-8">
@@ -318,22 +361,55 @@ export default async function DashboardPage() {
                 </div>
               </div>
 
-              <div className="flex min-h-[190px] flex-col items-center justify-center text-center">
-                <div className="mb-4 rounded-full border border-slate-800 bg-slate-900/70 p-4">
-                  <Clock3 className="h-6 w-6 text-slate-500" />
-                </div>
-
-                <h3 className="font-semibold">
-                  No upcoming jobs
-                </h3>
-
-                <p className="mt-1 max-w-sm text-sm text-slate-500">
-                  Your scheduled cleaning appointments will appear here.
-                </p>
-
+              <div className="mt-6 space-y-3">
+                {upcomingJobs.length > 0 ? (
+                  upcomingJobs.map((job) => (
+                    <div
+                      key={job.id}
+                      className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-medium text-white">
+                            {job.customerName}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-400">
+                            {job.service}
+                          </p>
+                        </div>
+                        <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-xs font-medium text-blue-300">
+                          {job.status}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-xs text-slate-500">
+                        {job.startAt.toLocaleString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}{" "}
+                        –{" "}
+                        {job.endAt.toLocaleTimeString("en-US", {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex min-h-[190px] flex-col items-center justify-center text-center">
+                    <div className="mb-4 rounded-full border border-slate-800 bg-slate-900/70 p-4">
+                      <Clock3 className="h-6 w-6 text-slate-500" />
+                    </div>
+                    <h3 className="font-semibold">No upcoming jobs</h3>
+                    <p className="mt-1 max-w-sm text-sm text-slate-500">
+                      Your scheduled cleaning appointments will appear here.
+                    </p>
+                  </div>
+                )}
                 <Link
                   href="/dashboard/calendar"
-                  className="mt-5 inline-flex h-10 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/70 px-4 text-sm font-medium text-white transition-colors hover:border-slate-700 hover:bg-slate-800"
+                  className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/70 px-4 text-sm font-medium text-white transition-colors hover:border-slate-700 hover:bg-slate-800"
                 >
                   Open Calendar
                 </Link>
@@ -359,22 +435,51 @@ export default async function DashboardPage() {
                 </div>
               </div>
 
-              <div className="flex min-h-[190px] flex-col items-center justify-center text-center">
-                <div className="mb-4 rounded-full border border-slate-800 bg-slate-900/70 p-4">
-                  <Users className="h-6 w-6 text-slate-500" />
-                </div>
-
-                <h3 className="font-semibold">
-                  No leads yet
-                </h3>
-
-                <p className="mt-1 max-w-sm text-sm text-slate-500">
-                  New leads from your AI employee will appear here.
-                </p>
-
+              <div className="mt-6 space-y-3">
+                {recentLeads.length > 0 ? (
+                  recentLeads.map((lead) => (
+                    <div
+                      key={lead.id}
+                      className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-medium text-white">
+                            {lead.name || "Unnamed lead"}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-400">
+                            {lead.service || "Service not specified"}
+                          </p>
+                        </div>
+                        <span className="rounded-full border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-300">
+                          {lead.status}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-xs text-slate-500">
+                        {lead.createdAt.toLocaleString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                        {lead.phone ? ` · ${lead.phone}` : ""}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex min-h-[190px] flex-col items-center justify-center text-center">
+                    <div className="mb-4 rounded-full border border-slate-800 bg-slate-900/70 p-4">
+                      <Users className="h-6 w-6 text-slate-500" />
+                    </div>
+                    <h3 className="font-semibold">No leads yet</h3>
+                    <p className="mt-1 max-w-sm text-sm text-slate-500">
+                      New leads from your AI employee will appear here.
+                    </p>
+                  </div>
+                )}
                 <Link
                   href="/dashboard/leads"
-                  className="mt-5 inline-flex h-10 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/70 px-4 text-sm font-medium text-white transition-colors hover:border-slate-700 hover:bg-slate-800"
+                  className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/70 px-4 text-sm font-medium text-white transition-colors hover:border-slate-700 hover:bg-slate-800"
                 >
                   View Leads
                 </Link>
