@@ -22,29 +22,42 @@ export const metadata = constructMetadata({
   description: "Manage your cleaning business with your AI employee.",
 });
 
-const stats = [
+const buildStats = ({
+  newLeads,
+  bookings,
+  customers,
+  employees,
+}: {
+  newLeads: number;
+  bookings: number;
+  customers: number;
+  employees: number;
+}) => [
   {
     title: "New Leads",
-    value: "0",
-    description: "No new leads yet",
+    value: String(newLeads),
+    description: newLeads === 1 ? "1 new lead" : `${newLeads} new leads`,
     icon: Users,
   },
   {
     title: "Bookings",
-    value: "0",
-    description: "No bookings yet",
+    value: String(bookings),
+    description:
+      bookings === 1 ? "1 booking in your workspace" : `${bookings} bookings in your workspace`,
     icon: CalendarDays,
   },
   {
-    title: "AI Conversations",
-    value: "0",
-    description: "No conversations yet",
+    title: "Customers",
+    value: String(customers),
+    description:
+      customers === 1 ? "1 customer in your workspace" : `${customers} customers in your workspace`,
     icon: MessageSquare,
   },
   {
-    title: "Calls Handled",
-    value: "0",
-    description: "No calls yet",
+    title: "Employees",
+    value: String(employees),
+    description:
+      employees === 1 ? "1 active employee" : `${employees} active employees`,
     icon: Phone,
   },
 ];
@@ -89,6 +102,38 @@ export default async function DashboardPage() {
       redirect("/onboarding");
     }
   }
+
+  const [newLeads, bookings, customers, employees] = await Promise.all([
+    prisma.lead.count({
+      where: {
+        userId: user?.id ?? "",
+        status: "NEW",
+      },
+    }),
+    prisma.booking.count({
+      where: {
+        userId: user?.id ?? "",
+      },
+    }),
+    prisma.customer.count({
+      where: {
+        userId: user?.id ?? "",
+      },
+    }),
+    prisma.employee.count({
+      where: {
+        userId: user?.id ?? "",
+        active: true,
+      },
+    }),
+  ]);
+
+  const stats = buildStats({
+    newLeads,
+    bookings,
+    customers,
+    employees,
+  });
 
   return (
     <div className="min-h-screen bg-[#020617] text-white">
