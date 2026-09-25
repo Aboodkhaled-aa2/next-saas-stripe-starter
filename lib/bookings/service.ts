@@ -60,6 +60,14 @@ export async function findBookingConflicts(
   employeeId?: string | null,
   travelBufferMinutes = 0,
 ) {
+  if (
+    Number.isNaN(window.startAt.getTime()) ||
+    Number.isNaN(window.endAt.getTime()) ||
+    window.startAt >= window.endAt
+  ) {
+    return [];
+  }
+
   const normalizedBufferMinutes = Math.max(0, travelBufferMinutes);
   const bufferMs = normalizedBufferMinutes * 60_000;
 
