@@ -44,6 +44,10 @@ export async function POST(req: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
+  if (session.user.role !== "ADMIN") {
+    return new Response("Forbidden", { status: 403 });
+  }
+
   let body: unknown;
 
   try {
