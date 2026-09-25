@@ -866,7 +866,7 @@ async function executeCustomerAgentTool(
   if (name === "check_booking_availability") {
     const startAt =
       typeof args.startAt === "string" ? new Date(args.startAt) : null;
-    const endAt =
+    const requestedEndAt =
       typeof args.endAt === "string" ? new Date(args.endAt) : null;
     const employeeId =
       typeof args.employeeId === "string" ? args.employeeId : null;
@@ -877,15 +877,67 @@ async function executeCustomerAgentTool(
 
     if (
       !startAt ||
-      !endAt ||
+      !requestedEndAt ||
       Number.isNaN(startAt.getTime()) ||
-      Number.isNaN(endAt.getTime()) ||
-      startAt >= endAt
+      Number.isNaN(requestedEndAt.getTime()) ||
+      startAt >= requestedEndAt
     ) {
       return {
         success: false,
         error: "Invalid appointment window.",
       };
+    }
+
+    let endAt = requestedEndAt;
+    const durationProfile = await prisma.businessProfile.findUnique({
+      where: {
+        userId,
+      },
+      select: {
+        bookingRules: true,
+      },
+    });
+
+    let durationConfiguration: {
+      duration?: {
+        mode?: "fixed" | "rules";
+        fixedDurationMinutes?: number | null;
+      };
+    } = {};
+
+    if (typeof durationProfile?.bookingRules === "string") {
+      try {
+        durationConfiguration = JSON.parse(
+          durationProfile.bookingRules,
+        ) as typeof durationConfiguration;
+      } catch {
+        durationConfiguration = {};
+      }
+    } else if (
+      durationProfile?.bookingRules &&
+      typeof durationProfile.bookingRules === "object" &&
+      !Array.isArray(durationProfile.bookingRules)
+    ) {
+      durationConfiguration =
+        durationProfile.bookingRules as typeof durationConfiguration;
+    }
+
+    if (durationConfiguration.duration?.mode === "fixed") {
+      const configuredDuration =
+        typeof durationConfiguration.duration.fixedDurationMinutes === "number"
+          ? durationConfiguration.duration.fixedDurationMinutes
+          : 0;
+
+      if (configuredDuration <= 0) {
+        return {
+          success: false,
+          error: "The company's fixed appointment duration is invalid.",
+        };
+      }
+
+      endAt = new Date(
+        startAt.getTime() + configuredDuration * 60_000,
+      );
     }
 
     const conflicts = await findBookingConflicts(
@@ -898,6 +950,11 @@ async function executeCustomerAgentTool(
     return {
       success: true,
       available: conflicts.length === 0,
+      startAt: startAt.toISOString(),
+      endAt: endAt.toISOString(),
+      durationMinutes: Math.round(
+        (endAt.getTime() - startAt.getTime()) / 60_000,
+      ),
       conflicts: conflicts.map((booking) => ({
         id: booking.id,
         customerName: booking.customerName,
