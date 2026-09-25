@@ -57,24 +57,39 @@ export async function findBookingConflicts(
   userId: string,
   window: BookingWindow,
   employeeId?: string | null,
+  travelBufferMinutes = 0,
 ) {
-  return prisma.booking.findMany({
+  const bufferMs = Math.max(0, travelBufferMinutes) * 60_000;
+
+  const candidates = await prisma.booking.findMany({
     where: {
       userId,
       status: {
         not: "CANCELLED",
       },
       startAt: {
-        lt: window.endAt,
+        lt: new Date(window.endAt.getTime() + bufferMs),
       },
       endAt: {
-        gt: window.startAt,
+        gt: new Date(window.startAt.getTime() - bufferMs),
       },
-      ...(employeeId ? { employeeId } : {}),
+      ...(employeeId ? { employeeId } : { employeeId: null }),
     },
     orderBy: {
       startAt: "asc",
     },
+  });
+
+  return candidates.filter((booking) => {
+    const existingEndWithBuffer =
+      booking.endAt.getTime() +
+      Math.max(0, booking.travelBufferMinutes) * 60_000;
+    const requestedEndWithBuffer = window.endAt.getTime() + bufferMs;
+
+    return (
+      booking.startAt.getTime() < requestedEndWithBuffer &&
+      existingEndWithBuffer > window.startAt.getTime()
+    );
   });
 }
 
@@ -98,6 +113,7 @@ export async function createBooking(input: CreateBookingInput) {
       endAt,
     },
     input.employeeId,
+    input.travelBufferMinutes ?? 0,
   );
 
   if (conflicts.length > 0) {
