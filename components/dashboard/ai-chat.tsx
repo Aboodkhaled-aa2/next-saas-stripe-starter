@@ -12,6 +12,9 @@ export function AIChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [previousResponseId, setPreviousResponseId] = useState<string | null>(
+    null,
+  );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -42,6 +45,7 @@ export function AIChat() {
         },
         body: JSON.stringify({
           message,
+          ...(previousResponseId ? { previousResponseId } : {}),
         }),
       });
 
@@ -49,6 +53,10 @@ export function AIChat() {
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to get AI response");
+      }
+
+      if (typeof data.responseId === "string") {
+        setPreviousResponseId(data.responseId);
       }
 
       setMessages((current) => [
