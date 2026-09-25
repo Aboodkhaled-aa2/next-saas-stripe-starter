@@ -118,6 +118,10 @@ export async function createBooking(input: CreateBookingInput) {
     throw new Error("Booking duration must be greater than zero.");
   }
 
+  if (input.startAt <= new Date()) {
+    throw new Error("Booking start time must be in the future.");
+  }
+
   if (input.startAt >= new Date(input.startAt.getTime() + input.durationMinutes * 60_000)) {
     throw new Error("Booking start time must be before its end time.");
   }
