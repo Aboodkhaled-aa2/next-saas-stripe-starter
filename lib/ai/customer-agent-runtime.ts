@@ -547,7 +547,7 @@ async function executeCustomerAgentTool(
 
       const bedroomRules: Array<RegExpMatchArray> = [];
       const bedroomRulePattern =
-        /(\\d+)\\s*(?:-|–|to)\\s*(\\d+)\\s*bedrooms?\\s*=\\s*(\\d+(?:\\.\\d+)?)\\s*hours?/gi;
+        /(\d+)\s*(?:-|–|to)\s*(\d+)\s*bedrooms?\s*=\s*(\d+(?:\.\d+)?)\s*hours?/gi;
       let bedroomRuleMatch: RegExpExecArray | null;
 
       while ((bedroomRuleMatch = bedroomRulePattern.exec(rules)) !== null) {
@@ -572,7 +572,7 @@ async function executeCustomerAgentTool(
       }
 
       const plusMatch = rules.match(
-        /(\\d+)\\s*\\+\\s*bedrooms?\\s*=\\s*(\\d+(?:\\.\\d+)?)\\s*hours?/i,
+        /(\d+)\s*\.\s*bedrooms?\s*=\s*(\d+(?:\.\d+)?)\s*hours?/i,
       );
 
       if (
@@ -599,7 +599,7 @@ async function executeCustomerAgentTool(
       let durationMinutes = Math.round(durationHours * 60);
 
       const bathroomMatch = rules.match(
-        /add\\s+(\\d+)\\s*minutes?\\s+for\\s+every\\s+(\\d+)\\s+additional\\s+bathrooms?/i,
+        /add\s+(\d+)\s*minutes?\s+for\s+every\s+(\d+)\s+additional\s+bathrooms?/i,
       );
 
       if (
