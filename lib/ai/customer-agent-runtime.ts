@@ -23,6 +23,154 @@ export type CustomerAgentRunResult = {
 };
 
 
+
+
+async function resolveConfiguredDuration(
+  userId: string,
+  details: {
+    bedrooms?: number | null;
+    bathrooms?: number | null;
+    propertySize?: string | null;
+  },
+): Promise<{
+  success: boolean;
+  durationMinutes?: number;
+  needsMoreDetails?: boolean;
+  error?: string;
+}> {
+  const profile = await prisma.businessProfile.findUnique({
+    where: { userId },
+    select: { bookingRules: true },
+  });
+
+  if (!profile) {
+    return { success: false, error: "Business profile not found." };
+  }
+
+  let configuration: {
+    duration?: {
+      mode?: "fixed" | "rules";
+      fixedDurationMinutes?: number | null;
+      rules?: string | null;
+    };
+  } = {};
+
+  if (typeof profile.bookingRules === "string") {
+    try {
+      configuration = JSON.parse(profile.bookingRules) as typeof configuration;
+    } catch {
+      configuration = {};
+    }
+  } else if (
+    profile.bookingRules &&
+    typeof profile.bookingRules === "object" &&
+    !Array.isArray(profile.bookingRules)
+  ) {
+    configuration = profile.bookingRules as typeof configuration;
+  }
+
+  const duration = configuration.duration;
+
+  if (!duration) {
+    return {
+      success: false,
+      error: "No appointment duration settings are configured for this business.",
+    };
+  }
+
+  if (duration.mode === "fixed") {
+    const minutes =
+      typeof duration.fixedDurationMinutes === "number"
+        ? duration.fixedDurationMinutes
+        : 0;
+
+    return minutes > 0
+      ? { success: true, durationMinutes: minutes }
+      : {
+          success: false,
+          error: "The company's fixed appointment duration is invalid.",
+        };
+  }
+
+  if (duration.mode !== "rules") {
+    return {
+      success: false,
+      error: "Appointment duration mode is not configured correctly.",
+    };
+  }
+
+  const rules =
+    typeof duration.rules === "string" ? duration.rules.trim() : "";
+
+  if (!rules) {
+    return {
+      success: false,
+      error: "Company-defined duration rules are not configured.",
+    };
+  }
+
+  const bedrooms = details.bedrooms ?? null;
+  const bathrooms = details.bathrooms ?? null;
+
+  const bedroomRules = [...rules.matchAll(
+    /(\d+)\s*(?:-|–|to)\s*(\d+)\s*bedrooms?\s*=\s*(\d+(?:\.\d+)?)\s*hours?/gi,
+  )];
+
+  let durationHours: number | null = null;
+
+  for (const match of bedroomRules) {
+    const min = Number(match[1]);
+    const max = Number(match[2]);
+    const hours = Number(match[3]);
+
+    if (bedrooms !== null && bedrooms >= min && bedrooms <= max) {
+      durationHours = hours;
+      break;
+    }
+  }
+
+  const plusMatch = rules.match(
+    /(\d+)\s*\+\s*bedrooms?\s*=\s*(\d+(?:\.\d+)?)\s*hours?/i,
+  );
+
+  if (
+    durationHours === null &&
+    plusMatch &&
+    bedrooms !== null &&
+    bedrooms >= Number(plusMatch[1])
+  ) {
+    durationHours = Number(plusMatch[2]);
+  }
+
+  if (durationHours === null) {
+    return {
+      success: false,
+      needsMoreDetails: bedrooms === null,
+      error:
+        "The company-defined rules do not produce a duration from the supplied property details. Do not invent a duration.",
+    };
+  }
+
+  let minutes = Math.round(durationHours * 60);
+
+  const bathroomMatch = rules.match(
+    /add\s+(\d+)\s*minutes?\s+for\s+every\s+(\d+)\s+additional\s+bathrooms?/i,
+  );
+
+  if (bathroomMatch && bathrooms !== null) {
+    const extraMinutes = Number(bathroomMatch[1]);
+    const bathroomStep = Number(bathroomMatch[2]);
+
+    if (bathroomStep > 0 && bathrooms > bathroomStep) {
+      minutes +=
+        Math.floor((bathrooms - bathroomStep) / bathroomStep) *
+        extraMinutes;
+    }
+  }
+
+  return { success: true, durationMinutes: minutes };
+}
+
 const customerAgentTools = [
   {
     type: "function" as const,
@@ -755,54 +903,24 @@ async function executeCustomerAgentTool(
         ? Math.max(0, args.travelBufferMinutes)
         : 0;
 
-    const durationProfile = await prisma.businessProfile.findUnique({
-      where: {
-        userId,
-      },
-      select: {
-        bookingRules: true,
-      },
+    const resolvedDuration = await resolveConfiguredDuration(userId, {
+      bedrooms: typeof args.bedrooms === "number" ? args.bedrooms : null,
+      bathrooms: typeof args.bathrooms === "number" ? args.bathrooms : null,
+      propertySize:
+        typeof args.propertySize === "string" ? args.propertySize : null,
     });
 
-    let durationConfiguration: {
-      duration?: {
-        mode?: "fixed" | "rules";
-        fixedDurationMinutes?: number | null;
+    if (!resolvedDuration.success || !resolvedDuration.durationMinutes) {
+      return {
+        success: false,
+        error:
+          resolvedDuration.error ??
+          "Unable to determine the appointment duration from company rules.",
+        needsMoreDetails: resolvedDuration.needsMoreDetails ?? false,
       };
-    } = {};
-
-    if (typeof durationProfile?.bookingRules === "string") {
-      try {
-        durationConfiguration = JSON.parse(
-          durationProfile.bookingRules,
-        ) as typeof durationConfiguration;
-      } catch {
-        durationConfiguration = {};
-      }
-    } else if (
-      durationProfile?.bookingRules &&
-      typeof durationProfile.bookingRules === "object" &&
-      !Array.isArray(durationProfile.bookingRules)
-    ) {
-      durationConfiguration =
-        durationProfile.bookingRules as typeof durationConfiguration;
     }
 
-    if (durationConfiguration.duration?.mode === "fixed") {
-      const configuredDuration =
-        typeof durationConfiguration.duration.fixedDurationMinutes === "number"
-          ? durationConfiguration.duration.fixedDurationMinutes
-          : 0;
-
-      if (configuredDuration <= 0) {
-        return {
-          success: false,
-          error: "The company's fixed appointment duration is invalid.",
-        };
-      }
-
-      durationMinutes = configuredDuration;
-    }
+    durationMinutes = resolvedDuration.durationMinutes;
 
     if (
       !startAt ||
@@ -974,57 +1092,25 @@ async function executeCustomerAgentTool(
       };
     }
 
-    let endAt = requestedEndAt;
-    const durationProfile = await prisma.businessProfile.findUnique({
-      where: {
-        userId,
-      },
-      select: {
-        bookingRules: true,
-      },
+    const resolvedDuration = await resolveConfiguredDuration(userId, {
+      bedrooms: null,
+      bathrooms: null,
+      propertySize: null,
     });
 
-    let durationConfiguration: {
-      duration?: {
-        mode?: "fixed" | "rules";
-        fixedDurationMinutes?: number | null;
+    if (!resolvedDuration.success || !resolvedDuration.durationMinutes) {
+      return {
+        success: false,
+        error:
+          resolvedDuration.error ??
+          "Unable to determine the appointment duration from company rules.",
+        needsMoreDetails: resolvedDuration.needsMoreDetails ?? false,
       };
-    } = {};
-
-    if (typeof durationProfile?.bookingRules === "string") {
-      try {
-        durationConfiguration = JSON.parse(
-          durationProfile.bookingRules,
-        ) as typeof durationConfiguration;
-      } catch {
-        durationConfiguration = {};
-      }
-    } else if (
-      durationProfile?.bookingRules &&
-      typeof durationProfile.bookingRules === "object" &&
-      !Array.isArray(durationProfile.bookingRules)
-    ) {
-      durationConfiguration =
-        durationProfile.bookingRules as typeof durationConfiguration;
     }
 
-    if (durationConfiguration.duration?.mode === "fixed") {
-      const configuredDuration =
-        typeof durationConfiguration.duration.fixedDurationMinutes === "number"
-          ? durationConfiguration.duration.fixedDurationMinutes
-          : 0;
-
-      if (configuredDuration <= 0) {
-        return {
-          success: false,
-          error: "The company's fixed appointment duration is invalid.",
-        };
-      }
-
-      endAt = new Date(
-        startAt.getTime() + configuredDuration * 60_000,
-      );
-    }
+    const endAt = new Date(
+      startAt.getTime() + resolvedDuration.durationMinutes * 60_000,
+    );
 
     const conflicts = await findBookingConflicts(
       userId,
