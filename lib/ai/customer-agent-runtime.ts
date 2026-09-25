@@ -26,6 +26,28 @@ export type CustomerAgentRunResult = {
 const customerAgentTools = [
   {
     type: "function" as const,
+    name: "find_booking",
+    description:
+      "Find a customer's non-cancelled booking using their phone number or email. Use this before changing or cancelling a booking.",
+    parameters: {
+      type: "object",
+      properties: {
+        customerPhone: {
+          type: ["string", "null"],
+          description: "Customer phone number.",
+        },
+        customerEmail: {
+          type: ["string", "null"],
+          description: "Customer email address.",
+        },
+      },
+      required: ["customerPhone", "customerEmail"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: "function" as const,
     name: "get_bookings_for_date",
     description:
       "Get all non-cancelled bookings for this cleaning business on a specific calendar date. Use this when the user asks about bookings, appointments, or the schedule for a date.",
@@ -124,6 +146,56 @@ async function executeCustomerAgentTool(
     args = JSON.parse(argumentsJson) as Record<string, unknown>;
   } catch {
     return { success: false, error: "Invalid tool arguments." };
+  }
+
+  if (name === "find_booking") {
+    const customerPhone =
+      typeof args.customerPhone === "string" ? args.customerPhone.trim() : null;
+    const customerEmail =
+      typeof args.customerEmail === "string"
+        ? args.customerEmail.trim().toLowerCase()
+        : null;
+
+    if (!customerPhone && !customerEmail) {
+      return {
+        success: false,
+        error: "A phone number or email address is required.",
+      };
+    }
+
+    const bookings = await prisma.booking.findMany({
+      where: {
+        userId,
+        status: {
+          not: "CANCELLED",
+        },
+        OR: [
+          ...(customerPhone ? [{ customerPhone }] : []),
+          ...(customerEmail ? [{ customerEmail }] : []),
+        ],
+      },
+      orderBy: {
+        startAt: "asc",
+      },
+      take: 10,
+    });
+
+    return {
+      success: true,
+      bookings: bookings.map((booking) => ({
+        id: booking.id,
+        customerName: booking.customerName,
+        customerPhone: booking.customerPhone,
+        customerEmail: booking.customerEmail,
+        service: booking.service,
+        address: booking.address,
+        startAt: booking.startAt.toISOString(),
+        endAt: booking.endAt.toISOString(),
+        durationMinutes: booking.durationMinutes,
+        status: booking.status,
+        employeeId: booking.employeeId,
+      })),
+    };
   }
 
   if (name === "get_bookings_for_date") {
