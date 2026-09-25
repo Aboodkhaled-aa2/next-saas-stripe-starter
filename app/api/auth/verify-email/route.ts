@@ -36,13 +36,13 @@ export async function POST(request: Request) {
       );
     }
 
-    if (verificationToken.expires < new Date()) {
-      await prisma.verificationToken.delete({
+    const now = new Date();
+
+    if (verificationToken.expires < now) {
+      await prisma.verificationToken.deleteMany({
         where: {
-          identifier_token: {
-            identifier: email,
-            token: code,
-          },
+          identifier: email,
+          token: code,
         },
       });
 
@@ -63,19 +63,27 @@ export async function POST(request: Request) {
       );
     }
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        emailVerified: new Date(),
+    const consumedToken = await prisma.verificationToken.deleteMany({
+      where: {
+        identifier: email,
+        token: code,
+        expires: {
+          gte: now,
+        },
       },
     });
 
-    await prisma.verificationToken.delete({
-      where: {
-        identifier_token: {
-          identifier: email,
-          token: code,
-        },
+    if (consumedToken.count !== 1) {
+      return NextResponse.json(
+        { error: "Invalid or already used verification code." },
+        { status: 400 },
+      );
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerified: now,
       },
     });
 
