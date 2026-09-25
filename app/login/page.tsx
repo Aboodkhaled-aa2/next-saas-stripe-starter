@@ -18,7 +18,25 @@ import { generateUserStripe } from "@/actions/generate-user-stripe";
 function LoginForm() {
   const searchParams = useSearchParams();
 
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const rawCallbackUrl = searchParams.get("callbackUrl");
+
+  const callbackUrl = (() => {
+    if (!rawCallbackUrl) {
+      return "/dashboard";
+    }
+
+    try {
+      const url = new URL(rawCallbackUrl, window.location.origin);
+
+      if (url.origin !== window.location.origin) {
+        return "/dashboard";
+      }
+
+      return url.pathname + url.search + url.hash;
+    } catch {
+      return "/dashboard";
+    }
+  })();
   const planParam = searchParams.get("plan")?.toLowerCase();
 
   const selectedPlan =
