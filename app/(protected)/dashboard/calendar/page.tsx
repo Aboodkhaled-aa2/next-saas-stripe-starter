@@ -7,49 +7,72 @@ import {
 } from "lucide-react";
 
 import { DashboardHeader } from "@/components/dashboard/header";
+import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-const appointments = [
-  {
-    time: "09:00 AM",
-    customer: "Sarah Johnson",
-    service: "Deep Cleaning",
-    address: "124 Main Street",
-    duration: "2 hrs",
-    status: "Confirmed",
-  },
-  {
-    time: "11:30 AM",
-    customer: "Michael Brown",
-    service: "Move-Out Cleaning",
-    address: "87 Oak Avenue",
-    duration: "3 hrs",
-    status: "Confirmed",
-  },
-  {
-    time: "02:00 PM",
-    customer: "Emily Davis",
-    service: "Standard Cleaning",
-    address: "42 Pine Road",
-    duration: "2 hrs",
-    status: "Pending",
-  },
-];
-
 const statusStyles: Record<string, string> = {
-  Confirmed:
+  CONFIRMED:
     "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
-  Pending: "border-amber-500/20 bg-amber-500/10 text-amber-400",
+  PENDING: "border-amber-500/20 bg-amber-500/10 text-amber-400",
+  COMPLETED: "border-blue-500/20 bg-blue-500/10 text-blue-400",
+  CANCELLED: "border-red-500/20 bg-red-500/10 text-red-400",
 };
 
-export default function CalendarPage() {
+const statusLabels: Record<string, string> = {
+  CONFIRMED: "Confirmed",
+  PENDING: "Pending",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+export default async function CalendarPage() {
+  const user = await getCurrentUser();
+
+  if (!user?.id) {
+    return null;
+  }
+
+  const now = new Date();
+  const startOfDay = new Date(now);
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const endOfDay = new Date(now);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  const appointments = await prisma.booking.findMany({
+    where: {
+      userId: user.id,
+      startAt: {
+        gte: startOfDay,
+        lte: endOfDay,
+      },
+    },
+    orderBy: {
+      startAt: "asc",
+    },
+  });
+
+  const todayAppointments = appointments.filter(
+    (appointment) => appointment.status !== "CANCELLED",
+  );
+
+  const scheduledMinutes = todayAppointments.reduce(
+    (total, appointment) => total + appointment.durationMinutes,
+    0,
+  );
+
+  const pendingCount = appointments.filter(
+    (appointment) => appointment.status === "PENDING",
+  ).length;
+
   const today = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
-  }).format(new Date());
+  }).format(now);
 
   return (
     <div className="space-y-6">
@@ -69,19 +92,19 @@ export default function CalendarPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
           label="Today's Appointments"
-          value="3"
+          value={String(todayAppointments.length)}
           icon={<CalendarDays className="h-5 w-5" />}
         />
 
         <StatCard
           label="Scheduled Hours"
-          value="7 hrs"
+          value={formatHours(scheduledMinutes)}
           icon={<Clock3 className="h-5 w-5" />}
         />
 
         <StatCard
           label="Pending Confirmation"
-          value="1"
+          value={String(pendingCount)}
           icon={<UserRound className="h-5 w-5" />}
         />
       </div>
@@ -90,95 +113,59 @@ export default function CalendarPage() {
         <div className="flex flex-col gap-4 border-b border-slate-800 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="font-semibold text-white">Today</h2>
-
             <p className="mt-1 text-sm text-slate-500">{today}</p>
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
-            >
-              Today
-            </button>
-
-            <button
-              type="button"
-              className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
-            >
-              Week
-            </button>
+            <button type="button" className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-white">Today</button>
+            <button type="button" className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-white">Week</button>
           </div>
         </div>
 
-        <div className="divide-y divide-slate-800">
-          {appointments.map((appointment) => (
-            <div
-              key={`${appointment.time}-${appointment.customer}`}
-              className="flex flex-col gap-5 p-5 transition-colors hover:bg-slate-900/30 sm:flex-row"
-            >
-              <div className="flex w-24 shrink-0 items-start gap-2 pt-1">
-                <Clock3 className="mt-0.5 h-4 w-4 text-slate-600" />
-
-                <span className="text-sm font-medium text-slate-300">
-                  {appointment.time}
-                </span>
-              </div>
-
-              <div className="h-px w-full bg-slate-800 sm:h-auto sm:w-px" />
-
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-semibold text-white">
-                    {appointment.service}
-                  </h3>
-
-                  <span
-                    className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${
-                      statusStyles[appointment.status] ||
-                      "border-slate-800 bg-slate-900 text-slate-400"
-                    }`}
-                  >
-                    {appointment.status}
-                  </span>
-                </div>
-
-                <div className="mt-3 grid gap-2 text-sm text-slate-500 sm:grid-cols-2">
-                  <div className="flex items-center gap-2">
-                    <UserRound className="h-4 w-4 text-slate-600" />
-                    {appointment.customer}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Clock3 className="h-4 w-4 text-slate-600" />
-                    {appointment.duration}
-                  </div>
-
-                  <div className="flex items-center gap-2 sm:col-span-2">
-                    <MapPin className="h-4 w-4 shrink-0 text-slate-600" />
-                    {appointment.address}
-                  </div>
-                </div>
-              </div>
+        {todayAppointments.length === 0 ? (
+          <div className="flex min-h-[320px] flex-col items-center justify-center px-6 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-800 bg-slate-900">
+              <CalendarDays className="h-6 w-6 text-slate-500" />
             </div>
-          ))}
-        </div>
+            <h3 className="mt-5 text-base font-semibold text-white">No appointments today</h3>
+            <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
+              Your confirmed and pending cleaning appointments will appear here as customers book through your AI employee.
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-800">
+            {todayAppointments.map((appointment) => (
+              <div key={appointment.id} className="flex flex-col gap-5 p-5 transition-colors hover:bg-slate-900/30 sm:flex-row">
+                <div className="flex w-24 shrink-0 items-start gap-2 pt-1">
+                  <Clock3 className="mt-0.5 h-4 w-4 text-slate-600" />
+                  <span className="text-sm font-medium text-slate-300">{formatTime(appointment.startAt)}</span>
+                </div>
+                <div className="h-px w-full bg-slate-800 sm:h-auto sm:w-px" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold text-white">{appointment.service}</h3>
+                    <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${statusStyles[appointment.status] || "border-slate-800 bg-slate-900 text-slate-400"}`}>
+                      {statusLabels[appointment.status] || appointment.status}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid gap-2 text-sm text-slate-500 sm:grid-cols-2">
+                    <div className="flex items-center gap-2"><UserRound className="h-4 w-4 text-slate-600" />{appointment.customerName}</div>
+                    <div className="flex items-center gap-2"><Clock3 className="h-4 w-4 text-slate-600" />{formatDuration(appointment.durationMinutes)}</div>
+                    {appointment.address && <div className="flex items-center gap-2 sm:col-span-2"><MapPin className="h-4 w-4 shrink-0 text-slate-600" />{appointment.address}</div>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shadow-xl">
         <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
-            <CalendarDays className="h-4 w-4 text-blue-400" />
-          </div>
-
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10"><CalendarDays className="h-4 w-4 text-blue-400" /></div>
           <div>
             <h3 className="font-medium text-white">AI Booking</h3>
-
-            <p className="mt-1 text-sm leading-6 text-slate-500">
-              Once your calendar integration is connected, your AI employee
-              will be able to check availability, book appointments, and send
-              booking confirmations automatically.
-            </p>
+            <p className="mt-1 text-sm leading-6 text-slate-500">Your AI employee can use the booking data in this calendar when checking availability and helping customers request appointments.</p>
           </div>
         </div>
       </section>
@@ -186,26 +173,26 @@ export default function CalendarPage() {
   );
 }
 
-function StatCard({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shadow-xl">
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-slate-500">{label}</span>
+function StatCard({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
+  return <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shadow-xl"><div className="flex items-center justify-between"><span className="text-sm text-slate-500">{label}</span><div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-slate-400">{icon}</div></div><p className="mt-4 text-2xl font-semibold text-white">{value}</p></div>;
+}
 
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-slate-400">
-          {icon}
-        </div>
-      </div>
+function formatTime(date: Date) {
+  return new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(date);
+}
 
-      <p className="mt-4 text-2xl font-semibold text-white">{value}</p>
-    </div>
-  );
+function formatDuration(minutes: number) {
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (hours === 0) return remainingMinutes + " min";
+  if (remainingMinutes === 0) return hours + (hours === 1 ? " hr" : " hrs");
+  return hours + (hours === 1 ? " hr " : " hrs ") + remainingMinutes + " min";
+}
+
+function formatHours(minutes: number) {
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (hours === 0) return remainingMinutes + " min";
+  if (remainingMinutes === 0) return hours + " hrs";
+  return hours + "h " + remainingMinutes + "m";
 }
