@@ -83,7 +83,7 @@ export async function findBookingConflicts(
       endAt: {
         gt: new Date(window.startAt.getTime() - bufferMs),
       },
-      ...(employeeId ? { employeeId } : { employeeId: null }),
+      ...(employeeId ? { employeeId } : {}),
     },
     orderBy: {
       startAt: "asc",
