@@ -44,6 +44,20 @@ const customerAgentTools = [
     },
     strict: true
   },
+
+  {
+    type: "function" as const,
+    name: "get_booking_duration_rules",
+    description:
+      "Read the cleaning company's configured appointment duration settings. Always use this before choosing durationMinutes for a new booking. Never invent a duration. If the company uses fixed duration, use the returned fixed duration exactly. If the company uses company-defined rules, follow only the returned explicit rules and collect any missing property details needed to apply them.",
+    parameters: {
+      type: "object",
+      properties: {},
+      required: [],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
   {
     type: "function" as const,
     name: "reschedule_booking",
@@ -282,6 +296,101 @@ async function executeCustomerAgentTool(
       leadId: lead.id,
       status: lead.status,
       message: "Customer lead saved successfully.",
+    };
+  }
+
+  if (name === "get_booking_duration_rules") {
+    const profile = await prisma.businessProfile.findUnique({
+      where: {
+        userId,
+      },
+      select: {
+        bookingRules: true,
+      },
+    });
+
+    if (!profile) {
+      return {
+        success: false,
+        error: "Business profile not found.",
+      };
+    }
+
+    let configuration: {
+      duration?: {
+        mode?: "fixed" | "rules";
+        fixedDurationMinutes?: number | null;
+        rules?: string | null;
+      };
+    } = {};
+
+    if (typeof profile.bookingRules === "string") {
+      try {
+        configuration = JSON.parse(profile.bookingRules) as typeof configuration;
+      } catch {
+        configuration = {};
+      }
+    } else if (
+      profile.bookingRules &&
+      typeof profile.bookingRules === "object" &&
+      !Array.isArray(profile.bookingRules)
+    ) {
+      configuration = profile.bookingRules as typeof configuration;
+    }
+
+    const duration = configuration.duration;
+
+    if (!duration) {
+      return {
+        success: false,
+        error: "No appointment duration settings are configured for this business.",
+      };
+    }
+
+    if (duration.mode === "fixed") {
+      const minutes =
+        typeof duration.fixedDurationMinutes === "number"
+          ? duration.fixedDurationMinutes
+          : 0;
+
+      if (minutes <= 0) {
+        return {
+          success: false,
+          error: "The configured fixed appointment duration is invalid.",
+        };
+      }
+
+      return {
+        success: true,
+        mode: "fixed",
+        durationMinutes: minutes,
+        message: "Use this fixed duration exactly for the appointment.",
+      };
+    }
+
+    if (duration.mode === "rules") {
+      const rules =
+        typeof duration.rules === "string" ? duration.rules.trim() : "";
+
+      if (!rules) {
+        return {
+          success: false,
+          error: "Company-defined duration mode is selected, but no duration rules are configured.",
+        };
+      }
+
+      return {
+        success: true,
+        mode: "rules",
+        rules,
+        message:
+          "Apply only these explicit company-defined duration rules. Do not invent or estimate beyond them. Collect missing property details when required.",
+      };
+    }
+
+    return {
+      success: false,
+      error: "Appointment duration mode is not configured correctly.",
     };
   }
 
