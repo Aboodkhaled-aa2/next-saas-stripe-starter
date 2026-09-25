@@ -109,7 +109,7 @@ export function PricingCards({
           </p>
 
           <ul className="space-y-3 text-sm text-gray-300">
-            {offer.benefits.map((feature) => (
+            {offer.benefits.slice(0, 5).map((feature) => (
               <li
                 className="flex items-start gap-x-3"
                 key={feature}
@@ -117,11 +117,28 @@ export function PricingCards({
                 <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-blue-800 bg-blue-950">
                   <Icons.check className="size-3.5 text-blue-400" />
                 </div>
-
                 <span>{feature}</span>
               </li>
             ))}
           </ul>
+
+          {offer.benefits.length > 5 && (
+            <details className="mt-5 border-t border-gray-800/80 pt-4">
+              <summary className="cursor-pointer list-none text-center text-sm font-semibold text-blue-400 transition hover:text-blue-300">
+                View all features
+              </summary>
+              <ul className="mt-4 space-y-3 text-sm text-gray-300">
+                {offer.benefits.slice(5).map((feature) => (
+                  <li className="flex items-start gap-x-3" key={feature}>
+                    <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-blue-800 bg-blue-950">
+                      <Icons.check className="size-3.5 text-blue-400" />
+                    </div>
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </div>
       </div>
     );
