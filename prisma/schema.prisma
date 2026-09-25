@@ -339,6 +339,8 @@ model Customer {
   @@index([userId, phone])
   @@index([userId, email])
   @@index([userId, createdAt])
+
+  @@map("customers")
 }
 
 model VerificationToken {
