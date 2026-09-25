@@ -28,6 +28,9 @@ type FormData = {
   businessHours: string;
   paymentMethods: string[];
   bookingRules: string;
+  durationMode: "fixed" | "rules";
+  fixedDurationMinutes: string;
+  durationRules: string;
   cancellationPolicy: string;
   reschedulingPolicy: string;
   aiInstructions: string;
@@ -47,6 +50,9 @@ const initialFormData: FormData = {
   businessHours: "",
   paymentMethods: [],
   bookingRules: "",
+  durationMode: "fixed",
+  fixedDurationMinutes: "180",
+  durationRules: "",
   cancellationPolicy: "",
   reschedulingPolicy: "",
   aiInstructions: "",
@@ -237,7 +243,23 @@ export default function OnboardingPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          bookingRules: JSON.stringify({
+            generalRules: formData.bookingRules.trim(),
+            duration: {
+              mode: formData.durationMode,
+              fixedDurationMinutes:
+                formData.durationMode === "fixed"
+                  ? Number(formData.fixedDurationMinutes)
+                  : null,
+              rules:
+                formData.durationMode === "rules"
+                  ? formData.durationRules.trim()
+                  : null,
+            },
+          }),
+        }),
       });
 
       const data = await response.json();
@@ -554,24 +576,92 @@ export default function OnboardingPage() {
                     </div>
                   </div>
 
-                  <div>
-                    <Label
-                      text="Booking rules"
-                      optional
-                    />
+                  <div className="space-y-6">
+                    <div>
+                      <Label
+                        text="How should appointment duration be determined?"
+                        required
+                      />
 
-                    <textarea
-                      value={formData.bookingRules}
-                      onChange={(event) =>
-                        updateField(
-                          "bookingRules",
-                          event.target.value,
-                        )
-                      }
-                      placeholder="Example: Same-day bookings are allowed before 2 PM. A minimum of 24 hours notice is preferred."
-                      rows={5}
-                      className="mt-3 w-full resize-none rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
-                    />
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        <SelectableButton
+                          selected={formData.durationMode === "fixed"}
+                          onClick={() =>
+                            updateField("durationMode", "fixed")
+                          }
+                          icon={<Clock3 className="h-4 w-4" />}
+                        >
+                          Fixed duration
+                        </SelectableButton>
+
+                        <SelectableButton
+                          selected={formData.durationMode === "rules"}
+                          onClick={() =>
+                            updateField("durationMode", "rules")
+                          }
+                          icon={<Sparkles className="h-4 w-4" />}
+                        >
+                          Company-defined rules
+                        </SelectableButton>
+                      </div>
+                    </div>
+
+                    {formData.durationMode === "fixed" ? (
+                      <Field
+                        label="Default appointment duration (minutes)"
+                        placeholder="180"
+                        type="number"
+                        value={formData.fixedDurationMinutes}
+                        onChange={(value) =>
+                          updateField("fixedDurationMinutes", value)
+                        }
+                        required
+                      />
+                    ) : (
+                      <div>
+                        <Label
+                          text="How should the duration be determined?"
+                          required
+                        />
+
+                        <textarea
+                          value={formData.durationRules}
+                          onChange={(event) =>
+                            updateField(
+                              "durationRules",
+                              event.target.value,
+                            )
+                          }
+                          placeholder="Example: 1-2 bedrooms = 2 hours. 3-4 bedrooms = 3 hours. 5+ bedrooms = 4 hours. Add 30 minutes for every 2 additional bathrooms."
+                          rows={5}
+                          className="mt-3 w-full resize-none rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
+                        />
+
+                        <p className="mt-2 text-xs leading-5 text-slate-600">
+                          The AI must follow these rules and should not invent a duration.
+                        </p>
+                      </div>
+                    )}
+
+                    <div>
+                      <Label
+                        text="Other booking rules"
+                        optional
+                      />
+
+                      <textarea
+                        value={formData.bookingRules}
+                        onChange={(event) =>
+                          updateField(
+                            "bookingRules",
+                            event.target.value,
+                          )
+                        }
+                        placeholder="Example: Same-day bookings are allowed before 2 PM. A minimum of 24 hours notice is preferred."
+                        rows={5}
+                        className="mt-3 w-full resize-none rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
