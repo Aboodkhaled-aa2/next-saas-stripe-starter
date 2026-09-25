@@ -6,6 +6,10 @@ import {
   buildCustomerAgentSystemPrompt,
   type CustomerAgentBusinessProfile,
 } from "@/lib/ai/customer-agent";
+import {
+  findBookingConflicts,
+  getBookingsForDay,
+} from "@/lib/bookings/service";
 
 export type CustomerAgentRunOptions = {
   userId: string;
