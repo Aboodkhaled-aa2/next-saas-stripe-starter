@@ -187,8 +187,12 @@ const customerAgentTools = [
           type: ["string", "null"],
           description: "Optional employee ID to check for that employee specifically.",
         },
+        travelBufferMinutes: {
+          type: "number",
+          description: "Minutes of buffer needed before or after the appointment.",
+        },
       },
-      required: ["startAt", "endAt", "employeeId"],
+      required: ["startAt", "endAt", "employeeId", "travelBufferMinutes"],
       additionalProperties: false,
     },
     strict: true,
@@ -555,6 +559,10 @@ async function executeCustomerAgentTool(
         : 0;
     const employeeId =
       typeof args.employeeId === "string" ? args.employeeId : null;
+    const travelBufferMinutes =
+      typeof args.travelBufferMinutes === "number"
+        ? Math.max(0, args.travelBufferMinutes)
+        : 0;
 
     if (
       !startAt ||
@@ -726,6 +734,7 @@ async function executeCustomerAgentTool(
       userId,
       { startAt, endAt },
       employeeId,
+      travelBufferMinutes,
     );
 
     return {
