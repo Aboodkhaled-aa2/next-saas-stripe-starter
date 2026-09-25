@@ -371,8 +371,28 @@ const customerAgentTools = [
           type: "number",
           description: "Minutes of buffer needed before or after the appointment.",
         },
+        bedrooms: {
+          type: ["number", "null"],
+          description: "Number of bedrooms in the property.",
+        },
+        bathrooms: {
+          type: ["number", "null"],
+          description: "Number of bathrooms in the property.",
+        },
+        propertySize: {
+          type: ["string", "null"],
+          description: "Approximate property size if relevant to the company's rules.",
+        },
       },
-      required: ["startAt", "endAt", "employeeId", "travelBufferMinutes"],
+      required: [
+        "startAt",
+        "endAt",
+        "employeeId",
+        "travelBufferMinutes",
+        "bedrooms",
+        "bathrooms",
+        "propertySize",
+      ],
       additionalProperties: false,
     },
     strict: true,
@@ -466,175 +486,29 @@ async function executeCustomerAgentTool(
   }
 
   if (name === "get_booking_duration_rules") {
-    const profile = await prisma.businessProfile.findUnique({
-      where: {
-        userId,
-      },
-      select: {
-        bookingRules: true,
-      },
+    const resolvedDuration = await resolveConfiguredDuration(userId, {
+      bedrooms: typeof args.bedrooms === "number" ? args.bedrooms : null,
+      bathrooms: typeof args.bathrooms === "number" ? args.bathrooms : null,
+      propertySize:
+        typeof args.propertySize === "string" ? args.propertySize.trim() : null,
     });
 
-    if (!profile) {
+    if (!resolvedDuration.success) {
       return {
         success: false,
-        error: "Business profile not found.",
-      };
-    }
-
-    let configuration: {
-      duration?: {
-        mode?: "fixed" | "rules";
-        fixedDurationMinutes?: number | null;
-        rules?: string | null;
-      };
-    } = {};
-
-    if (typeof profile.bookingRules === "string") {
-      try {
-        configuration = JSON.parse(profile.bookingRules) as typeof configuration;
-      } catch {
-        configuration = {};
-      }
-    } else if (
-      profile.bookingRules &&
-      typeof profile.bookingRules === "object" &&
-      !Array.isArray(profile.bookingRules)
-    ) {
-      configuration = profile.bookingRules as typeof configuration;
-    }
-
-    const duration = configuration.duration;
-
-    if (!duration) {
-      return {
-        success: false,
-        error: "No appointment duration settings are configured for this business.",
-      };
-    }
-
-    if (duration.mode === "fixed") {
-      const minutes =
-        typeof duration.fixedDurationMinutes === "number"
-          ? duration.fixedDurationMinutes
-          : 0;
-
-      if (minutes <= 0) {
-        return {
-          success: false,
-          error: "The configured fixed appointment duration is invalid.",
-        };
-      }
-
-      return {
-        success: true,
-        mode: "fixed",
-        durationMinutes: minutes,
-        message: "Use this fixed duration exactly for the appointment.",
-      };
-    }
-
-    if (duration.mode === "rules") {
-      const rules =
-        typeof duration.rules === "string" ? duration.rules.trim() : "";
-
-      if (!rules) {
-        return {
-          success: false,
-          error: "Company-defined duration mode is selected, but no duration rules are configured.",
-        };
-      }
-
-      const bedrooms =
-        typeof args.bedrooms === "number" ? args.bedrooms : null;
-      const bathrooms =
-        typeof args.bathrooms === "number" ? args.bathrooms : null;
-
-      const bedroomRules: Array<RegExpMatchArray> = [];
-      const bedroomRulePattern =
-        /(\d+)\s*(?:-|–|to)\s*(\d+)\s*bedrooms?\s*=\s*(\d+(?:\.\d+)?)\s*hours?/gi;
-      let bedroomRuleMatch: RegExpExecArray | null;
-
-      while ((bedroomRuleMatch = bedroomRulePattern.exec(rules)) !== null) {
-        bedroomRules.push(bedroomRuleMatch);
-      }
-
-      let durationHours: number | null = null;
-
-      for (const match of bedroomRules) {
-        const min = Number(match[1]);
-        const max = Number(match[2]);
-        const hours = Number(match[3]);
-
-        if (
-          bedrooms !== null &&
-          bedrooms >= min &&
-          bedrooms <= max
-        ) {
-          durationHours = hours;
-          break;
-        }
-      }
-
-      const plusMatch = rules.match(
-        /(\d+)\s*\.\s*bedrooms?\s*=\s*(\d+(?:\.\d+)?)\s*hours?/i,
-      );
-
-      if (
-        durationHours === null &&
-        plusMatch &&
-        bedrooms !== null &&
-        bedrooms >= Number(plusMatch[1])
-      ) {
-        durationHours = Number(plusMatch[2]);
-      }
-
-      if (durationHours === null) {
-        return {
-          success: true,
-          mode: "rules",
-          rules,
-          durationMinutes: null,
-          needsMoreDetails: bedrooms === null,
-          message:
-            "No explicit duration rule could be applied yet. Do not invent a duration. Collect the missing property details needed by the company's rules.",
-        };
-      }
-
-      let durationMinutes = Math.round(durationHours * 60);
-
-      const bathroomMatch = rules.match(
-        /add\s+(\d+)\s*minutes?\s+for\s+every\s+(\d+)\s+additional\s+bathrooms?/i,
-      );
-
-      if (
-        bathroomMatch &&
-        bathrooms !== null
-      ) {
-        const extraMinutes = Number(bathroomMatch[1]);
-        const bathroomStep = Number(bathroomMatch[2]);
-
-        if (bathroomStep > 0 && bathrooms > bathroomStep) {
-          durationMinutes +=
-            Math.floor((bathrooms - bathroomStep) / bathroomStep) *
-            extraMinutes;
-        }
-      }
-
-      return {
-        success: true,
-        mode: "rules",
-        rules,
-        durationMinutes,
-        needsMoreDetails: false,
-        message:
-          "Use the calculated duration from the company's explicit rules. Do not change or invent it.",
+        error:
+          resolvedDuration.error ??
+          "Unable to determine the appointment duration from company rules.",
+        needsMoreDetails: resolvedDuration.needsMoreDetails ?? false,
       };
     }
 
     return {
-      success: false,
-      error: "Appointment duration mode is not configured correctly.",
+      success: true,
+      durationMinutes: resolvedDuration.durationMinutes,
+      needsMoreDetails: false,
+      message:
+        "Use the configured company duration exactly. Do not invent or override the duration.",
     };
   }
 
@@ -1103,9 +977,10 @@ async function executeCustomerAgentTool(
     }
 
     const resolvedDuration = await resolveConfiguredDuration(userId, {
-      bedrooms: null,
-      bathrooms: null,
-      propertySize: null,
+      bedrooms: typeof args.bedrooms === "number" ? args.bedrooms : null,
+      bathrooms: typeof args.bathrooms === "number" ? args.bathrooms : null,
+      propertySize:
+        typeof args.propertySize === "string" ? args.propertySize.trim() : null,
     });
 
     if (!resolvedDuration.success || !resolvedDuration.durationMinutes) {
