@@ -55,24 +55,18 @@ const faqs = [
 
 const starterFeatures = [
   "AI Customer Messaging",
-  "Instagram, Facebook & WhatsApp",
   "Lead Capture",
   "Customer Inbox",
-  "Customer Information Collection",
-  "Business Hours & FAQ Responses",
+  "Business Knowledge & FAQs",
   "Conversation History",
-  "Basic Automations",
 ];
 
 const businessFeatures = [
   "Everything in Starter",
   "AI Voice Receptionist",
   "100 Voice Minutes / Month",
-  "Appointment Booking & Calendar",
+  "Appointment Booking",
   "Automated Lead Follow-Ups",
-  "Lead Qualification & Quotes",
-  "Booking Reminders",
-  "Custom AI Instructions",
 ];
 
 const proFeatures = [
@@ -80,10 +74,7 @@ const proFeatures = [
   "Dedicated Business Phone Number",
   "500 Voice Minutes / Month",
   "Advanced Call Handling",
-  "Call Transfer",
-  "Advanced Follow-Ups",
-  "Custom Booking Rules",
-  "Custom AI Knowledge Base",
+  "Custom Booking & AI Rules",
 ];
 
 function CheckItem({ children }: { children: React.ReactNode }) {
@@ -198,20 +189,20 @@ export default function LandingPage() {
           <div className="mx-auto max-w-4xl text-center">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-500/35 bg-blue-500/10 px-4 py-2 text-sm font-semibold text-blue-300">
               <Sparkles className="h-4 w-4" />
-              Your AI Employee for Your Cleaning Business
+              24/7 AI Customer Service for Your Cleaning Business
             </div>
 
             <h1 className="text-4xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">
-              Never Miss Another Cleaning Customer
+              Your Cleaning Business,
               <span className="block text-blue-400">
-                While You Are Busy Cleaning
+                Powered by AI. 24/7.
               </span>
             </h1>
 
             <p className="mx-auto mt-7 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
-              Smart Cleaning Desk answers customer questions, captures leads, follows up,
-              books appointments, and helps manage your cleaning business with AI
-              across the channels your customers already use.
+              Answer every customer. Capture every lead. Book more jobs — even while you are busy cleaning.
+              Smart Cleaning Desk brings customer service, AI phone, lead capture,
+              follow-ups, and smart booking into one AI employee.
             </p>
 
             <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
