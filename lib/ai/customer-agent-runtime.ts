@@ -52,8 +52,21 @@ const customerAgentTools = [
       "Read the cleaning company's configured appointment duration settings. Always use this before choosing durationMinutes for a new booking. Never invent a duration. If the company uses fixed duration, use the returned fixed duration exactly. If the company uses company-defined rules, follow only the returned explicit rules and collect any missing property details needed to apply them.",
     parameters: {
       type: "object",
-      properties: {},
-      required: [],
+      properties: {
+        bedrooms: {
+          type: ["number", "null"],
+          description: "Number of bedrooms in the property.",
+        },
+        bathrooms: {
+          type: ["number", "null"],
+          description: "Number of bathrooms in the property.",
+        },
+        propertySize: {
+          type: ["string", "null"],
+          description: "Approximate property size if relevant to the company's rules.",
+        },
+      },
+      required: ["bedrooms", "bathrooms", "propertySize"],
       additionalProperties: false,
     },
     strict: true,
@@ -379,12 +392,85 @@ async function executeCustomerAgentTool(
         };
       }
 
+      const bedrooms =
+        typeof args.bedrooms === "number" ? args.bedrooms : null;
+      const bathrooms =
+        typeof args.bathrooms === "number" ? args.bathrooms : null;
+
+      const bedroomRules = [...rules.matchAll(
+        /(\\d+)\\s*(?:-|–|to)\\s*(\\d+)\\s*bedrooms?\\s*=\\s*(\\d+(?:\\.\\d+)?)\\s*hours?/gi,
+      )];
+
+      let durationHours: number | null = null;
+
+      for (const match of bedroomRules) {
+        const min = Number(match[1]);
+        const max = Number(match[2]);
+        const hours = Number(match[3]);
+
+        if (
+          bedrooms !== null &&
+          bedrooms >= min &&
+          bedrooms <= max
+        ) {
+          durationHours = hours;
+          break;
+        }
+      }
+
+      const plusMatch = rules.match(
+        /(\\d+)\\s*\\+\\s*bedrooms?\\s*=\\s*(\\d+(?:\\.\\d+)?)\\s*hours?/i,
+      );
+
+      if (
+        durationHours === null &&
+        plusMatch &&
+        bedrooms !== null &&
+        bedrooms >= Number(plusMatch[1])
+      ) {
+        durationHours = Number(plusMatch[2]);
+      }
+
+      if (durationHours === null) {
+        return {
+          success: true,
+          mode: "rules",
+          rules,
+          durationMinutes: null,
+          needsMoreDetails: bedrooms === null,
+          message:
+            "No explicit duration rule could be applied yet. Do not invent a duration. Collect the missing property details needed by the company's rules.",
+        };
+      }
+
+      let durationMinutes = Math.round(durationHours * 60);
+
+      const bathroomMatch = rules.match(
+        /add\\s+(\\d+)\\s*minutes?\\s+for\\s+every\\s+(\\d+)\\s+additional\\s+bathrooms?/i,
+      );
+
+      if (
+        bathroomMatch &&
+        bathrooms !== null
+      ) {
+        const extraMinutes = Number(bathroomMatch[1]);
+        const bathroomStep = Number(bathroomMatch[2]);
+
+        if (bathroomStep > 0 && bathrooms > bathroomStep) {
+          durationMinutes +=
+            Math.floor((bathrooms - bathroomStep) / bathroomStep) *
+            extraMinutes;
+        }
+      }
+
       return {
         success: true,
         mode: "rules",
         rules,
+        durationMinutes,
+        needsMoreDetails: false,
         message:
-          "Apply only these explicit company-defined duration rules. Do not invent or estimate beyond them. Collect missing property details when required.",
+          "Use the calculated duration from the company's explicit rules. Do not change or invent it.",
       };
     }
 
