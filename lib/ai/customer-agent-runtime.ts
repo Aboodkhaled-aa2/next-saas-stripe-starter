@@ -26,6 +26,28 @@ export type CustomerAgentRunResult = {
 const customerAgentTools = [
   {
     type: "function" as const,
+    name: "reschedule_booking",
+    description:
+      "Move an existing customer booking to a new appointment time after checking the new time for conflicts.",
+    parameters: {
+      type: "object",
+      properties: {
+        bookingId: {
+          type: "string",
+          description: "The booking ID to reschedule.",
+        },
+        newStartAt: {
+          type: "string",
+          description: "New appointment start time as an ISO 8601 datetime.",
+        },
+      },
+      required: ["bookingId", "newStartAt"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: "function" as const,
     name: "cancel_booking",
     description:
       "Cancel an existing customer booking after the booking has been identified. Use only when the customer clearly asks to cancel.",
@@ -164,6 +186,113 @@ async function executeCustomerAgentTool(
     args = JSON.parse(argumentsJson) as Record<string, unknown>;
   } catch {
     return { success: false, error: "Invalid tool arguments." };
+  }
+
+  if (name === "reschedule_booking") {
+    const bookingId =
+      typeof args.bookingId === "string" ? args.bookingId.trim() : "";
+    const newStartAt =
+      typeof args.newStartAt === "string" ? new Date(args.newStartAt) : null;
+
+    if (
+      !bookingId ||
+      !newStartAt ||
+      Number.isNaN(newStartAt.getTime())
+    ) {
+      return {
+        success: false,
+        error: "Booking ID and a valid new start time are required.",
+      };
+    }
+
+    const booking = await prisma.booking.findFirst({
+      where: {
+        id: bookingId,
+        userId,
+        status: {
+          not: "CANCELLED",
+        },
+      },
+      select: {
+        id: true,
+        customerName: true,
+        service: true,
+        durationMinutes: true,
+        travelBufferMinutes: true,
+        employeeId: true,
+      },
+    });
+
+    if (!booking) {
+      return {
+        success: false,
+        error: "Booking not found or already cancelled.",
+      };
+    }
+
+    const newEndAt = new Date(
+      newStartAt.getTime() + booking.durationMinutes * 60_000,
+    );
+
+    const conflicts = await findBookingConflicts(
+      userId,
+      {
+        startAt: newStartAt,
+        endAt: newEndAt,
+      },
+      booking.employeeId,
+      booking.travelBufferMinutes,
+    );
+
+    const conflictsWithoutCurrentBooking = conflicts.filter(
+      (conflict) => conflict.id !== booking.id,
+    );
+
+    if (conflictsWithoutCurrentBooking.length > 0) {
+      return {
+        success: false,
+        error: "The new appointment time is not available.",
+        conflicts: conflictsWithoutCurrentBooking.map((conflict) => ({
+          id: conflict.id,
+          customerName: conflict.customerName,
+          service: conflict.service,
+          startAt: conflict.startAt.toISOString(),
+          endAt: conflict.endAt.toISOString(),
+          employeeId: conflict.employeeId,
+        })),
+      };
+    }
+
+    const updatedBooking = await prisma.booking.update({
+      where: {
+        id: booking.id,
+      },
+      data: {
+        startAt: newStartAt,
+        endAt: newEndAt,
+      },
+      select: {
+        id: true,
+        customerName: true,
+        service: true,
+        startAt: true,
+        endAt: true,
+        status: true,
+      },
+    });
+
+    return {
+      success: true,
+      message: "Booking rescheduled successfully.",
+      booking: {
+        id: updatedBooking.id,
+        customerName: updatedBooking.customerName,
+        service: updatedBooking.service,
+        startAt: updatedBooking.startAt.toISOString(),
+        endAt: updatedBooking.endAt.toISOString(),
+        status: updatedBooking.status,
+      },
+    };
   }
 
   if (name === "cancel_booking") {
