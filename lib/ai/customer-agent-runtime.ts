@@ -545,9 +545,14 @@ async function executeCustomerAgentTool(
       const bathrooms =
         typeof args.bathrooms === "number" ? args.bathrooms : null;
 
-      const bedroomRules = [...rules.matchAll(
-        /(\\d+)\\s*(?:-|–|to)\\s*(\\d+)\\s*bedrooms?\\s*=\\s*(\\d+(?:\\.\\d+)?)\\s*hours?/gi,
-      )];
+      const bedroomRules: Array<RegExpMatchArray> = [];
+      const bedroomRulePattern =
+        /(\\d+)\\s*(?:-|–|to)\\s*(\\d+)\\s*bedrooms?\\s*=\\s*(\\d+(?:\\.\\d+)?)\\s*hours?/gi;
+      let bedroomRuleMatch: RegExpExecArray | null;
+
+      while ((bedroomRuleMatch = bedroomRulePattern.exec(rules)) !== null) {
+        bedroomRules.push(bedroomRuleMatch);
+      }
 
       let durationHours: number | null = null;
 
