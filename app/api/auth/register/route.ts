@@ -1,3 +1,5 @@
+import { randomInt } from "node:crypto";
+
 import { NextResponse } from "next/server";
 
 import bcrypt from "bcryptjs";
@@ -117,9 +119,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const verificationCode = Math.floor(
-      100000 + Math.random() * 900000
-    ).toString();
+    const verificationCode = randomInt(100000, 1000000).toString();
 
     await prisma.verificationToken.deleteMany({
       where: {
