@@ -112,9 +112,14 @@ async function resolveConfiguredDuration(
   const bedrooms = details.bedrooms ?? null;
   const bathrooms = details.bathrooms ?? null;
 
-  const bedroomRules = [...rules.matchAll(
-    /(\d+)\s*(?:-|–|to)\s*(\d+)\s*bedrooms?\s*=\s*(\d+(?:\.\d+)?)\s*hours?/gi,
-  )];
+  const bedroomRules: RegExpExecArray[] = [];
+  const bedroomRulePattern =
+    /(\d+)\s*(?:-|–|to)\s*(\d+)\s*bedrooms?\s*=\s*(\d+(?:\.\d+)?)\s*hours?/gi;
+  let bedroomRuleMatch: RegExpExecArray | null;
+
+  while ((bedroomRuleMatch = bedroomRulePattern.exec(rules)) !== null) {
+    bedroomRules.push(bedroomRuleMatch);
+  }
 
   let durationHours: number | null = null;
 
