@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { runCustomerAgent } from "@/lib/ai/customer-agent-runtime";
+import { getUserSubscriptionPlan } from "@/lib/subscription";
 
 export async function POST(req: Request) {
   try {
@@ -33,6 +34,17 @@ export async function POST(req: Request) {
         { error: "User ID is missing" },
         { status: 400 },
       );
+    }
+
+    if (user.role !== "ADMIN") {
+      const subscriptionPlan = await getUserSubscriptionPlan(user.id);
+
+      if (!subscriptionPlan.isPaid) {
+        return NextResponse.json(
+          { error: "An active subscription is required to use the AI employee." },
+          { status: 402 },
+        );
+      }
     }
 
     const result = await runCustomerAgent({
