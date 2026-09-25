@@ -29,12 +29,12 @@ const faqs = [
   {
     question: "What happens after I subscribe?",
     answer:
-      "After your payment is successfully verified, your subscription becomes active and you can access the dashboard and the features included in your plan.",
+      "After your payment is successfully verified, your subscription becomes active. You can then complete your business setup and configure the AI employee using your company information, services, rules, and customer workflow.",
   },
   {
     question: "What are Voice AI minutes?",
     answer:
-      "Voice AI minutes are the monthly calling minutes included with Business and Pro plans. Starter does not include Voice AI.",
+      "Voice AI minutes are the monthly calling minutes included with Business and Pro plans. Starter does not include Voice AI. Additional voice minutes can be purchased when your included balance is used.",
   },
   {
     question: "Can I upgrade my plan?",
@@ -279,7 +279,7 @@ export default function LandingPage() {
           <SectionTitle
             eyebrow="Everything in One Place"
             title="Run customer communication smarter"
-            description="Bring your customer conversations, leads, follow-ups, appointments, and AI tools into one workspace designed for cleaning businesses."
+            description="Let AI handle customer conversations, qualify leads, answer calls, collect job details, follow up, and move customers toward booked appointments."
           />
 
           <div className="mt-16 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -294,7 +294,7 @@ export default function LandingPage() {
                 icon: Phone,
                 title: "AI Voice Receptionist",
                 description:
-                  "Business and Pro plans can use Voice AI to help handle customer calls.",
+                  "Let your AI receptionist answer calls, collect customer details, handle common questions, and help move callers toward a booking.",
               },
               {
                 icon: Users,
@@ -306,13 +306,13 @@ export default function LandingPage() {
                 icon: Calendar,
                 title: "Appointment Booking",
                 description:
-                  "Business and Pro plans include appointment and calendar features.",
+                  "Collect the details needed for a cleaning, check availability, and move qualified customers toward the right appointment.",
               },
               {
                 icon: Clock,
                 title: "Automated Follow-Ups",
                 description:
-                  "Keep potential customers moving forward with automated follow-up workflows.",
+                  "Automatically follow up with leads so opportunities do not disappear when you are busy running the business.",
               },
               {
                 icon: Headphones,
@@ -355,7 +355,7 @@ export default function LandingPage() {
           <SectionTitle
             eyebrow="Simple Workflow"
             title="From customer message to booked job"
-            description="Smart Cleaning Desk is designed around the everyday workflow of a cleaning business."
+            description="From the first customer message or phone call to qualification, scheduling, and follow-up, Smart Cleaning Desk keeps the workflow connected."
           />
 
           <div className="mt-16 grid gap-8 md:grid-cols-3">
@@ -645,7 +645,7 @@ export default function LandingPage() {
           <SectionTitle
             eyebrow="FAQ"
             title="Frequently asked questions"
-            description="Everything you need to know before choosing your plan."
+            description="Everything you need to know before choosing your plan and setting up your AI employee."
           />
 
           <div className="mt-12 space-y-4">
