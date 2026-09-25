@@ -5,6 +5,7 @@ import { env } from "@/env.mjs";
 import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { pricingData } from "@/config/subscriptions";
+import { sendPaymentConfirmation } from "@/lib/email";
 
 const allowedStripePriceIds = new Set(
   pricingData.flatMap((plan) => [plan.stripeIds.monthly, plan.stripeIds.yearly])
@@ -84,10 +85,7 @@ export async function POST(req: Request) {
     if (event.type === "invoice.payment_succeeded") {
       const invoice = event.data.object as Stripe.Invoice;
 
-      if (
-        invoice.billing_reason !== "subscription_create" &&
-        invoice.subscription
-      ) {
+      if (invoice.subscription && invoice.payment_status === "paid") {
         const subscription = await stripe.subscriptions.retrieve(
           invoice.subscription as string,
         );
@@ -107,6 +105,38 @@ export async function POST(req: Request) {
             ),
           },
         });
+
+        const user = await prisma.user.findFirst({
+          where: {
+            stripeSubscriptionId: subscription.id,
+          },
+          select: {
+            name: true,
+            email: true,
+          },
+        });
+
+        if (user?.email) {
+          const priceId = subscription.items.data[0]?.price.id;
+          const plan = pricingData.find(
+            (item) =>
+              item.stripeIds.monthly === priceId ||
+              item.stripeIds.yearly === priceId,
+          );
+
+          await sendPaymentConfirmation({
+            email: user.email,
+            customerName: invoice.customer_name ?? user.name ?? "Customer",
+            planName: plan?.title ?? "Subscription",
+            amount: new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: invoice.currency ?? "usd",
+            }).format((invoice.amount_paid ?? 0) / 100),
+            paymentDate: new Date(invoice.created * 1000),
+            invoiceNumber: invoice.number,
+            invoiceUrl: invoice.hosted_invoice_url,
+          });
+        }
       }
     }
 
