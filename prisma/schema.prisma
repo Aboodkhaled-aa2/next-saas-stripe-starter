@@ -1,5 +1,5 @@
 // This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// learn more about it at https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -36,6 +36,13 @@ enum AIPhoneStatus {
   DISCONNECTED
 }
 
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
 model Account {
   id                String   @id @default(cuid())
   userId            String
@@ -64,10 +71,10 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@map(name: "sessions")
+  @@map("sessions")
 }
 
 model User {
@@ -88,6 +95,8 @@ model User {
   businessProfile BusinessProfile?
   leads           Lead[]
   customers       Customer[]
+  employees       Employee[]
+  bookings        Booking[]
   passwordResetTokens PasswordResetToken[]
 
   stripeCustomerId       String?   @unique @map("stripe_customer_id")
@@ -156,6 +165,67 @@ model AIPhoneSettings {
   @@map("ai_phone_settings")
 }
 
+model Employee {
+  id     String  @id @default(cuid())
+  userId String
+
+  name     String
+  phone    String?
+  email    String?
+  active   Boolean @default(true)
+  teamName String?
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, active])
+  @@map("employees")
+}
+
+model Booking {
+  id     String @id @default(cuid())
+  userId String
+
+  customerId String?
+  employeeId String?
+
+  customerName  String
+  customerPhone String?
+  customerEmail String?
+  address       String?
+
+  service       String
+  propertyType  String?
+  bedrooms     Int?
+  bathrooms    Int?
+  propertySize String?
+  notes         String? @db.Text
+
+  startAt DateTime
+  endAt   DateTime
+
+  durationMinutes     Int
+  travelBufferMinutes Int @default(0)
+
+  status BookingStatus @default(PENDING)
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, startAt])
+  @@index([userId, endAt])
+  @@index([employeeId, startAt])
+  @@index([customerId])
+  @@map("bookings")
+}
+
 model Lead {
   id String @id @default(cuid())
 
@@ -215,7 +285,6 @@ model Customer {
   @@index([userId, phone])
   @@index([userId, email])
   @@index([userId, createdAt])
-  @@map("customers")
 }
 
 model VerificationToken {
