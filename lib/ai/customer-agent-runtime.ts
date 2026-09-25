@@ -44,6 +44,49 @@ const customerAgentTools = [
   },
   {
     type: "function" as const,
+    name: "create_booking",
+    description:
+      "Create a customer appointment after the requested time has been checked and confirmed as available. Use only when all required booking details are known.",
+    parameters: {
+      type: "object",
+      properties: {
+        customerName: { type: "string" },
+        customerPhone: { type: ["string", "null"] },
+        customerEmail: { type: ["string", "null"] },
+        address: { type: ["string", "null"] },
+        service: { type: "string" },
+        propertyType: { type: ["string", "null"] },
+        bedrooms: { type: ["number", "null"] },
+        bathrooms: { type: ["number", "null"] },
+        propertySize: { type: ["string", "null"] },
+        notes: { type: ["string", "null"] },
+        startAt: { type: "string" },
+        durationMinutes: { type: "number" },
+        travelBufferMinutes: { type: "number" },
+        employeeId: { type: ["string", "null"] }
+      },
+      required: [
+        "customerName",
+        "customerPhone",
+        "customerEmail",
+        "address",
+        "service",
+        "propertyType",
+        "bedrooms",
+        "bathrooms",
+        "propertySize",
+        "notes",
+        "startAt",
+        "durationMinutes",
+        "travelBufferMinutes",
+        "employeeId"
+      ],
+      additionalProperties: false
+    },
+    strict: true
+  },
+  {
+    type: "function" as const,
     name: "check_booking_availability",
     description:
       "Check whether a requested appointment window conflicts with existing bookings. Use this before promising an appointment time.",
@@ -119,6 +162,93 @@ async function executeCustomerAgentTool(
         employeeId: booking.employeeId,
         notes: booking.notes,
       })),
+    };
+  }
+
+  if (name === "create_booking") {
+    const startAt =
+      typeof args.startAt === "string" ? new Date(args.startAt) : null;
+    const durationMinutes =
+      typeof args.durationMinutes === "number" ? args.durationMinutes : 0;
+    const travelBufferMinutes =
+      typeof args.travelBufferMinutes === "number"
+        ? args.travelBufferMinutes
+        : 0;
+    const employeeId =
+      typeof args.employeeId === "string" ? args.employeeId : null;
+
+    if (
+      !startAt ||
+      Number.isNaN(startAt.getTime()) ||
+      durationMinutes <= 0
+    ) {
+      return {
+        success: false,
+        error: "Invalid booking time or duration.",
+      };
+    }
+
+    const endAt = new Date(
+      startAt.getTime() + durationMinutes * 60_000,
+    );
+
+    const conflicts = await findBookingConflicts(
+      userId,
+      { startAt, endAt },
+      employeeId,
+      travelBufferMinutes,
+    );
+
+    if (conflicts.length > 0) {
+      return {
+        success: false,
+        error: "The requested appointment is no longer available.",
+        conflicts: conflicts.map((booking) => ({
+          id: booking.id,
+          customerName: booking.customerName,
+          startAt: booking.startAt.toISOString(),
+          endAt: booking.endAt.toISOString(),
+          employeeId: booking.employeeId,
+        })),
+      };
+    }
+
+    const { createBooking } = await import("@/lib/bookings/service");
+
+    const booking = await createBooking({
+      userId,
+      customerName:
+        typeof args.customerName === "string" ? args.customerName : "Customer",
+      customerPhone:
+        typeof args.customerPhone === "string" ? args.customerPhone : null,
+      customerEmail:
+        typeof args.customerEmail === "string" ? args.customerEmail : null,
+      address: typeof args.address === "string" ? args.address : null,
+      service: typeof args.service === "string" ? args.service : "Cleaning",
+      propertyType:
+        typeof args.propertyType === "string" ? args.propertyType : null,
+      bedrooms: typeof args.bedrooms === "number" ? args.bedrooms : null,
+      bathrooms: typeof args.bathrooms === "number" ? args.bathrooms : null,
+      propertySize:
+        typeof args.propertySize === "string" ? args.propertySize : null,
+      notes: typeof args.notes === "string" ? args.notes : null,
+      startAt,
+      durationMinutes,
+      travelBufferMinutes,
+      employeeId,
+    });
+
+    return {
+      success: true,
+      booking: {
+        id: booking.id,
+        customerName: booking.customerName,
+        service: booking.service,
+        startAt: booking.startAt.toISOString(),
+        endAt: booking.endAt.toISOString(),
+        status: booking.status,
+        employeeId: booking.employeeId,
+      },
     };
   }
 
