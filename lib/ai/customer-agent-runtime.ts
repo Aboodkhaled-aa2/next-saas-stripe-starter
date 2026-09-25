@@ -448,16 +448,21 @@ async function hasActiveBookingAccess(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
+      role: true,
       stripePriceId: true,
       stripeCurrentPeriodEnd: true,
     },
   });
 
+  if (user?.role === "ADMIN") {
+    return true;
+  }
+
   if (!user?.stripePriceId || !user.stripeCurrentPeriodEnd) {
     return false;
   }
 
-  if (user.stripeCurrentPeriodEnd.getTime() <= Date.now()) {
+  if (user.stripeCurrentPeriodEnd.getTime() + 86_400_000 <= Date.now()) {
     return false;
   }
 
