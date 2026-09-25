@@ -594,16 +594,73 @@ async function executeCustomerAgentTool(
 
     const { createBooking } = await import("@/lib/bookings/service");
 
+    const customerPhone =
+      typeof args.customerPhone === "string" ? args.customerPhone.trim() : null;
+    const customerEmail =
+      typeof args.customerEmail === "string"
+        ? args.customerEmail.trim().toLowerCase()
+        : null;
+    const customerName =
+      typeof args.customerName === "string" ? args.customerName.trim() : "Customer";
+    const address =
+      typeof args.address === "string" ? args.address.trim() : null;
+    const service =
+      typeof args.service === "string" ? args.service.trim() : "Cleaning";
+
+    const existingCustomer = await prisma.customer.findFirst({
+      where: {
+        userId,
+        OR: [
+          ...(customerPhone ? [{ phone: customerPhone }] : []),
+          ...(customerEmail ? [{ email: customerEmail }] : []),
+        ],
+      },
+    });
+
+    const customer = existingCustomer
+      ? await prisma.customer.update({
+          where: { id: existingCustomer.id },
+          data: {
+            name: customerName || existingCustomer.name,
+            phone: customerPhone ?? existingCustomer.phone,
+            email: customerEmail ?? existingCustomer.email,
+            address: address ?? existingCustomer.address,
+            source: existingCustomer.source ?? "ai_employee",
+            lastContactAt: new Date(),
+            totalBookings: { increment: 1 },
+          },
+        })
+      : await prisma.customer.create({
+          data: {
+            userId,
+            name: customerName,
+            phone: customerPhone,
+            email: customerEmail,
+            address,
+            source: "ai_employee",
+            lastContactAt: new Date(),
+            totalBookings: 1,
+          },
+        });
+
+    const lead = await prisma.lead.findFirst({
+      where: {
+        userId,
+        OR: [
+          ...(customerPhone ? [{ phone: customerPhone }] : []),
+          ...(customerEmail ? [{ email: customerEmail }] : []),
+        ],
+      },
+    });
+
     const booking = await createBooking({
       userId,
-      customerName:
-        typeof args.customerName === "string" ? args.customerName : "Customer",
-      customerPhone:
-        typeof args.customerPhone === "string" ? args.customerPhone : null,
-      customerEmail:
-        typeof args.customerEmail === "string" ? args.customerEmail : null,
-      address: typeof args.address === "string" ? args.address : null,
-      service: typeof args.service === "string" ? args.service : "Cleaning",
+      customerId: customer.id,
+      customerName,
+      customerPhone,
+      customerEmail,
+      address,
+      service,
       propertyType:
         typeof args.propertyType === "string" ? args.propertyType : null,
       bedrooms: typeof args.bedrooms === "number" ? args.bedrooms : null,
@@ -617,8 +674,21 @@ async function executeCustomerAgentTool(
       employeeId,
     });
 
+    if (lead) {
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: {
+          customerId: customer.id,
+          status: "BOOKED",
+          lastMessage: "Booking created by AI employee",
+        },
+      });
+    }
+
     return {
       success: true,
+      customerId: customer.id,
+      leadId: lead?.id ?? null,
       booking: {
         id: booking.id,
         customerName: booking.customerName,
