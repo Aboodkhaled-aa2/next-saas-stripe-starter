@@ -60,7 +60,7 @@ export const PasswordResetEmail = ({
         </Container>
       </Body>
     </Tailwind>
-  </Body>
+  </Html>
 );
 
 export default PasswordResetEmail;
