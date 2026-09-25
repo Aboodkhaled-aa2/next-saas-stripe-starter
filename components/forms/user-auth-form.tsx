@@ -40,7 +40,12 @@ export function UserAuthForm({
 
   const searchParams = useSearchParams();
 
-  const targetDestination = searchParams?.get("from") || "/pricing";
+  const rawTargetDestination = searchParams?.get("from");
+
+  const targetDestination =
+    rawTargetDestination && rawTargetDestination.startsWith("/")
+      ? rawTargetDestination
+      : "/pricing";
   const selectedPlan = (
     searchParams?.get("plan") || "starter"
   ).toLowerCase();
