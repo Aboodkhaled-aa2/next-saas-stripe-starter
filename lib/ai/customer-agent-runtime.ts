@@ -201,7 +201,7 @@ async function findAlternativeBookingTimes(
       travelBufferMinutes,
     );
 
-    if (conflicts.length === 0) {
+    if (candidateStartAt.getTime() > Date.now() && conflicts.length === 0) {
       alternatives.push(candidateStartAt);
     }
 
@@ -273,12 +273,20 @@ const customerAgentTools = [
           type: "string",
           description: "The booking ID to reschedule.",
         },
+        customerPhone: {
+          type: ["string", "null"],
+          description: "The customer's phone number used for booking verification.",
+        },
+        customerEmail: {
+          type: ["string", "null"],
+          description: "The customer's email address used for booking verification.",
+        },
         newStartAt: {
           type: "string",
           description: "New appointment start time as an ISO 8601 datetime.",
         },
       },
-      required: ["bookingId", "newStartAt"],
+      required: ["bookingId", "customerPhone", "customerEmail", "newStartAt"],
       additionalProperties: false,
     },
     strict: true,
@@ -295,8 +303,16 @@ const customerAgentTools = [
           type: "string",
           description: "The booking ID to cancel.",
         },
+        customerPhone: {
+          type: ["string", "null"],
+          description: "The customer's phone number used for booking verification.",
+        },
+        customerEmail: {
+          type: ["string", "null"],
+          description: "The customer's email address used for booking verification.",
+        },
       },
-      required: ["bookingId"],
+      required: ["bookingId", "customerPhone", "customerEmail"],
       additionalProperties: false,
     },
     strict: true,
@@ -319,24 +335,6 @@ const customerAgentTools = [
         },
       },
       required: ["customerPhone", "customerEmail"],
-      additionalProperties: false,
-    },
-    strict: true,
-  },
-  {
-    type: "function" as const,
-    name: "get_bookings_for_date",
-    description:
-      "Get all non-cancelled bookings for this cleaning business on a specific calendar date. Use this when the user asks about bookings, appointments, or the schedule for a date.",
-    parameters: {
-      type: "object",
-      properties: {
-        date: {
-          type: "string",
-          description: "Calendar date in YYYY-MM-DD format.",
-        },
-      },
-      required: ["date"],
       additionalProperties: false,
     },
     strict: true,
@@ -436,11 +434,53 @@ const customerAgentTools = [
   },
 ];
 
+function isBookingTool(name: string) {
+  return [
+    "reschedule_booking",
+    "cancel_booking",
+    "find_booking",
+    "create_booking",
+    "check_booking_availability",
+  ].includes(name);
+}
+
+async function hasActiveBookingAccess(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      stripePriceId: true,
+      stripeCurrentPeriodEnd: true,
+    },
+  });
+
+  if (!user?.stripePriceId || !user.stripeCurrentPeriodEnd) {
+    return false;
+  }
+
+  if (user.stripeCurrentPeriodEnd.getTime() <= Date.now()) {
+    return false;
+  }
+
+  return [
+    process.env.NEXT_PUBLIC_STRIPE_BUSINESS_MONTHLY_PLAN_ID,
+    process.env.NEXT_PUBLIC_STRIPE_BUSINESS_YEARLY_PLAN_ID,
+    process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PLAN_ID,
+    process.env.NEXT_PUBLIC_STRIPE_PRO_YEARLY_PLAN_ID,
+  ].includes(user.stripePriceId);
+}
+
 async function executeCustomerAgentTool(
   name: string,
   argumentsJson: string,
   userId: string,
 ): Promise<Record<string, unknown>> {
+  if (isBookingTool(name) && !(await hasActiveBookingAccess(userId))) {
+    return {
+      success: false,
+      error: "Appointment booking is available on Business and Pro plans only.",
+    };
+  }
+
   let args: Record<string, unknown>;
 
   try {
@@ -552,11 +592,18 @@ async function executeCustomerAgentTool(
   if (name === "reschedule_booking") {
     const bookingId =
       typeof args.bookingId === "string" ? args.bookingId.trim() : "";
+    const customerPhone =
+      typeof args.customerPhone === "string" ? args.customerPhone.trim() : null;
+    const customerEmail =
+      typeof args.customerEmail === "string"
+        ? args.customerEmail.trim().toLowerCase()
+        : null;
     const newStartAt =
       typeof args.newStartAt === "string" ? new Date(args.newStartAt) : null;
 
     if (
       !bookingId ||
+      (!customerPhone && !customerEmail) ||
       !newStartAt ||
       Number.isNaN(newStartAt.getTime())
     ) {
@@ -577,6 +624,8 @@ async function executeCustomerAgentTool(
       select: {
         id: true,
         customerName: true,
+        customerPhone: true,
+        customerEmail: true,
         service: true,
         durationMinutes: true,
         travelBufferMinutes: true,
@@ -588,6 +637,24 @@ async function executeCustomerAgentTool(
       return {
         success: false,
         error: "Booking not found or already cancelled.",
+      };
+    }
+
+    const identityMatches =
+      (customerPhone && booking.customerPhone === customerPhone) ||
+      (customerEmail && booking.customerEmail === customerEmail);
+
+    if (!identityMatches) {
+      return {
+        success: false,
+        error: "The booking could not be verified for this customer.",
+      };
+    }
+
+    if (newStartAt.getTime() <= Date.now()) {
+      return {
+        success: false,
+        error: "The new appointment time must be in the future.",
       };
     }
 
@@ -659,8 +726,14 @@ async function executeCustomerAgentTool(
   if (name === "cancel_booking") {
     const bookingId =
       typeof args.bookingId === "string" ? args.bookingId.trim() : "";
+    const customerPhone =
+      typeof args.customerPhone === "string" ? args.customerPhone.trim() : null;
+    const customerEmail =
+      typeof args.customerEmail === "string"
+        ? args.customerEmail.trim().toLowerCase()
+        : null;
 
-    if (!bookingId) {
+    if (!bookingId || (!customerPhone && !customerEmail)) {
       return {
         success: false,
         error: "Booking ID is required.",
@@ -678,6 +751,8 @@ async function executeCustomerAgentTool(
       select: {
         id: true,
         customerName: true,
+        customerPhone: true,
+        customerEmail: true,
         service: true,
         startAt: true,
         endAt: true,
@@ -689,6 +764,17 @@ async function executeCustomerAgentTool(
       return {
         success: false,
         error: "Booking not found or already cancelled.",
+      };
+    }
+
+    const identityMatches =
+      (customerPhone && booking.customerPhone === customerPhone) ||
+      (customerEmail && booking.customerEmail === customerEmail);
+
+    if (!identityMatches) {
+      return {
+        success: false,
+        error: "The booking could not be verified for this customer.",
       };
     }
 
@@ -773,45 +859,6 @@ async function executeCustomerAgentTool(
     };
   }
 
-  if (name === "get_bookings_for_date") {
-    const date = typeof args.date === "string" ? args.date : "";
-
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return {
-        success: false,
-        error: "Date must use YYYY-MM-DD format.",
-      };
-    }
-
-    const bookings = await getBookingsForDay(
-      userId,
-      new Date(date + "T12:00:00"),
-    );
-
-    return {
-      success: true,
-      date,
-      bookings: bookings.map((booking) => ({
-        id: booking.id,
-        customerName: booking.customerName,
-        customerPhone: booking.customerPhone,
-        service: booking.service,
-        address: booking.address,
-        propertyType: booking.propertyType,
-        bedrooms: booking.bedrooms,
-        bathrooms: booking.bathrooms,
-        propertySize: booking.propertySize,
-        startAt: booking.startAt.toISOString(),
-        endAt: booking.endAt.toISOString(),
-        durationMinutes: booking.durationMinutes,
-        travelBufferMinutes: booking.travelBufferMinutes,
-        status: booking.status,
-        employeeId: booking.employeeId,
-        notes: booking.notes,
-      })),
-    };
-  }
-
   if (name === "create_booking") {
     const startAt =
       typeof args.startAt === "string" ? new Date(args.startAt) : null;
@@ -851,6 +898,13 @@ async function executeCustomerAgentTool(
       return {
         success: false,
         error: "Invalid booking time or duration.",
+      };
+    }
+
+    if (startAt.getTime() <= Date.now()) {
+      return {
+        success: false,
+        error: "The appointment time must be in the future.",
       };
     }
 
@@ -928,7 +982,6 @@ async function executeCustomerAgentTool(
             address: address ?? existingCustomer.address,
             source: existingCustomer.source ?? "ai_employee",
             lastContactAt: new Date(),
-            totalBookings: { increment: 1 },
           },
         })
       : await prisma.customer.create({
@@ -940,7 +993,7 @@ async function executeCustomerAgentTool(
             address,
             source: "ai_employee",
             lastContactAt: new Date(),
-            totalBookings: 1,
+            totalBookings: 0,
           },
         });
 
@@ -973,6 +1026,14 @@ async function executeCustomerAgentTool(
       durationMinutes,
       travelBufferMinutes,
       employeeId,
+    });
+
+    await prisma.customer.update({
+      where: { id: customer.id },
+      data: {
+        totalBookings: { increment: 1 },
+        lastContactAt: new Date(),
+      },
     });
 
     if (lead) {
@@ -1041,6 +1102,13 @@ async function executeCustomerAgentTool(
           resolvedDuration.error ??
           "Unable to determine the appointment duration from company rules.",
         needsMoreDetails: resolvedDuration.needsMoreDetails ?? false,
+      };
+    }
+
+    if (startAt.getTime() <= Date.now()) {
+      return {
+        success: false,
+        error: "The appointment time must be in the future.",
       };
     }
 
@@ -1130,6 +1198,8 @@ export async function runCustomerAgent(
     additionalNotes: businessProfile.additionalNotes,
   };
 
+  const bookingAccessEnabled = await hasActiveBookingAccess(options.userId);
+
   let response = await openai.responses.create({
     model: "gpt-5.6-terra",
     reasoning: {
@@ -1137,7 +1207,9 @@ export async function runCustomerAgent(
     },
     instructions: buildCustomerAgentSystemPrompt(knowledge),
     input: options.message,
-    tools: customerAgentTools,
+    tools: bookingAccessEnabled
+      ? customerAgentTools
+      : customerAgentTools.filter((tool) => !isBookingTool(tool.name)),
     ...(options.previousResponseId
       ? { previous_response_id: options.previousResponseId }
       : {}),
@@ -1180,7 +1252,9 @@ export async function runCustomerAgent(
       instructions: buildCustomerAgentSystemPrompt(knowledge),
       previous_response_id: response.id,
       input: toolOutputs,
-      tools: customerAgentTools,
+      tools: bookingAccessEnabled
+        ? customerAgentTools
+        : customerAgentTools.filter((tool) => !isBookingTool(tool.name)),
     });
   }
 
