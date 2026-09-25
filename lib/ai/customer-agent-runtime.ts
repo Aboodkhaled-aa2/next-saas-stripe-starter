@@ -18,6 +18,154 @@ export type CustomerAgentRunResult = {
   text: string;
 };
 
+
+const customerAgentTools = [
+  {
+    type: "function" as const,
+    name: "get_bookings_for_date",
+    description:
+      "Get all non-cancelled bookings for this cleaning business on a specific calendar date. Use this when the user asks about bookings, appointments, or the schedule for a date.",
+    parameters: {
+      type: "object",
+      properties: {
+        date: {
+          type: "string",
+          description: "Calendar date in YYYY-MM-DD format.",
+        },
+      },
+      required: ["date"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: "function" as const,
+    name: "check_booking_availability",
+    description:
+      "Check whether a requested appointment window conflicts with existing bookings. Use this before promising an appointment time.",
+    parameters: {
+      type: "object",
+      properties: {
+        startAt: {
+          type: "string",
+          description: "Requested start time as an ISO 8601 datetime.",
+        },
+        endAt: {
+          type: "string",
+          description: "Requested end time as an ISO 8601 datetime.",
+        },
+        employeeId: {
+          type: ["string", "null"],
+          description: "Optional employee ID to check for that employee specifically.",
+        },
+      },
+      required: ["startAt", "endAt", "employeeId"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+];
+
+async function executeCustomerAgentTool(
+  name: string,
+  argumentsJson: string,
+  userId: string,
+): Promise<Record<string, unknown>> {
+  let args: Record<string, unknown>;
+
+  try {
+    args = JSON.parse(argumentsJson) as Record<string, unknown>;
+  } catch {
+    return { success: false, error: "Invalid tool arguments." };
+  }
+
+  if (name === "get_bookings_for_date") {
+    const date = typeof args.date === "string" ? args.date : "";
+
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) {
+      return {
+        success: false,
+        error: "Date must use YYYY-MM-DD format.",
+      };
+    }
+
+    const bookings = await getBookingsForDay(
+      userId,
+      new Date(date + "T12:00:00"),
+    );
+
+    return {
+      success: true,
+      date,
+      bookings: bookings.map((booking) => ({
+        id: booking.id,
+        customerName: booking.customerName,
+        customerPhone: booking.customerPhone,
+        service: booking.service,
+        address: booking.address,
+        propertyType: booking.propertyType,
+        bedrooms: booking.bedrooms,
+        bathrooms: booking.bathrooms,
+        propertySize: booking.propertySize,
+        startAt: booking.startAt.toISOString(),
+        endAt: booking.endAt.toISOString(),
+        durationMinutes: booking.durationMinutes,
+        travelBufferMinutes: booking.travelBufferMinutes,
+        status: booking.status,
+        employeeId: booking.employeeId,
+        notes: booking.notes,
+      })),
+    };
+  }
+
+  if (name === "check_booking_availability") {
+    const startAt =
+      typeof args.startAt === "string" ? new Date(args.startAt) : null;
+    const endAt =
+      typeof args.endAt === "string" ? new Date(args.endAt) : null;
+    const employeeId =
+      typeof args.employeeId === "string" ? args.employeeId : null;
+
+    if (
+      !startAt ||
+      !endAt ||
+      Number.isNaN(startAt.getTime()) ||
+      Number.isNaN(endAt.getTime()) ||
+      startAt >= endAt
+    ) {
+      return {
+        success: false,
+        error: "Invalid appointment window.",
+      };
+    }
+
+    const conflicts = await findBookingConflicts(
+      userId,
+      { startAt, endAt },
+      employeeId,
+    );
+
+    return {
+      success: true,
+      available: conflicts.length === 0,
+      conflicts: conflicts.map((booking) => ({
+        id: booking.id,
+        customerName: booking.customerName,
+        service: booking.service,
+        startAt: booking.startAt.toISOString(),
+        endAt: booking.endAt.toISOString(),
+        employeeId: booking.employeeId,
+        status: booking.status,
+      })),
+    };
+  }
+
+  return {
+    success: false,
+    error: "Unknown customer agent tool.",
+  };
+}
+
 export async function runCustomerAgent(
   options: CustomerAgentRunOptions,
 ): Promise<CustomerAgentRunResult> {
@@ -50,17 +198,55 @@ export async function runCustomerAgent(
     additionalNotes: businessProfile.additionalNotes,
   };
 
-  const response = await openai.responses.create({
+  let response = await openai.responses.create({
     model: "gpt-5.6-terra",
     reasoning: {
       effort: "low",
     },
     instructions: buildCustomerAgentSystemPrompt(knowledge),
     input: options.message,
+    tools: customerAgentTools,
     ...(options.previousResponseId
       ? { previous_response_id: options.previousResponseId }
       : {}),
   });
+
+  for (let iteration = 0; iteration < 5; iteration += 1) {
+    const functionCalls = response.output.filter(
+      (item) => item.type === "function_call",
+    );
+
+    if (functionCalls.length === 0) {
+      break;
+    }
+
+    const toolOutputs = [];
+
+    for (const call of functionCalls) {
+      const result = await executeCustomerAgentTool(
+        call.name,
+        call.arguments,
+        options.userId,
+      );
+
+      toolOutputs.push({
+        type: "function_call_output" as const,
+        call_id: call.call_id,
+        output: JSON.stringify(result),
+      });
+    }
+
+    response = await openai.responses.create({
+      model: "gpt-5.6-terra",
+      reasoning: {
+        effort: "low",
+      },
+      instructions: buildCustomerAgentSystemPrompt(knowledge),
+      previous_response_id: response.id,
+      input: toolOutputs,
+      tools: customerAgentTools,
+    });
+  }
 
   return {
     responseId: response.id,
