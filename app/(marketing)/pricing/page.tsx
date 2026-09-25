@@ -57,7 +57,24 @@ export default async function PricingPage() {
 
       <hr className="container border-slate-800" />
 
-      <ComparePlans />
+      <details className="group container">
+        <summary className="mx-auto flex max-w-3xl cursor-pointer list-none items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/50 px-6 py-5 text-left transition hover:border-slate-700">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wider text-blue-400">
+              Full comparison
+            </p>
+            <p className="mt-1 text-lg font-bold text-white">
+              See every feature by plan
+            </p>
+          </div>
+          <span className="text-sm font-semibold text-blue-400 transition group-open:rotate-180">
+            ↓
+          </span>
+        </summary>
+        <div className="pt-8">
+          <ComparePlans />
+        </div>
+      </details>
 
       <PricingFaq />
     </div>
