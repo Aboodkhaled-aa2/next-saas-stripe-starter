@@ -10,33 +10,33 @@ import { HeaderSection } from "../shared/header-section";
 const pricingFaqData = [
   {
     id: "item-1",
-    question: "What is the cost of the free plan?",
+    question: "Is there a free trial?",
     answer:
-      "Our free plan is completely free, with no monthly or annual charges. It's a great way to get started and explore our basic features.",
+      "No. Smart Cleaning Desk is a paid-only platform. Choose the plan that fits your cleaning business and activate it through secure checkout.",
   },
   {
     id: "item-2",
-    question: "How much does the Basic Monthly plan cost?",
+    question: "What happens after I subscribe?",
     answer:
-      "The Basic Monthly plan is priced at $15 per month. It provides access to our core features and is billed on a monthly basis.",
+      "After payment is verified, your subscription becomes active. You can then complete your business setup and configure your AI employee.",
   },
   {
     id: "item-3",
-    question: "What is the price of the Pro Monthly plan?",
+    question: "What are Voice AI minutes?",
     answer:
-      "The Pro Monthly plan is available for $25 per month. It offers advanced features and is billed on a monthly basis for added flexibility.",
+      "Voice AI minutes are the monthly calling minutes included with Business and Pro plans. Starter focuses on AI customer messaging.",
   },
   {
     id: "item-4",
-    question: "Do you offer any annual subscription plans?",
+    question: "Can I upgrade my plan?",
     answer:
-      "Yes, we offer annual subscription plans for even more savings. The Basic Annual plan is $144 per year, and the Pro Annual plan is $300 per year.",
+      "Yes. You can upgrade when your business needs more automation, voice usage, calling features, or advanced controls.",
   },
   {
     id: "item-5",
-    question: "Is there a trial period for the paid plans?",
+    question: "Is the annual plan available?",
     answer:
-      "We offer a 14-day free trial for both the Pro Monthly and Pro Annual plans. It's a great way to experience all the features before committing to a paid subscription.",
+      "Annual billing can be offered as an additional billing option when the corresponding Stripe prices are enabled. The current pricing experience focuses on monthly plans.",
   },
 ];
 
@@ -46,9 +46,7 @@ export function PricingFaq() {
       <HeaderSection
         label="FAQ"
         title="Frequently Asked Questions"
-        subtitle="Explore our comprehensive FAQ to find quick answers to common
-          inquiries. If you need further assistance, don't hesitate to
-          contact us for personalized help."
+        subtitle="Quick answers about plans, Voice AI, billing, and getting started."
       />
 
       <Accordion type="single" collapsible className="my-12 w-full">
