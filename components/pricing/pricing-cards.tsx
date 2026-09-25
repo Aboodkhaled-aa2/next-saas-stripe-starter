@@ -149,7 +149,8 @@ export function PricingCards({
       <section className="flex flex-col items-center py-10 text-center">
         <HeaderSection
           label="Pricing"
-          title="Start at full speed!"
+          title="Choose your AI employee"
+          subtitle="Start with customer service, add AI voice and booking, or unlock advanced controls."
         />
 
         <div className="grid w-full max-w-7xl items-stretch gap-8 bg-inherit py-10 lg:grid-cols-3">
