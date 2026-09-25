@@ -24,6 +24,13 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!user.id) {
+      return NextResponse.json(
+        { error: "User ID is missing" },
+        { status: 400 },
+      );
+    }
+
     const result = await runCustomerAgent({
       userId: user.id,
       message,
