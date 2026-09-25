@@ -60,7 +60,8 @@ export async function findBookingConflicts(
   employeeId?: string | null,
   travelBufferMinutes = 0,
 ) {
-  const bufferMs = Math.max(0, travelBufferMinutes) * 60_000;
+  const normalizedBufferMinutes = Math.max(0, travelBufferMinutes);
+  const bufferMs = normalizedBufferMinutes * 60_000;
 
   const candidates = await prisma.booking.findMany({
     where: {
@@ -82,20 +83,30 @@ export async function findBookingConflicts(
   });
 
   return candidates.filter((booking) => {
-    const existingEndWithBuffer =
-      booking.endAt.getTime() +
+    const existingBufferMs =
       Math.max(0, booking.travelBufferMinutes) * 60_000;
-    const requestedEndWithBuffer = window.endAt.getTime() + bufferMs;
+    const existingStartWithBuffer =
+      booking.startAt.getTime() - existingBufferMs;
+    const existingEndWithBuffer =
+      booking.endAt.getTime() + existingBufferMs;
+    const requestedStartWithBuffer =
+      window.startAt.getTime() - bufferMs;
+    const requestedEndWithBuffer =
+      window.endAt.getTime() + bufferMs;
 
     return (
-      booking.startAt.getTime() < requestedEndWithBuffer &&
-      existingEndWithBuffer > window.startAt.getTime()
+      existingStartWithBuffer < requestedEndWithBuffer &&
+      existingEndWithBuffer > requestedStartWithBuffer
     );
   });
 }
 
 export async function createBooking(input: CreateBookingInput) {
-  if (input.durationMinutes <= 0) {
+  if (
+    Number.isNaN(input.startAt.getTime()) ||
+    Number.isNaN(input.durationMinutes) ||
+    input.durationMinutes <= 0
+  ) {
     throw new Error("Booking duration must be greater than zero.");
   }
 
@@ -106,20 +117,6 @@ export async function createBooking(input: CreateBookingInput) {
   const endAt = new Date(
     input.startAt.getTime() + input.durationMinutes * 60_000,
   );
-
-  const conflicts = await findBookingConflicts(
-    input.userId,
-    {
-      startAt: input.startAt,
-      endAt,
-    },
-    input.employeeId,
-    input.travelBufferMinutes ?? 0,
-  );
-
-  if (conflicts.length > 0) {
-    throw new Error("The requested booking time conflicts with an existing booking.");
-  }
 
   if (input.employeeId) {
     const employee = await prisma.employee.findFirst({
@@ -134,6 +131,20 @@ export async function createBooking(input: CreateBookingInput) {
     if (!employee) {
       throw new Error("The selected employee is not available.");
     }
+  }
+
+  const conflicts = await findBookingConflicts(
+    input.userId,
+    {
+      startAt: input.startAt,
+      endAt,
+    },
+    input.employeeId,
+    input.travelBufferMinutes ?? 0,
+  );
+
+  if (conflicts.length > 0) {
+    throw new Error("The requested booking time conflicts with an existing booking.");
   }
 
   return prisma.booking.create({
