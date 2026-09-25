@@ -660,7 +660,7 @@ async function executeCustomerAgentTool(
   if (name === "create_booking") {
     const startAt =
       typeof args.startAt === "string" ? new Date(args.startAt) : null;
-    const durationMinutes =
+    let durationMinutes =
       typeof args.durationMinutes === "number" ? args.durationMinutes : 0;
     const employeeId =
       typeof args.employeeId === "string" ? args.employeeId : null;
@@ -668,6 +668,55 @@ async function executeCustomerAgentTool(
       typeof args.travelBufferMinutes === "number"
         ? Math.max(0, args.travelBufferMinutes)
         : 0;
+
+    const durationProfile = await prisma.businessProfile.findUnique({
+      where: {
+        userId,
+      },
+      select: {
+        bookingRules: true,
+      },
+    });
+
+    let durationConfiguration: {
+      duration?: {
+        mode?: "fixed" | "rules";
+        fixedDurationMinutes?: number | null;
+      };
+    } = {};
+
+    if (typeof durationProfile?.bookingRules === "string") {
+      try {
+        durationConfiguration = JSON.parse(
+          durationProfile.bookingRules,
+        ) as typeof durationConfiguration;
+      } catch {
+        durationConfiguration = {};
+      }
+    } else if (
+      durationProfile?.bookingRules &&
+      typeof durationProfile.bookingRules === "object" &&
+      !Array.isArray(durationProfile.bookingRules)
+    ) {
+      durationConfiguration =
+        durationProfile.bookingRules as typeof durationConfiguration;
+    }
+
+    if (durationConfiguration.duration?.mode === "fixed") {
+      const configuredDuration =
+        typeof durationConfiguration.duration.fixedDurationMinutes === "number"
+          ? durationConfiguration.duration.fixedDurationMinutes
+          : 0;
+
+      if (configuredDuration <= 0) {
+        return {
+          success: false,
+          error: "The company's fixed appointment duration is invalid.",
+        };
+      }
+
+      durationMinutes = configuredDuration;
+    }
 
     if (
       !startAt ||
