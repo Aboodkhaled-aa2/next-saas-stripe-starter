@@ -26,6 +26,24 @@ export type CustomerAgentRunResult = {
 const customerAgentTools = [
   {
     type: "function" as const,
+    name: "cancel_booking",
+    description:
+      "Cancel an existing customer booking after the booking has been identified. Use only when the customer clearly asks to cancel.",
+    parameters: {
+      type: "object",
+      properties: {
+        bookingId: {
+          type: "string",
+          description: "The booking ID to cancel.",
+        },
+      },
+      required: ["bookingId"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: "function" as const,
     name: "find_booking",
     description:
       "Find a customer's non-cancelled booking using their phone number or email. Use this before changing or cancelling a booking.",
@@ -146,6 +164,73 @@ async function executeCustomerAgentTool(
     args = JSON.parse(argumentsJson) as Record<string, unknown>;
   } catch {
     return { success: false, error: "Invalid tool arguments." };
+  }
+
+  if (name === "cancel_booking") {
+    const bookingId =
+      typeof args.bookingId === "string" ? args.bookingId.trim() : "";
+
+    if (!bookingId) {
+      return {
+        success: false,
+        error: "Booking ID is required.",
+      };
+    }
+
+    const booking = await prisma.booking.findFirst({
+      where: {
+        id: bookingId,
+        userId,
+        status: {
+          not: "CANCELLED",
+        },
+      },
+      select: {
+        id: true,
+        customerName: true,
+        service: true,
+        startAt: true,
+        endAt: true,
+        status: true,
+      },
+    });
+
+    if (!booking) {
+      return {
+        success: false,
+        error: "Booking not found or already cancelled.",
+      };
+    }
+
+    const cancelledBooking = await prisma.booking.update({
+      where: {
+        id: booking.id,
+      },
+      data: {
+        status: "CANCELLED",
+      },
+      select: {
+        id: true,
+        customerName: true,
+        service: true,
+        startAt: true,
+        endAt: true,
+        status: true,
+      },
+    });
+
+    return {
+      success: true,
+      message: "Booking cancelled successfully.",
+      booking: {
+        id: cancelledBooking.id,
+        customerName: cancelledBooking.customerName,
+        service: cancelledBooking.service,
+        startAt: cancelledBooking.startAt.toISOString(),
+        endAt: cancelledBooking.endAt.toISOString(),
+        status: cancelledBooking.status,
+      },
+    };
   }
 
   if (name === "find_booking") {
