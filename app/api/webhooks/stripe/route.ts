@@ -85,7 +85,7 @@ export async function POST(req: Request) {
     if (event.type === "invoice.payment_succeeded") {
       const invoice = event.data.object as Stripe.Invoice;
 
-      if (invoice.subscription && invoice.payment_status === "paid") {
+      if (invoice.subscription && invoice.status === "paid") {
         const subscription = await stripe.subscriptions.retrieve(
           invoice.subscription as string,
         );
