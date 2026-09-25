@@ -360,6 +360,7 @@ model SalesCampaign {
 
   user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   prospects SalesProspect[]
+  contactAttempts SalesContactAttempt[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt
