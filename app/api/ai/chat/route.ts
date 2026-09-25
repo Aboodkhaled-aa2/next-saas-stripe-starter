@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
-import { prisma } from "@/lib/db";
-import { openai } from "@/lib/openai";
-import { buildEmployeeSystemPrompt } from "@/lib/ai/employee";
+import { runCustomerAgent } from "@/lib/ai/customer-agent-runtime";
 
 export async function POST(req: Request) {
   try {
@@ -26,30 +24,15 @@ export async function POST(req: Request) {
       );
     }
 
-    const businessProfile = await prisma.businessProfile.findUnique({
-      where: {
-        userId: user.id,
-      },
-    });
-
-    if (!businessProfile) {
-      return NextResponse.json(
-        { error: "Business profile is not configured" },
-        { status: 400 },
-      );
-    }
-
-    const systemPrompt = buildEmployeeSystemPrompt(businessProfile);
-
-    const response = await openai.responses.create({
-      model: "gpt-5-mini",
-      instructions: systemPrompt,
-      input: message,
+    const result = await runCustomerAgent({
+      userId: user.id,
+      message,
     });
 
     return NextResponse.json({
       success: true,
-      message: response.output_text,
+      message: result.text,
+      responseId: result.responseId,
     });
   } catch (error) {
     console.error("AI chat error:", error);
