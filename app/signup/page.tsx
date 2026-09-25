@@ -10,6 +10,8 @@ import {
   Mail,
   User,
   Chrome,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
@@ -30,6 +32,7 @@ function SignupForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -263,25 +266,69 @@ function SignupForm() {
                 Password
               </label>
 
-              <div className="relative">
+              <div className={`relative rounded-xl border transition ${
+                password.length > 0 &&
+                (!/[A-Z]/.test(password) ||
+                  !/[a-z]/.test(password) ||
+                  !/[0-9]/.test(password) ||
+                  !/[^A-Za-z0-9]/.test(password) ||
+                  password.length < 8)
+                  ? "border-red-500/70"
+                  : "border-slate-800 focus-within:border-blue-500"
+              }`}>
                 <Lock className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
 
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Create a strong password"
                   disabled={isLoading}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-12 pr-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 transition disabled:opacity-50"
+                  className="w-full bg-slate-950 rounded-xl pl-12 pr-12 py-3 text-white placeholder-slate-600 focus:outline-none transition disabled:opacity-50"
                 />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((value) => !value)}
+                  disabled={isLoading}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-slate-300 disabled:opacity-50"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
               </div>
 
-              <p className="mt-2 text-xs text-slate-500">
-                8+ characters with uppercase, lowercase, number, and special
-                character.
-              </p>
+              {password.length > 0 && (
+                <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950/80 p-4">
+                  <p className="mb-3 text-sm font-semibold text-slate-300">
+                    Your password must contain:
+                  </p>
+
+                  <div className="space-y-2 text-sm">
+                    {[
+                      { label: "At least 8 characters", valid: password.length >= 8 },
+                      { label: "Uppercase letter (A-Z)", valid: /[A-Z]/.test(password) },
+                      { label: "Lowercase letter (a-z)", valid: /[a-z]/.test(password) },
+                      { label: "Number (0-9)", valid: /[0-9]/.test(password) },
+                      { label: "Special character", valid: /[^A-Za-z0-9]/.test(password) },
+                    ].map((requirement) => (
+                      <div
+                        key={requirement.label}
+                        className={`flex items-center gap-2 ${
+                          requirement.valid ? "text-emerald-400" : "text-slate-500"
+                        }`}
+                      >
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full border border-current text-xs">
+                          {requirement.valid ? "✓" : ""}
+                        </span>
+                        <span>{requirement.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
