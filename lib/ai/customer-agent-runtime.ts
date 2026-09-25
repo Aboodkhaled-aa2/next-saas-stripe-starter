@@ -224,7 +224,11 @@ export async function runCustomerAgent(
       break;
     }
 
-    const toolOutputs = [];
+    const toolOutputs: Array<{
+      type: "function_call_output";
+      call_id: string;
+      output: string;
+    }> = [];
 
     for (const call of functionCalls) {
       const result = await executeCustomerAgentTool(
