@@ -14,6 +14,14 @@ const DEFAULT_INSTAGRAM_SCOPES = [
   "instagram_business_manage_messages",
 ].join(",");
 
+type InstagramTokenResponse = {
+  access_token: string;
+  user_id: string;
+  expires_in?: number;
+  error_type?: string;
+  error_message?: string;
+};
+
 function verifyState(state: string, secret: string) {
   const [payload, signature] = state.split(".");
   if (!payload || !signature) return null;
@@ -54,7 +62,7 @@ async function exchangeCodeForToken(
   appId: string,
   appSecret: string,
   redirectUri: string,
-) {
+): Promise<InstagramTokenResponse> {
   const body = new URLSearchParams();
   body.set("client_id", appId);
   body.set("client_secret", appSecret);
@@ -69,13 +77,7 @@ async function exchangeCodeForToken(
     cache: "no-store",
   });
 
-  const data = (await response.json()) as {
-    access_token?: string;
-    user_id?: string;
-    expires_in?: number;
-    error_type?: string;
-    error_message?: string;
-  };
+  const data = (await response.json()) as Partial<InstagramTokenResponse>;
 
   if (!response.ok || !data.access_token || !data.user_id) {
     throw new Error(
@@ -85,10 +87,17 @@ async function exchangeCodeForToken(
     );
   }
 
-  return data;
+  return {
+    access_token: data.access_token,
+    user_id: data.user_id,
+    expires_in: data.expires_in,
+  };
 }
 
-async function exchangeForLongLivedToken(shortLivedToken: string, appSecret: string) {
+async function exchangeForLongLivedToken(
+  shortLivedToken: string,
+  appSecret: string,
+) {
   const url = new URL(`${INSTAGRAM_GRAPH_BASE_URL}/access_token`);
   url.searchParams.set("grant_type", "ig_exchange_token");
   url.searchParams.set("client_secret", appSecret);
@@ -102,10 +111,15 @@ async function exchangeForLongLivedToken(shortLivedToken: string, appSecret: str
   };
 
   if (!response.ok || !data.access_token) {
-    throw new Error(data.error?.message || "Instagram long-lived token exchange failed.");
+    throw new Error(
+      data.error?.message || "Instagram long-lived token exchange failed.",
+    );
   }
 
-  return data;
+  return {
+    access_token: data.access_token,
+    expires_in: data.expires_in,
+  };
 }
 
 async function getInstagramAccount(accessToken: string) {
