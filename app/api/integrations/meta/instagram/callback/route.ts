@@ -173,7 +173,12 @@ async function getInstagramAccount(accessToken: string) {
     );
   }
 
-  return data;
+  return {
+    id: data.id,
+    username: data.username,
+    name: data.name,
+    account_type: data.account_type,
+  };
 }
 
 export async function GET(request: Request) {
