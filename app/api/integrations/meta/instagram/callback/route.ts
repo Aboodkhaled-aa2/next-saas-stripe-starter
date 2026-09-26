@@ -190,6 +190,10 @@ export async function GET(request: Request) {
 
     const metaUser = await getMetaUser(token.access_token);
 
+    if (!metaUser.id) {
+      throw new Error("Meta account lookup returned no account ID.");
+    }
+
     const expiresAt =
       typeof token.expires_in === "number"
         ? new Date(Date.now() + token.expires_in * 1000)
