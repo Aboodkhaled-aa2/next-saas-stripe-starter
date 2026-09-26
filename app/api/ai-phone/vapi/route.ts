@@ -372,7 +372,10 @@ export async function POST(request: Request) {
 
     if (message.type === "tool-calls") {
       const toolCalls = normalizeToolCalls(message);
-      const results = [];
+      const results: Array<{
+        toolCallId: string;
+        result: string;
+      }> = [];
 
       for (const toolCall of toolCalls) {
         const result = await executeCustomerAgentToolCall({
