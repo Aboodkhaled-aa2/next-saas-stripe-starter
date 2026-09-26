@@ -1171,6 +1171,18 @@ async function executeCustomerAgentTool(
   };
 }
 
+function shouldForceAvailabilityCheck(message: string) {
+  return /check\s+(?:the\s+)?availability|check\s+if\s+.*available|if\s+.*available.*(?:book|schedule)|(?:book|schedule).*if\s+.*available/i.test(
+    message,
+  );
+}
+
+function shouldBookIfAvailable(message: string) {
+  return /(?:book|schedule).*if\s+.*available|if\s+.*available.*(?:book|schedule)/i.test(
+    message,
+  );
+}
+
 export async function runCustomerAgent(
   options: CustomerAgentRunOptions,
 ): Promise<CustomerAgentRunResult> {
@@ -1204,6 +1216,10 @@ export async function runCustomerAgent(
   };
 
   const bookingAccessEnabled = await hasActiveBookingAccess(options.userId);
+  const forceAvailabilityCheck =
+    bookingAccessEnabled && shouldForceAvailabilityCheck(options.message);
+  const bookIfAvailable =
+    bookingAccessEnabled && shouldBookIfAvailable(options.message);
 
   let response = await openai.responses.create({
     model: "gpt-5.6-terra",
@@ -1215,6 +1231,14 @@ export async function runCustomerAgent(
     tools: bookingAccessEnabled
       ? customerAgentTools
       : customerAgentTools.filter((tool) => !isBookingTool(tool.name)),
+    ...(forceAvailabilityCheck
+      ? {
+          tool_choice: {
+            type: "function" as const,
+            name: "check_booking_availability",
+          },
+        }
+      : {}),
     ...(options.previousResponseId
       ? { previous_response_id: options.previousResponseId }
       : {}),
@@ -1234,6 +1258,7 @@ export async function runCustomerAgent(
       call_id: string;
       output: string;
     }> = [];
+    let forceCreateBooking = false;
 
     for (const call of functionCalls) {
       const result = await executeCustomerAgentTool(
@@ -1241,6 +1266,15 @@ export async function runCustomerAgent(
         call.arguments,
         options.userId,
       );
+
+      if (
+        call.name === "check_booking_availability" &&
+        bookIfAvailable &&
+        result.success === true &&
+        result.available === true
+      ) {
+        forceCreateBooking = true;
+      }
 
       toolOutputs.push({
         type: "function_call_output" as const,
@@ -1260,6 +1294,14 @@ export async function runCustomerAgent(
       tools: bookingAccessEnabled
         ? customerAgentTools
         : customerAgentTools.filter((tool) => !isBookingTool(tool.name)),
+      ...(forceCreateBooking
+        ? {
+            tool_choice: {
+              type: "function" as const,
+              name: "create_booking",
+            },
+          }
+        : {}),
     });
   }
 
