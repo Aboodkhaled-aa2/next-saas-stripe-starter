@@ -7,6 +7,8 @@ import {
   Zap,
 } from "lucide-react";
 
+import Link from "next/link";
+
 import { DashboardHeader } from "@/components/dashboard/header";
 
 export const dynamic = "force-dynamic";
@@ -66,13 +68,13 @@ export default function FacebookIntegrationPage() {
         </div>
 
         <div className="border-t border-slate-800 bg-slate-900/20 p-6">
-          <button
-            type="button"
+          <Link
+            href="/api/integrations/meta/facebook"
             className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
           >
             <Facebook className="h-4 w-4" />
             Connect Facebook
-          </button>
+          </Link>
 
           <p className="mt-3 text-xs leading-5 text-slate-600">
             Facebook connection will be completed through Meta&apos;s secure
