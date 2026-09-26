@@ -24,9 +24,11 @@ function SignupForm() {
 
   const planParam = searchParams.get("plan");
 
-  const selectedPlan: Plan = validPlans.includes(planParam as Plan)
+  const initialPlan: Plan | null = validPlans.includes(planParam as Plan)
     ? (planParam as Plan)
-    : "starter";
+    : null;
+
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(initialPlan);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -40,6 +42,11 @@ function SignupForm() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
+
+    if (!selectedPlan) {
+      setErrorMsg("Please choose a plan before creating your account.");
+      return;
+    }
 
     if (!name.trim()) {
       setErrorMsg("Please enter your full name.");
@@ -141,6 +148,12 @@ function SignupForm() {
 
   const handleGoogleSignup = async () => {
     setErrorMsg("");
+
+    if (!selectedPlan) {
+      setErrorMsg("Please choose a plan before continuing with Google.");
+      return;
+    }
+
     setGoogleLoading(true);
 
     try {
@@ -190,6 +203,70 @@ function SignupForm() {
         </div>
 
         <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-8 shadow-2xl">
+          <div className="mb-8">
+            <div className="mb-3">
+              <h2 className="text-lg font-bold text-white">Choose your plan</h2>
+              <p className="text-sm text-slate-400">
+                Select a plan before creating your account.
+              </p>
+            </div>
+
+            <div className="grid gap-3">
+              {[
+                {
+                  id: "starter" as Plan,
+                  name: "Starter",
+                  price: "$49",
+                  description: "AI customer messaging",
+                },
+                {
+                  id: "business" as Plan,
+                  name: "Business",
+                  price: "$99",
+                  description: "Booking, calendar, and AI voice",
+                },
+                {
+                  id: "pro" as Plan,
+                  name: "Pro",
+                  price: "$249",
+                  description: "Advanced booking and custom rules",
+                },
+              ].map((plan) => {
+                const isSelected = selectedPlan === plan.id;
+
+                return (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedPlan(plan.id);
+                      setErrorMsg("");
+                    }}
+                    disabled={isLoading}
+                    className={`w-full rounded-2xl border p-4 text-left transition ${
+                      isSelected
+                        ? "border-blue-500 bg-blue-500/10 ring-1 ring-blue-500"
+                        : "border-slate-800 bg-slate-950/70 hover:border-slate-700"
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <div className="font-bold text-white">{plan.name}</div>
+                        <div className="mt-1 text-xs text-slate-400">
+                          {plan.description}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-white">{plan.price}</div>
+                        <div className="text-xs text-slate-500">per month</div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {errorMsg && (
             <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm leading-relaxed break-words">
               {errorMsg}
