@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
 
-const META_GRAPH_API_VERSION = "v26.0";
+const INSTAGRAM_OAUTH_AUTHORIZE_URL = "https://www.instagram.com/oauth/authorize";
 
 function createState(userId: string, secret: string) {
   const nonce = randomBytes(24).toString("hex");
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Meta OAuth is not configured. Set META_APP_ID, AUTH_SECRET, and META_OAUTH_SCOPES.",
+          "Instagram OAuth is not configured. Set META_APP_ID, AUTH_SECRET, and META_OAUTH_SCOPES.",
       },
       { status: 500 },
     );
@@ -49,14 +49,12 @@ export async function GET(request: Request) {
     request.url,
   ).toString();
 
-  const authorizationUrl = new URL(
-    `https://www.facebook.com/${META_GRAPH_API_VERSION}/dialog/oauth`,
-  );
+  const authorizationUrl = new URL(INSTAGRAM_OAUTH_AUTHORIZE_URL);
 
   authorizationUrl.searchParams.set("client_id", appId);
   authorizationUrl.searchParams.set("redirect_uri", redirectUri);
-  authorizationUrl.searchParams.set("state", createState(userId, stateSecret));
   authorizationUrl.searchParams.set("response_type", "code");
+  authorizationUrl.searchParams.set("state", createState(userId, stateSecret));
   authorizationUrl.searchParams.set("scope", scopes);
 
   return NextResponse.redirect(authorizationUrl);
