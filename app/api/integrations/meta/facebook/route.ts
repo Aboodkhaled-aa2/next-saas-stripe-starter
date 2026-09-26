@@ -33,9 +33,16 @@ export async function GET(request: Request) {
 
   const appId = process.env.META_APP_ID;
   const stateSecret = process.env.AUTH_SECRET;
-  const scopes =
+  const configuredScopes =
     process.env.META_FACEBOOK_OAUTH_SCOPES ||
-    "pages_show_list,pages_read_engagement,pages_manage_metadata,pages_messaging";
+    "pages_show_list,pages_manage_metadata,pages_messaging";
+
+  const scopes = configuredScopes
+    .split(",")
+    .map((scope) => scope.trim())
+    .filter(Boolean)
+    .filter((scope) => scope !== "pages_read_engagement")
+    .join(",");
 
   if (!appId || !stateSecret) {
     return NextResponse.json(
