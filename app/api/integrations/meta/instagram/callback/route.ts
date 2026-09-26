@@ -7,31 +7,28 @@ const INSTAGRAM_GRAPH_API_VERSION = "v26.0";
 const INSTAGRAM_TOKEN_URL = "https://api.instagram.com/oauth/access_token";
 const INSTAGRAM_GRAPH_BASE_URL = "https://graph.instagram.com";
 
+const DEFAULT_INSTAGRAM_SCOPES = [
+  "instagram_business_basic",
+  "instagram_business_content_publish",
+  "instagram_business_manage_comments",
+  "instagram_business_manage_messages",
+].join(",");
+
 function verifyState(state: string, secret: string) {
   const [payload, signature] = state.split(".");
+  if (!payload || !signature) return null;
 
-  if (!payload || !signature) {
-    return null;
-  }
-
-  const expected = createHmac("sha256", secret)
-    .update(payload)
-    .digest("base64url");
-
+  const expected = createHmac("sha256", secret).update(payload).digest("base64url");
   const receivedBuffer = Buffer.from(signature);
   const expectedBuffer = Buffer.from(expected);
 
   if (
     receivedBuffer.length !== expectedBuffer.length ||
     !timingSafeEqual(receivedBuffer, expectedBuffer)
-  ) {
-    return null;
-  }
+  ) return null;
 
   try {
-    const decoded = JSON.parse(
-      Buffer.from(payload, "base64url").toString("utf8"),
-    ) as {
+    const decoded = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
       userId?: string;
       createdAt?: number;
     };
@@ -40,9 +37,7 @@ function verifyState(state: string, secret: string) {
       !decoded.userId ||
       !decoded.createdAt ||
       Date.now() - decoded.createdAt > 10 * 60 * 1000
-    ) {
-      return null;
-    }
+    ) return null;
 
     return decoded.userId;
   } catch {
@@ -51,10 +46,7 @@ function verifyState(state: string, secret: string) {
 }
 
 function getRedirectUri(request: Request) {
-  return new URL(
-    "/api/integrations/meta/instagram/callback",
-    request.url,
-  ).toString();
+  return new URL("/api/integrations/meta/instagram/callback", request.url).toString();
 }
 
 async function exchangeCodeForToken(
@@ -64,7 +56,6 @@ async function exchangeCodeForToken(
   redirectUri: string,
 ) {
   const body = new URLSearchParams();
-
   body.set("client_id", appId);
   body.set("client_secret", appSecret);
   body.set("grant_type", "authorization_code");
@@ -73,9 +64,7 @@ async function exchangeCodeForToken(
 
   const response = await fetch(INSTAGRAM_TOKEN_URL, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
     cache: "no-store",
   });
@@ -83,54 +72,37 @@ async function exchangeCodeForToken(
   const data = (await response.json()) as {
     access_token?: string;
     user_id?: string;
-    permissions?: string[];
     expires_in?: number;
     error_type?: string;
-    code?: number;
     error_message?: string;
   };
 
   if (!response.ok || !data.access_token || !data.user_id) {
     throw new Error(
-      data.error_message || "Instagram authorization code exchange failed.",
+      data.error_message ||
+        data.error_type ||
+        "Instagram authorization code exchange failed.",
     );
   }
 
   return data;
 }
 
-async function exchangeForLongLivedToken(
-  shortLivedToken: string,
-  appSecret: string,
-) {
-  const url = new URL(
-    `${INSTAGRAM_GRAPH_BASE_URL}/access_token`,
-  );
-
+async function exchangeForLongLivedToken(shortLivedToken: string, appSecret: string) {
+  const url = new URL(`${INSTAGRAM_GRAPH_BASE_URL}/access_token`);
   url.searchParams.set("grant_type", "ig_exchange_token");
   url.searchParams.set("client_secret", appSecret);
   url.searchParams.set("access_token", shortLivedToken);
 
-  const response = await fetch(url, {
-    method: "GET",
-    cache: "no-store",
-  });
-
+  const response = await fetch(url, { method: "GET", cache: "no-store" });
   const data = (await response.json()) as {
     access_token?: string;
-    token_type?: string;
     expires_in?: number;
-    error?: {
-      message?: string;
-      type?: string;
-      code?: number;
-    };
+    error?: { message?: string };
   };
 
   if (!response.ok || !data.access_token) {
-    throw new Error(
-      data.error?.message || "Instagram long-lived token exchange failed.",
-    );
+    throw new Error(data.error?.message || "Instagram long-lived token exchange failed.");
   }
 
   return data;
@@ -140,36 +112,28 @@ async function getInstagramAccount(accessToken: string) {
   const url = new URL(
     `${INSTAGRAM_GRAPH_BASE_URL}/${INSTAGRAM_GRAPH_API_VERSION}/me`,
   );
-
   url.searchParams.set("fields", "id,username,name,account_type");
   url.searchParams.set("access_token", accessToken);
 
-  const response = await fetch(url, {
-    method: "GET",
-    cache: "no-store",
-  });
-
+  const response = await fetch(url, { method: "GET", cache: "no-store" });
   const data = (await response.json()) as {
     id?: string;
     username?: string;
     name?: string;
     account_type?: string;
-    error?: {
-      message?: string;
-      type?: string;
-      code?: number;
-    };
+    error?: { message?: string };
   };
 
   if (!response.ok || !data.id) {
-    throw new Error(
-      data.error?.message || "Instagram account lookup failed.",
-    );
+    throw new Error(data.error?.message || "Instagram account lookup failed.");
   }
 
-  if (data.account_type && data.account_type !== "BUSINESS") {
+  if (
+    data.account_type &&
+    !["BUSINESS", "CREATOR"].includes(data.account_type)
+  ) {
     throw new Error(
-      "The connected Instagram account is not an Instagram Business account.",
+      "The connected Instagram account is not an Instagram professional account.",
     );
   }
 
@@ -181,6 +145,12 @@ async function getInstagramAccount(accessToken: string) {
   };
 }
 
+function redirectWithError(request: Request, message: string) {
+  const url = new URL("/dashboard/integrations/instagram", request.url);
+  url.searchParams.set("error", message);
+  return NextResponse.redirect(url);
+}
+
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
@@ -189,24 +159,14 @@ export async function GET(request: Request) {
   const errorDescription = requestUrl.searchParams.get("error_description");
 
   if (error) {
-    const message =
-      errorDescription || error || "Instagram authorization was cancelled.";
-
-    return NextResponse.redirect(
-      new URL(
-        `/dashboard/integrations/instagram?error=${encodeURIComponent(message)}`,
-        request.url,
-      ),
+    return redirectWithError(
+      request,
+      errorDescription || error || "Instagram authorization was cancelled.",
     );
   }
 
   if (!code || !state) {
-    return NextResponse.redirect(
-      new URL(
-        "/dashboard/integrations/instagram?error=Missing+Instagram+authorization+parameters",
-        request.url,
-      ),
-    );
+    return redirectWithError(request, "Missing Instagram authorization parameters.");
   }
 
   const appId = process.env.META_APP_ID;
@@ -224,16 +184,13 @@ export async function GET(request: Request) {
   }
 
   const userId = verifyState(state, stateSecret);
-
   if (!userId) {
-    return NextResponse.json(
-      { error: "Invalid or expired Instagram OAuth state." },
-      { status: 400 },
-    );
+    return redirectWithError(request, "Invalid or expired Instagram OAuth state.");
   }
 
   try {
     const redirectUri = getRedirectUri(request);
+
     const shortLivedToken = await exchangeCodeForToken(
       code,
       appId,
@@ -242,12 +199,12 @@ export async function GET(request: Request) {
     );
 
     const longLivedToken = await exchangeForLongLivedToken(
-      shortLivedToken.access_token!,
+      shortLivedToken.access_token,
       appSecret,
     );
 
     const instagramAccount = await getInstagramAccount(
-      longLivedToken.access_token!,
+      longLivedToken.access_token,
     );
 
     const expiresAt =
@@ -256,6 +213,9 @@ export async function GET(request: Request) {
         : typeof shortLivedToken.expires_in === "number"
           ? new Date(Date.now() + shortLivedToken.expires_in * 1000)
           : null;
+
+    const scopes =
+      process.env.META_OAUTH_SCOPES?.trim() || DEFAULT_INSTAGRAM_SCOPES;
 
     await prisma.metaIntegration.upsert({
       where: {
@@ -267,12 +227,10 @@ export async function GET(request: Request) {
       },
       update: {
         externalAccountName:
-          instagramAccount.username ??
-          instagramAccount.name ??
-          null,
-        accessToken: longLivedToken.access_token!,
+          instagramAccount.username ?? instagramAccount.name ?? null,
+        accessToken: longLivedToken.access_token,
         tokenExpiresAt: expiresAt,
-        scopes: process.env.META_OAUTH_SCOPES ?? null,
+        scopes,
         instagramAccountId: instagramAccount.id,
         pageId: null,
         pageName: null,
@@ -282,30 +240,25 @@ export async function GET(request: Request) {
         platform: "INSTAGRAM",
         externalAccountId: instagramAccount.id,
         externalAccountName:
-          instagramAccount.username ??
-          instagramAccount.name ??
-          null,
-        accessToken: longLivedToken.access_token!,
+          instagramAccount.username ?? instagramAccount.name ?? null,
+        accessToken: longLivedToken.access_token,
         tokenExpiresAt: expiresAt,
-        scopes: process.env.META_OAUTH_SCOPES ?? null,
+        scopes,
         instagramAccountId: instagramAccount.id,
       },
     });
 
     return NextResponse.redirect(
-      new URL(
-        "/dashboard/integrations/instagram?connected=true",
-        request.url,
-      ),
+      new URL("/dashboard/integrations/instagram?connected=true", request.url),
     );
   } catch (callbackError) {
     console.error("Instagram OAuth callback error:", callbackError);
 
-    return NextResponse.redirect(
-      new URL(
-        "/dashboard/integrations/instagram?error=Instagram+connection+failed",
-        request.url,
-      ),
-    );
+    const message =
+      callbackError instanceof Error
+        ? callbackError.message
+        : "Instagram connection failed.";
+
+    return redirectWithError(request, message);
   }
 }
