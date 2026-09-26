@@ -184,6 +184,10 @@ export async function GET(request: Request) {
       appSecret,
       redirectUri,
     );
+    if (!token.access_token) {
+      throw new Error("Meta token exchange returned no access token.");
+    }
+
     const metaUser = await getMetaUser(token.access_token);
 
     const expiresAt =
