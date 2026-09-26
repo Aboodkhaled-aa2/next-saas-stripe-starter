@@ -35,6 +35,9 @@ export default async function AIEmployeePage() {
       where: {
         userId: user.id,
       },
+      include: {
+        aiPhoneSettings: true,
+      },
     }),
     getUserSubscriptionPlan(user.id),
   ]);
@@ -51,6 +54,14 @@ export default async function AIEmployeePage() {
     subscriptionPlan.title === "Pro";
 
   const planLabel = subscriptionPlan.title;
+  const aiPhoneSettings = businessProfile?.aiPhoneSettings;
+  const aiPhoneConfigured = Boolean(
+    aiPhoneSettings &&
+      aiPhoneSettings.status !== "NOT_CONFIGURED" &&
+      aiPhoneSettings.phoneNumber &&
+      aiPhoneSettings.assistantName,
+  );
+  const aiPhoneActive = aiPhoneSettings?.status === "ACTIVE";
 
   return (
     <div className="space-y-6">
@@ -66,6 +77,63 @@ export default async function AIEmployeePage() {
           Configure AI
         </Link>
       </DashboardHeader>
+
+      <section className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-xl sm:p-8">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10">
+              <Phone className="h-6 w-6 text-violet-400" />
+            </div>
+
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-xl font-semibold text-white">AI Phone</h2>
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+                    aiPhoneActive
+                      ? "bg-emerald-500/10 text-emerald-400"
+                      : aiPhoneConfigured
+                        ? "bg-blue-500/10 text-blue-400"
+                        : "bg-amber-500/10 text-amber-400"
+                  }`}
+                >
+                  {aiPhoneActive ? "Active" : aiPhoneConfigured ? "Ready" : "Setup required"}
+                </span>
+              </div>
+
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+                Give your cleaning business an AI receptionist that can answer calls,
+                qualify customers, and help with bookings using the same business
+                knowledge as your AI employee.
+              </p>
+            </div>
+          </div>
+
+          {hasVoice ? (
+            <Link
+              href="/dashboard/ai/phone/setup"
+              className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-500"
+            >
+              <Settings2 className="h-4 w-4" />
+              {aiPhoneConfigured ? "Manage AI Phone" : "Set Up AI Phone"}
+            </Link>
+          ) : (
+            <Link
+              href="/dashboard/billing"
+              className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-4 text-sm font-semibold text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-800 hover:text-white"
+            >
+              Upgrade to Business
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          )}
+        </div>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <PhoneStatusItem label="Phone number" value={aiPhoneSettings?.phoneNumber || "Not connected"} />
+          <PhoneStatusItem label="AI receptionist" value={aiPhoneSettings?.assistantName || "Not configured"} />
+          <PhoneStatusItem label="Provider" value={aiPhoneSettings?.provider || "Not connected"} />
+        </div>
+      </section>
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
         <section className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-xl sm:p-8">
@@ -246,6 +314,21 @@ export default async function AIEmployeePage() {
       </section>
 
       <AIChat />
+    </div>
+  );
+}
+
+function PhoneStatusItem({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="mt-1 truncate text-sm font-medium text-slate-200">{value}</p>
     </div>
   );
 }
