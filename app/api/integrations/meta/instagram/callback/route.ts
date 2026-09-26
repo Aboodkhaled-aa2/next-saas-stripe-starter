@@ -3,7 +3,9 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
 
-const META_GRAPH_API_VERSION = "v26.0";
+const INSTAGRAM_GRAPH_API_VERSION = "v26.0";
+const INSTAGRAM_TOKEN_URL = "https://api.instagram.com/oauth/access_token";
+const INSTAGRAM_GRAPH_BASE_URL = "https://graph.instagram.com";
 
 function verifyState(state: string, secret: string) {
   const [payload, signature] = state.split(".");
@@ -61,14 +63,53 @@ async function exchangeCodeForToken(
   appSecret: string,
   redirectUri: string,
 ) {
+  const body = new URLSearchParams();
+
+  body.set("client_id", appId);
+  body.set("client_secret", appSecret);
+  body.set("grant_type", "authorization_code");
+  body.set("redirect_uri", redirectUri);
+  body.set("code", code);
+
+  const response = await fetch(INSTAGRAM_TOKEN_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+    cache: "no-store",
+  });
+
+  const data = (await response.json()) as {
+    access_token?: string;
+    user_id?: string;
+    permissions?: string[];
+    expires_in?: number;
+    error_type?: string;
+    code?: number;
+    error_message?: string;
+  };
+
+  if (!response.ok || !data.access_token || !data.user_id) {
+    throw new Error(
+      data.error_message || "Instagram authorization code exchange failed.",
+    );
+  }
+
+  return data;
+}
+
+async function exchangeForLongLivedToken(
+  shortLivedToken: string,
+  appSecret: string,
+) {
   const url = new URL(
-    `https://graph.facebook.com/${META_GRAPH_API_VERSION}/oauth/access_token`,
+    `${INSTAGRAM_GRAPH_BASE_URL}/access_token`,
   );
 
-  url.searchParams.set("client_id", appId);
+  url.searchParams.set("grant_type", "ig_exchange_token");
   url.searchParams.set("client_secret", appSecret);
-  url.searchParams.set("redirect_uri", redirectUri);
-  url.searchParams.set("code", code);
+  url.searchParams.set("access_token", shortLivedToken);
 
   const response = await fetch(url, {
     method: "GET",
@@ -88,21 +129,19 @@ async function exchangeCodeForToken(
 
   if (!response.ok || !data.access_token) {
     throw new Error(
-      data.error?.message || "Meta token exchange failed.",
+      data.error?.message || "Instagram long-lived token exchange failed.",
     );
   }
 
   return data;
 }
 
-async function getMetaUser(
-  accessToken: string,
-) {
+async function getInstagramAccount(accessToken: string) {
   const url = new URL(
-    `https://graph.facebook.com/${META_GRAPH_API_VERSION}/me`,
+    `${INSTAGRAM_GRAPH_BASE_URL}/${INSTAGRAM_GRAPH_API_VERSION}/me`,
   );
 
-  url.searchParams.set("fields", "id,name");
+  url.searchParams.set("fields", "id,username,name,account_type");
   url.searchParams.set("access_token", accessToken);
 
   const response = await fetch(url, {
@@ -112,14 +151,26 @@ async function getMetaUser(
 
   const data = (await response.json()) as {
     id?: string;
+    username?: string;
     name?: string;
+    account_type?: string;
     error?: {
       message?: string;
+      type?: string;
+      code?: number;
     };
   };
 
   if (!response.ok || !data.id) {
-    throw new Error(data.error?.message || "Meta account lookup failed.");
+    throw new Error(
+      data.error?.message || "Instagram account lookup failed.",
+    );
+  }
+
+  if (data.account_type && data.account_type !== "BUSINESS") {
+    throw new Error(
+      "The connected Instagram account is not an Instagram Business account.",
+    );
   }
 
   return data;
@@ -134,7 +185,7 @@ export async function GET(request: Request) {
 
   if (error) {
     const message =
-      errorDescription || error || "Meta authorization was cancelled.";
+      errorDescription || error || "Instagram authorization was cancelled.";
 
     return NextResponse.redirect(
       new URL(
@@ -147,7 +198,7 @@ export async function GET(request: Request) {
   if (!code || !state) {
     return NextResponse.redirect(
       new URL(
-        "/dashboard/integrations/instagram?error=Missing+Meta+authorization+parameters",
+        "/dashboard/integrations/instagram?error=Missing+Instagram+authorization+parameters",
         request.url,
       ),
     );
@@ -161,7 +212,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Meta OAuth is not configured. Set META_APP_ID, META_APP_SECRET, and AUTH_SECRET.",
+          "Instagram OAuth is not configured. Set META_APP_ID, META_APP_SECRET, and AUTH_SECRET.",
       },
       { status: 500 },
     );
@@ -171,56 +222,68 @@ export async function GET(request: Request) {
 
   if (!userId) {
     return NextResponse.json(
-      { error: "Invalid or expired Meta OAuth state." },
+      { error: "Invalid or expired Instagram OAuth state." },
       { status: 400 },
     );
   }
 
   try {
     const redirectUri = getRedirectUri(request);
-    const token = await exchangeCodeForToken(
+    const shortLivedToken = await exchangeCodeForToken(
       code,
       appId,
       appSecret,
       redirectUri,
     );
-    if (!token.access_token) {
-      throw new Error("Meta token exchange returned no access token.");
-    }
 
-    const metaUser = await getMetaUser(token.access_token);
+    const longLivedToken = await exchangeForLongLivedToken(
+      shortLivedToken.access_token!,
+      appSecret,
+    );
 
-    if (!metaUser.id) {
-      throw new Error("Meta account lookup returned no account ID.");
-    }
+    const instagramAccount = await getInstagramAccount(
+      longLivedToken.access_token!,
+    );
 
     const expiresAt =
-      typeof token.expires_in === "number"
-        ? new Date(Date.now() + token.expires_in * 1000)
-        : null;
+      typeof longLivedToken.expires_in === "number"
+        ? new Date(Date.now() + longLivedToken.expires_in * 1000)
+        : typeof shortLivedToken.expires_in === "number"
+          ? new Date(Date.now() + shortLivedToken.expires_in * 1000)
+          : null;
 
     await prisma.metaIntegration.upsert({
       where: {
         userId_platform_externalAccountId: {
           userId,
           platform: "INSTAGRAM",
-          externalAccountId: metaUser.id,
+          externalAccountId: instagramAccount.id,
         },
       },
       update: {
-        externalAccountName: metaUser.name ?? null,
-        accessToken: token.access_token,
+        externalAccountName:
+          instagramAccount.username ??
+          instagramAccount.name ??
+          null,
+        accessToken: longLivedToken.access_token!,
         tokenExpiresAt: expiresAt,
         scopes: process.env.META_OAUTH_SCOPES ?? null,
+        instagramAccountId: instagramAccount.id,
+        pageId: null,
+        pageName: null,
       },
       create: {
         userId,
         platform: "INSTAGRAM",
-        externalAccountId: metaUser.id,
-        externalAccountName: metaUser.name ?? null,
-        accessToken: token.access_token,
+        externalAccountId: instagramAccount.id,
+        externalAccountName:
+          instagramAccount.username ??
+          instagramAccount.name ??
+          null,
+        accessToken: longLivedToken.access_token!,
         tokenExpiresAt: expiresAt,
         scopes: process.env.META_OAUTH_SCOPES ?? null,
+        instagramAccountId: instagramAccount.id,
       },
     });
 
@@ -231,11 +294,11 @@ export async function GET(request: Request) {
       ),
     );
   } catch (callbackError) {
-    console.error("Meta Instagram OAuth callback error:", callbackError);
+    console.error("Instagram OAuth callback error:", callbackError);
 
     return NextResponse.redirect(
       new URL(
-        "/dashboard/integrations/instagram?error=Meta+connection+failed",
+        "/dashboard/integrations/instagram?error=Instagram+connection+failed",
         request.url,
       ),
     );
