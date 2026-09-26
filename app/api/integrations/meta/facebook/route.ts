@@ -33,13 +33,15 @@ export async function GET(request: Request) {
 
   const appId = process.env.META_APP_ID;
   const stateSecret = process.env.AUTH_SECRET;
-  const scopes = process.env.META_FACEBOOK_OAUTH_SCOPES;
+  const scopes =
+    process.env.META_FACEBOOK_OAUTH_SCOPES ||
+    "pages_show_list,pages_read_engagement,pages_manage_metadata,pages_messaging";
 
-  if (!appId || !stateSecret || !scopes) {
+  if (!appId || !stateSecret) {
     return NextResponse.json(
       {
         error:
-          "Facebook OAuth is not configured. Set META_APP_ID, AUTH_SECRET, and META_FACEBOOK_OAUTH_SCOPES.",
+          "Facebook OAuth is not configured. Set META_APP_ID and AUTH_SECRET.",
       },
       { status: 500 },
     );
