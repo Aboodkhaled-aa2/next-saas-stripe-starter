@@ -86,6 +86,13 @@ enum SalesContactStatus {
   VOICEMAIL
 }
 
+enum MetaIntegrationPlatform {
+  @@schema("public")
+  FACEBOOK
+  INSTAGRAM
+  WHATSAPP
+}
+
 model Account {
   @@schema("public")
   id                String   @id @default(cuid())
@@ -146,6 +153,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   salesCampaigns  SalesCampaign[]
   salesProspects  SalesProspect[]
+  metaIntegrations MetaIntegration[]
 
   stripeCustomerId       String?   @unique @map("stripe_customer_id")
   stripeSubscriptionId   String?   @unique @map("stripe_subscription_id")
@@ -153,6 +161,39 @@ model User {
   stripeCurrentPeriodEnd DateTime? @map("stripe_current_period_end")
 
   @@map("users")
+}
+
+model MetaIntegration {
+  @@schema("public")
+  id     String @id @default(cuid())
+  userId String
+
+  platform MetaIntegrationPlatform
+
+  externalAccountId   String
+  externalAccountName String?
+
+  accessToken    String @db.Text
+  tokenExpiresAt DateTime?
+  scopes         String?
+
+  pageId               String?
+  pageName             String?
+  instagramAccountId   String?
+  whatsappBusinessId   String?
+  whatsappPhoneNumberId String?
+  phoneNumber          String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform, externalAccountId])
+  @@index([userId, platform])
+  @@map("meta_integrations")
 }
 
 model BusinessProfile {
