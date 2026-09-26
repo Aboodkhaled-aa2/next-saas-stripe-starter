@@ -61,6 +61,8 @@ export async function GET(request: Request) {
   authorizationUrl.searchParams.set("client_id", appId);
   authorizationUrl.searchParams.set("redirect_uri", redirectUri);
   authorizationUrl.searchParams.set("response_type", "code");
+  authorizationUrl.searchParams.set("enable_fb_login", "0");
+  authorizationUrl.searchParams.set("force_authentication", "1");
   authorizationUrl.searchParams.set("state", createState(userId, stateSecret));
   authorizationUrl.searchParams.set("scope", scopes);
 
