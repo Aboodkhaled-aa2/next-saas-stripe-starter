@@ -5,6 +5,13 @@ import { auth } from "@/auth";
 
 const INSTAGRAM_OAUTH_AUTHORIZE_URL = "https://www.instagram.com/oauth/authorize";
 
+const DEFAULT_INSTAGRAM_SCOPES = [
+  "instagram_business_basic",
+  "instagram_business_content_publish",
+  "instagram_business_manage_comments",
+  "instagram_business_manage_messages",
+].join(",");
+
 function createState(userId: string, secret: string) {
   const nonce = randomBytes(24).toString("hex");
   const payload = Buffer.from(
@@ -32,13 +39,13 @@ export async function GET(request: Request) {
 
   const appId = process.env.META_APP_ID;
   const stateSecret = process.env.AUTH_SECRET;
-  const scopes = process.env.META_OAUTH_SCOPES;
+  const scopes = process.env.META_OAUTH_SCOPES?.trim() || DEFAULT_INSTAGRAM_SCOPES;
 
-  if (!appId || !stateSecret || !scopes) {
+  if (!appId || !stateSecret) {
     return NextResponse.json(
       {
         error:
-          "Instagram OAuth is not configured. Set META_APP_ID, AUTH_SECRET, and META_OAUTH_SCOPES.",
+          "Instagram OAuth is not configured. Set META_APP_ID and AUTH_SECRET.",
       },
       { status: 500 },
     );
