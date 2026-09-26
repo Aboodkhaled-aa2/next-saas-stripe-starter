@@ -474,6 +474,22 @@ async function hasActiveBookingAccess(userId: string) {
   ].includes(user.stripePriceId);
 }
 
+export type CustomerAgentToolCall = {
+  name: string;
+  arguments: Record<string, unknown>;
+  userId: string;
+};
+
+export async function executeCustomerAgentToolCall(
+  call: CustomerAgentToolCall,
+): Promise<Record<string, unknown>> {
+  return executeCustomerAgentTool(
+    call.name,
+    JSON.stringify(call.arguments),
+    call.userId,
+  );
+}
+
 async function executeCustomerAgentTool(
   name: string,
   argumentsJson: string,
