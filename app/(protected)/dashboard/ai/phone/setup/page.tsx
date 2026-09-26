@@ -2,21 +2,83 @@
 
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Phone, Save, Sparkles } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 export default function AIPhoneSetupPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSettings() {
+      try {
+        const response = await fetch("/api/ai-phone");
+        if (!response.ok) return;
+
+        const data = await response.json();
+        if (!cancelled && data.aiPhoneSettings) {
+          const settings = data.aiPhoneSettings;
+          const form = document.querySelector<HTMLFormElement>("form");
+          if (!form) return;
+
+          const setValue = (name: string, value: string | null) => {
+            const field = form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
+            if (field && value) field.value = value;
+          };
+
+          setValue("phoneNumber", settings.phoneNumber);
+          setValue("assistantName", settings.assistantName);
+          setValue("greeting", settings.greeting);
+          setValue("provider", settings.provider);
+        }
+      } catch {
+        if (!cancelled) setError("Unable to load AI Phone settings.");
+      }
+    }
+
+    loadSettings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
     setSaved(false);
+    setError("");
 
-    window.setTimeout(() => {
-      setSaving(false);
+    const formData = new FormData(event.currentTarget);
+
+    try {
+      const response = await fetch("/api/ai-phone", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phoneNumber: formData.get("phoneNumber"),
+          assistantName: formData.get("assistantName"),
+          greeting: formData.get("greeting"),
+          provider: formData.get("provider"),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to save AI Phone settings.");
+      }
+
       setSaved(true);
-    }, 500);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save AI Phone settings.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -123,11 +185,17 @@ export default function AIPhoneSetupPage() {
           </div>
         </section>
 
+        {error && (
+          <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {error}
+          </div>
+        )}
+
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
           {saved && (
             <span className="inline-flex items-center gap-2 text-sm text-emerald-400">
               <CheckCircle2 className="h-4 w-4" />
-              Setup saved locally
+              Setup saved
             </span>
           )}
 
