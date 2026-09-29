@@ -77,7 +77,7 @@ export default function FacebookIntegrationPage() {
           </Link>
 
           <p className="mt-3 text-xs leading-5 text-slate-600">
-            Facebook connection will be completed through Meta&apos;s secure
+            Facebook connection will be completed through InboxSync&apos;s secure
             authorization flow.
           </p>
         </div>
