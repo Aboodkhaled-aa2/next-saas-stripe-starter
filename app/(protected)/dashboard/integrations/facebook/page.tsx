@@ -69,7 +69,7 @@ export default function FacebookIntegrationPage() {
 
         <div className="border-t border-slate-800 bg-slate-900/20 p-6">
           <Link
-            href="/api/integrations/meta/facebook"
+            href="/api/integrations/inboxsync/messenger"
             className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
           >
             <Facebook className="h-4 w-4" />
@@ -87,7 +87,7 @@ export default function FacebookIntegrationPage() {
         <InfoCard
           icon={<ShieldCheck className="h-5 w-5" />}
           title="Secure Connection"
-          text="Your Facebook Page will use Meta's authorization system. Your password is never shared with Smart Cleaning Desk."
+          text="Your Facebook Page will use InboxSync&apos;s secure Meta authorization flow. Your password is never shared with Smart Cleaning Desk."
         />
 
         <InfoCard
