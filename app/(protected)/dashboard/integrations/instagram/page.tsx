@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export default async function InstagramIntegrationPage() {
   const session = await auth();
-  let channel = null;
+  let channel: Awaited<ReturnType<typeof prisma.fiwanoChannel.findFirst>> = null;
 
   if (session?.user?.id) {
     try {
