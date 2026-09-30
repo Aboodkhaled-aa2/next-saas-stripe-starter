@@ -9,11 +9,24 @@ import {
 
 import Link from "next/link";
 
+import { auth } from "@/auth";
+import { prisma } from "@/lib/db";
 import { DashboardHeader } from "@/components/dashboard/header";
 
 export const dynamic = "force-dynamic";
 
-export default function InstagramIntegrationPage() {
+export default async function InstagramIntegrationPage() {
+  const session = await auth();
+  const channel = session?.user?.id
+    ? await prisma.fiwanoChannel.findFirst({
+        where: {
+          userId: session.user.id,
+          channelType: "instagram",
+          isActive: true,
+        },
+      })
+    : null;
+
   return (
     <div className="space-y-6">
       <DashboardHeader
@@ -34,113 +47,81 @@ export default function InstagramIntegrationPage() {
                   Instagram Messaging
                 </h2>
 
-                <span className="rounded-full border border-slate-800 bg-slate-900 px-2.5 py-1 text-[11px] font-medium text-slate-500">
-                  Not connected
+                <span
+                  className={
+                    channel
+                      ? "rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-400"
+                      : "rounded-full border border-slate-800 bg-slate-900 px-2.5 py-1 text-[11px] font-medium text-slate-500"
+                  }
+                >
+                  {channel ? "Connected" : "Not connected"}
                 </span>
               </div>
 
               <p className="mt-1 text-sm leading-6 text-slate-500">
-                Let your AI employee answer Instagram DMs, qualify leads,
-                provide service information, and help customers book.
+                {channel
+                  ? channel.name
+                    ? `Connected to ${channel.name}`
+                    : "Your Instagram channel is connected and ready."
+                  : "Let your AI employee answer Instagram DMs, qualify leads, provide service information, and help customers book."}
               </p>
             </div>
           </div>
         </div>
 
         <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3">
-          <FeatureCard
-            icon={<MessageCircle className="h-4 w-4" />}
-            title="AI Replies"
-            text="Respond to customer messages automatically."
-          />
-
-          <FeatureCard
-            icon={<Sparkles className="h-4 w-4" />}
-            title="Lead Capture"
-            text="Collect names, contact details, and service requests."
-          />
-
-          <FeatureCard
-            icon={<Zap className="h-4 w-4" />}
-            title="24/7 Response"
-            text="Never leave a customer waiting for a reply."
-          />
+          <FeatureCard icon={<MessageCircle className="h-4 w-4" />} title="AI Replies" text="Respond to customer messages automatically." />
+          <FeatureCard icon={<Sparkles className="h-4 w-4" />} title="Lead Capture" text="Collect names, contact details, and service requests." />
+          <FeatureCard icon={<Zap className="h-4 w-4" />} title="24/7 Response" text="Never leave a customer waiting for a reply." />
         </div>
 
         <div className="border-t border-slate-800 bg-slate-900/20 p-6">
-          <Link
-            href="/api/integrations/fiwano/connect?channel=instagram"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-pink-600 to-purple-600 px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-          >
-            <Instagram className="h-4 w-4" />
-            Connect Instagram
-          </Link>
+          {channel ? (
+            <div className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-5 text-sm font-semibold text-emerald-400">
+              <CheckCircle2 className="h-4 w-4" />
+              Connected
+            </div>
+          ) : (
+            <Link
+              href="/api/integrations/fiwano/connect?channel=instagram"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-pink-600 to-purple-600 px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            >
+              <Instagram className="h-4 w-4" />
+              Connect Instagram
+            </Link>
+          )}
 
           <p className="mt-3 text-xs leading-5 text-slate-600">
-            Instagram connection is handled through Fiwano&apos;s secure hosted
-            authorization flow.
+            Instagram connection is handled through Fiwano&apos;s secure hosted authorization flow.
           </p>
         </div>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <InfoCard
-          icon={<ShieldCheck className="h-5 w-5" />}
-          title="Secure Connection"
-          text="Your Instagram account will use Fiwano's hosted authorization system. Your password is never shared with Smart Cleaning Desk."
-        />
-
-        <InfoCard
-          icon={<CheckCircle2 className="h-5 w-5" />}
-          title="What Happens After Connecting"
-          text="Fiwano handles the Instagram authorization and channel connection so Smart Cleaning Desk can work with eligible customer conversations."
-        />
+        <InfoCard icon={<ShieldCheck className="h-5 w-5" />} title="Secure Connection" text="Your Instagram account will use Fiwano's hosted authorization system. Your password is never shared with Smart Cleaning Desk." />
+        <InfoCard icon={<CheckCircle2 className="h-5 w-5" />} title="What Happens After Connecting" text="Fiwano handles the Instagram authorization and channel connection so Smart Cleaning Desk can work with eligible customer conversations." />
       </section>
     </div>
   );
 }
 
-function FeatureCard({
-  icon,
-  title,
-  text,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-}) {
+function FeatureCard({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
-      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-slate-400">
-        {icon}
-      </div>
-
+      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-slate-400">{icon}</div>
       <h3 className="mt-4 text-sm font-semibold text-white">{title}</h3>
-
       <p className="mt-1 text-sm leading-6 text-slate-500">{text}</p>
     </div>
   );
 }
 
-function InfoCard({
-  icon,
-  title,
-  text,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-}) {
+function InfoCard({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shadow-xl">
       <div className="flex items-start gap-4">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 text-slate-400">
-          {icon}
-        </div>
-
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 text-slate-400">{icon}</div>
         <div>
           <h3 className="font-medium text-white">{title}</h3>
-
           <p className="mt-1 text-sm leading-6 text-slate-500">{text}</p>
         </div>
       </div>
