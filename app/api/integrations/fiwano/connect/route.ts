@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { randomBytes } from "crypto";
 import {
   addFiwanoRedirect,
   createFiwanoSetupUrl,
@@ -42,13 +43,20 @@ export async function GET(request: Request) {
   }
 
   const appUrl = getAppUrl();
-  const redirectUri = `${appUrl}/api/integrations/fiwano/callback`;
+  const state = randomBytes(32).toString("base64url");
+  const callbackPath = "/api/integrations/fiwano/callback";
+  const redirectUriPattern = `${appUrl}${callbackPath}?state=*`;
+  const redirectUri = `${appUrl}${callbackPath}?state=${state}`;
 
   try {
     const redirects = await listFiwanoRedirects();
 
-    if (!redirects.redirects.some((item) => item.uri_pattern === redirectUri)) {
-      await addFiwanoRedirect(redirectUri);
+    if (
+      !redirects.redirects.some(
+        (item) => item.uri_pattern === redirectUriPattern,
+      )
+    ) {
+      await addFiwanoRedirect(redirectUriPattern);
     }
 
     const setup = await createFiwanoSetupUrl(
@@ -56,7 +64,17 @@ export async function GET(request: Request) {
       redirectUri,
     );
 
-    return NextResponse.redirect(setup.setup_url);
+    const response = NextResponse.redirect(setup.setup_url);
+
+    response.cookies.set("fiwano_oauth_state", state, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: callbackPath,
+      maxAge: 10 * 60,
+    });
+
+    return response;
   } catch (error) {
     console.error("Fiwano connect error:", error);
 
