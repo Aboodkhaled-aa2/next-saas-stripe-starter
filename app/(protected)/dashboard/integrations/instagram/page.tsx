@@ -69,7 +69,7 @@ export default function InstagramIntegrationPage() {
 
         <div className="border-t border-slate-800 bg-slate-900/20 p-6">
           <Link
-            href="/api/integrations/inboxsync/instagram"
+            href="/api/integrations/fiwano/connect?channel=instagram"
             className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-pink-600 to-purple-600 px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
           >
             <Instagram className="h-4 w-4" />
@@ -77,8 +77,8 @@ export default function InstagramIntegrationPage() {
           </Link>
 
           <p className="mt-3 text-xs leading-5 text-slate-600">
-            Instagram connection is handled through InboxSync&apos;s secure
-            hosted authorization flow.
+            Instagram connection is handled through Fiwano&apos;s secure hosted
+            authorization flow.
           </p>
         </div>
       </section>
@@ -87,13 +87,13 @@ export default function InstagramIntegrationPage() {
         <InfoCard
           icon={<ShieldCheck className="h-5 w-5" />}
           title="Secure Connection"
-          text="Your Instagram account will use InboxSync's hosted authorization system. Your password is never shared with Smart Cleaning Desk."
+          text="Your Instagram account will use Fiwano's hosted authorization system. Your password is never shared with Smart Cleaning Desk."
         />
 
         <InfoCard
           icon={<CheckCircle2 className="h-5 w-5" />}
           title="What Happens After Connecting"
-          text="InboxSync handles the Instagram authorization and token lifecycle so Smart Cleaning Desk can work with eligible customer conversations."
+          text="Fiwano handles the Instagram authorization and channel connection so Smart Cleaning Desk can work with eligible customer conversations."
         />
       </section>
     </div>
