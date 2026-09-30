@@ -97,20 +97,26 @@ export async function exchangeFiwanoCode(
   code: string,
   webhookUrl: string,
   webhookSecret: string,
+  channelType: FiwanoChannelType,
 ) {
+  const webhookEvents =
+    channelType === "whatsapp"
+      ? [
+          "message.received",
+          "message.sent",
+          "message.delivered",
+          "message.read",
+          "message.failed",
+        ]
+      : ["message.received", "message.delivered", "message.read"];
+
   return fiwanoRequest<FiwanoExchangeResponse>("/channels/exchange-code", {
     method: "POST",
     body: JSON.stringify({
       code,
       webhook_url: webhookUrl,
       webhook_secret: webhookSecret,
-      webhook_events: [
-        "message.received",
-        "message.delivered",
-        "message.read",
-        "message.sent",
-        "message.failed",
-      ],
+      webhook_events: webhookEvents,
     }),
   });
 }
