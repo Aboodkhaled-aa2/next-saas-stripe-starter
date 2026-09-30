@@ -154,6 +154,7 @@ model User {
   salesCampaigns  SalesCampaign[]
   salesProspects  SalesProspect[]
   metaIntegrations MetaIntegration[]
+  fiwanoChannels FiwanoChannel[]
 
   stripeCustomerId       String?   @unique @map("stripe_customer_id")
   stripeSubscriptionId   String?   @unique @map("stripe_subscription_id")
@@ -194,6 +195,36 @@ model MetaIntegration {
   @@unique([userId, platform, externalAccountId])
   @@index([userId, platform])
   @@map("meta_integrations")
+}
+
+model FiwanoChannel {
+  @@schema("public")
+  id String @id @default(cuid())
+
+  userId String
+
+  channelId String @unique
+  channelType String
+  name String?
+
+  phoneNumber String?
+  phoneNumberId String?
+  instagramAccountId String?
+  instagramUsername String?
+  pageId String?
+
+  webhookSecret String? @db.Text
+  isActive Boolean @default(true)
+  metadata Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, channelType])
+  @@map("fiwano_channels")
 }
 
 model BusinessProfile {
