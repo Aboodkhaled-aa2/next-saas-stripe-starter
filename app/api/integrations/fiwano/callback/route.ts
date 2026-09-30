@@ -1,0 +1,100 @@
+import { auth } from "@/auth";
+import { exchangeFiwanoCode } from "@/lib/fiwano";
+import { prisma } from "@/lib/db";
+import { NextResponse } from "next/server";
+import { randomBytes } from "crypto";
+
+function getAppUrl() {
+  const configured =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.AUTH_URL ||
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "https://www.smartcleaningdesk.com");
+
+  return configured.replace(/\/$/, "");
+}
+
+function getWebhookSecret() {
+  const configured = process.env.FIWANO_WEBHOOK_SECRET;
+  if (configured) return configured.slice(0, 64);
+
+  return randomBytes(32).toString("hex");
+}
+
+export async function GET(request: Request) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return NextResponse.redirect(
+      `${getAppUrl()}/login?error=fiwano_auth_required`,
+    );
+  }
+
+  const url = new URL(request.url);
+  const code = url.searchParams.get("code");
+  const providerError =
+    url.searchParams.get("error") || url.searchParams.get("reason");
+
+  if (!code) {
+    return NextResponse.redirect(
+      `${getAppUrl()}/dashboard?fiwano=error&reason=${encodeURIComponent(
+        providerError || "connection_cancelled",
+      )}`,
+    );
+  }
+
+  const webhookUrl = `${getAppUrl()}/api/integrations/fiwano/webhook`;
+  const webhookSecret = getWebhookSecret();
+
+  try {
+    const channel = await exchangeFiwanoCode(
+      code,
+      webhookUrl,
+      webhookSecret,
+    );
+
+    await prisma.fiwanoChannel.upsert({
+      where: { channelId: channel.channel_id },
+      update: {
+        userId: session.user.id,
+        channelType: channel.channel_type,
+        name: channel.name ?? null,
+        phoneNumber: channel.phone_number ?? null,
+        phoneNumberId: channel.phone_number_id ?? null,
+        instagramAccountId: channel.ig_account_id ?? null,
+        instagramUsername: channel.ig_username ?? null,
+        pageId: channel.page_id ?? null,
+        webhookSecret: channel.webhook_secret ?? webhookSecret,
+        isActive: true,
+        metadata: channel,
+      },
+      create: {
+        userId: session.user.id,
+        channelId: channel.channel_id,
+        channelType: channel.channel_type,
+        name: channel.name ?? null,
+        phoneNumber: channel.phone_number ?? null,
+        phoneNumberId: channel.phone_number_id ?? null,
+        instagramAccountId: channel.ig_account_id ?? null,
+        instagramUsername: channel.ig_username ?? null,
+        pageId: channel.page_id ?? null,
+        webhookSecret: channel.webhook_secret ?? webhookSecret,
+        isActive: true,
+        metadata: channel,
+      },
+    });
+
+    return NextResponse.redirect(
+      `${getAppUrl()}/dashboard?fiwano=connected&channel=${encodeURIComponent(
+        channel.channel_type,
+      )}`,
+    );
+  } catch (error) {
+    console.error("Fiwano callback error:", error);
+
+    return NextResponse.redirect(
+      `${getAppUrl()}/dashboard?fiwano=error&reason=exchange_failed`,
+    );
+  }
+}
