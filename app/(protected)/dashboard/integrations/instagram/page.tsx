@@ -17,15 +17,21 @@ export const dynamic = "force-dynamic";
 
 export default async function InstagramIntegrationPage() {
   const session = await auth();
-  const channel = session?.user?.id
-    ? await prisma.fiwanoChannel.findFirst({
+  let channel = null;
+
+  if (session?.user?.id) {
+    try {
+      channel = await prisma.fiwanoChannel.findFirst({
         where: {
           userId: session.user.id,
           channelType: "instagram",
           isActive: true,
         },
-      })
-    : null;
+      });
+    } catch (error) {
+      console.error("Fiwano channel status lookup failed:", error);
+    }
+  }
 
   return (
     <div className="space-y-6">
