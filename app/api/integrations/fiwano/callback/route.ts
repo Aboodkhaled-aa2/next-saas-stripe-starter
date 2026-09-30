@@ -33,6 +33,16 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
+  const state = url.searchParams.get("state");
+  const stateCookie = request.headers
+    .get("cookie")
+    ?.match(/(?:^|; )fiwano_oauth_state=([^;]+)/)?.[1];
+
+  if (!state || !stateCookie || state !== decodeURIComponent(stateCookie)) {
+    return NextResponse.redirect(
+      `${getAppUrl()}/dashboard?fiwano=error&reason=invalid_state`,
+    );
+  }
   const providerError =
     url.searchParams.get("error") || url.searchParams.get("reason");
 
@@ -48,10 +58,24 @@ export async function GET(request: Request) {
   const webhookSecret = getWebhookSecret();
 
   try {
+    const channelType =
+      (url.searchParams.get("channel_type") as
+        | "whatsapp"
+        | "instagram"
+        | "facebook"
+        | null) ?? null;
+
+    if (!channelType) {
+      return NextResponse.redirect(
+        `${getAppUrl()}/dashboard?fiwano=error&reason=missing_channel_type`,
+      );
+    }
+
     const channel = await exchangeFiwanoCode(
       code,
       webhookUrl,
       webhookSecret,
+      channelType,
     );
 
     await prisma.fiwanoChannel.upsert({
@@ -85,11 +109,21 @@ export async function GET(request: Request) {
       },
     });
 
-    return NextResponse.redirect(
+    const response = NextResponse.redirect(
       `${getAppUrl()}/dashboard?fiwano=connected&channel=${encodeURIComponent(
         channel.channel_type,
       )}`,
     );
+
+    response.cookies.set("fiwano_oauth_state", "", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/api/integrations/fiwano/callback",
+      maxAge: 0,
+    });
+
+    return response;
   } catch (error) {
     console.error("Fiwano callback error:", error);
 
