@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/db";
 import { sendFiwanoMessage } from "@/lib/fiwano";
+import { runCustomerAgent } from "@/lib/ai/customer-agent-runtime";
 import { NextResponse } from "next/server";
 
 type FiwanoWebhook = {
@@ -81,8 +82,22 @@ export async function POST(request: Request) {
         },
       });
 
-      // AI reply is intentionally not triggered here yet. This endpoint first
-      // establishes the verified transport layer for the three Meta channels.
+      try {
+        const aiResponse = await runCustomerAgent({
+          userId: channel.userId,
+          message: text,
+        });
+
+        if (aiResponse.text.trim()) {
+          await sendFiwanoMessage(
+            channel.channelId,
+            payload.data.from,
+            aiResponse.text.trim(),
+          );
+        }
+      } catch (error) {
+        console.error("Fiwano AI reply failed:", error);
+      }
     }
   }
 
