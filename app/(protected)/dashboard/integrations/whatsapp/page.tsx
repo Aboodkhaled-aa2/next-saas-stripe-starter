@@ -7,6 +7,8 @@ import {
   Zap,
 } from "lucide-react";
 
+import Link from "next/link";
+
 import { DashboardHeader } from "@/components/dashboard/header";
 
 export const dynamic = "force-dynamic";
@@ -66,17 +68,17 @@ export default function WhatsAppIntegrationPage() {
         </div>
 
         <div className="border-t border-slate-800 bg-slate-900/20 p-6">
-          <button
-            type="button"
+          <Link
+            href="/api/integrations/fiwano/connect?channel=whatsapp"
             className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500"
           >
             <MessageCircle className="h-4 w-4" />
             Connect WhatsApp
-          </button>
+          </Link>
 
           <p className="mt-3 text-xs leading-5 text-slate-600">
-            WhatsApp Business connection will use Meta&apos;s secure
-            authorization and messaging infrastructure.
+            WhatsApp Business connection is handled through Fiwano&apos;s secure
+            hosted authorization flow.
           </p>
         </div>
       </section>
@@ -85,7 +87,7 @@ export default function WhatsAppIntegrationPage() {
         <InfoCard
           icon={<ShieldCheck className="h-5 w-5" />}
           title="Secure Connection"
-          text="Your WhatsApp Business account will be connected through the official Meta infrastructure."
+          text="Your WhatsApp Business account will be connected through Fiwano's official Meta authorization infrastructure."
         />
 
         <InfoCard
