@@ -73,6 +73,13 @@ export async function GET(request: Request) {
       path: callbackPath,
       maxAge: 10 * 60,
     });
+    response.cookies.set("fiwano_channel_type", channelType, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: callbackPath,
+      maxAge: 10 * 60,
+    });
 
     return response;
   } catch (error) {
