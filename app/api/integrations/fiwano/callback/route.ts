@@ -34,9 +34,13 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
-  const stateCookie = request.headers
-    .get("cookie")
-    ?.match(/(?:^|; )fiwano_oauth_state=([^;]+)/)?.[1];
+  const cookieHeader = request.headers.get("cookie") || "";
+  const stateCookie = cookieHeader.match(
+    /(?:^|; )fiwano_oauth_state=([^;]+)/
+  )?.[1];
+  const channelCookie = cookieHeader.match(
+    /(?:^|; )fiwano_channel_type=([^;]+)/
+  )?.[1];
 
   if (!state || !stateCookie || state !== decodeURIComponent(stateCookie)) {
     return NextResponse.redirect(
@@ -63,7 +67,13 @@ export async function GET(request: Request) {
         | "whatsapp"
         | "instagram"
         | "facebook"
-        | null) ?? null;
+        | null) ??
+      (channelCookie as
+        | "whatsapp"
+        | "instagram"
+        | "facebook"
+        | null) ??
+      null;
 
     if (!channelType) {
       return NextResponse.redirect(
@@ -110,12 +120,19 @@ export async function GET(request: Request) {
     });
 
     const response = NextResponse.redirect(
-      `${getAppUrl()}/dashboard?fiwano=connected&channel=${encodeURIComponent(
+      `${getAppUrl()}/dashboard/integrations/${encodeURIComponent(
         channel.channel_type,
-      )}`,
+      )}?fiwano=connected`,
     );
 
     response.cookies.set("fiwano_oauth_state", "", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/api/integrations/fiwano/callback",
+      maxAge: 0,
+    });
+    response.cookies.set("fiwano_channel_type", "", {
       httpOnly: true,
       secure: true,
       sameSite: "lax",
