@@ -17,21 +17,9 @@ export const dynamic = "force-dynamic";
 
 export default async function WhatsAppIntegrationPage() {
   const session = await auth();
-  let channel: Awaited<ReturnType<typeof prisma.fiwanoChannel.findFirst>> = null;
-
-  if (session?.user?.id) {
-    try {
-      channel = await prisma.fiwanoChannel.findFirst({
-        where: {
-          userId: session.user.id,
-          channelType: "whatsapp",
-          isActive: true,
-        },
-      });
-    } catch (error) {
-      console.error("Fiwano channel status lookup failed:", error);
-    }
-  }
+  const channel = session?.user?.id
+    ? await getFiwanoChannel(session.user.id, "whatsapp")
+    : null;
 
   return (
     <div className="space-y-6">
@@ -57,6 +45,11 @@ export default async function WhatsAppIntegrationPage() {
           </div>
         </div>
 
+
+        <div className="mx-6 mb-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-slate-300">
+          <p className="font-semibold text-amber-300">WhatsApp Business account</p>
+          <p className="mt-1 leading-6 text-slate-400">Only connect a WhatsApp Business account/number used by your business. Do not connect a personal WhatsApp account.</p>
+        </div>
         <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3">
           <FeatureCard icon={<MessageCircle className="h-4 w-4" />} title="AI Conversations" text="Respond to WhatsApp customer messages automatically." />
           <FeatureCard icon={<Sparkles className="h-4 w-4" />} title="Lead Capture" text="Collect customer details and understand their service needs." />
@@ -85,6 +78,17 @@ export default async function WhatsAppIntegrationPage() {
       </section>
     </div>
   );
+}
+
+async function getFiwanoChannel(userId: string, channelType: string) {
+  try {
+    return await prisma.fiwanoChannel.findFirst({
+      where: { userId, channelType, isActive: true },
+    });
+  } catch (error) {
+    console.error("Fiwano channel status lookup failed:", error);
+    return null;
+  }
 }
 
 function FeatureCard({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
