@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
+import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
 import { pricingData } from "@/config/subscriptions";
@@ -35,6 +36,24 @@ export async function generateUserStripe(
     if (!allowedStripePriceIds.has(priceId)) {
       throw new Error("Invalid Stripe price selected");
     }
+
+    const selectedOffer = pricingData.find(
+      (offer) =>
+        offer.stripeIds.monthly === priceId ||
+        offer.stripeIds.yearly === priceId,
+    );
+
+    if (!selectedOffer) {
+      throw new Error("Invalid subscription plan");
+    }
+
+    const selectedPlan =
+      selectedOffer.title.toUpperCase() as "STARTER" | "BUSINESS" | "PRO";
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { plan: selectedPlan },
+    });
 
     const subscriptionPlan = await getUserSubscriptionPlan(user.id);
 
