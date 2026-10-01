@@ -69,7 +69,7 @@ export async function createDmlyWorkspace(input: {
 }) {
   return dmlyRequest<DmlyWorkspaceResponse>({
     method: "POST",
-    path: "v1/workspaces",
+    path: "workspaces",
     body: input,
   });
 }
