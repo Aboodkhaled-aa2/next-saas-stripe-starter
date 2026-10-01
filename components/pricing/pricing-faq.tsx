@@ -12,7 +12,7 @@ const pricingFaqData = [
     id: "item-1",
     question: "Is there a free trial?",
     answer:
-      "No. Smart Cleaning Desk is a paid-only platform. Choose the plan that fits your cleaning business and activate it through secure checkout.",
+      "Yes. Every plan includes a 3-day free trial. Your subscription begins billing after the trial period ends.",
   },
   {
     id: "item-2",
