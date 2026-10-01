@@ -1,4 +1,4 @@
-import { CheckCircle2, MessageCircle, MessageCircle, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { CheckCircle2, MessageCircle, ShieldCheck, Sparkles, Zap } from "lucide-react";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
