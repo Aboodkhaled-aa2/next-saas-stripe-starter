@@ -59,6 +59,12 @@ export async function generateUserStripe(
             quantity: 1,
           },
         ],
+        subscription_data: {
+          trial_period_days: 3,
+          metadata: {
+            userId: user.id,
+          },
+        },
         metadata: {
           userId: user.id,
         },
