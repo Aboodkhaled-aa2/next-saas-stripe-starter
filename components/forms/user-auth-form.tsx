@@ -221,7 +221,10 @@ export function UserAuthForm({
           setIsGoogleLoading(true);
 
           signIn("google", {
-            callbackUrl: targetDestination,
+            callbackUrl:
+              type === "register"
+                ? `/pricing?plan=${encodeURIComponent(selectedPlan)}`
+                : targetDestination,
           });
         }}
         disabled={isLoading || isGoogleLoading}
