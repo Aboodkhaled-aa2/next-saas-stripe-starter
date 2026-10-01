@@ -9,6 +9,9 @@ import {
 } from "lucide-react";
 
 import { DashboardHeader } from "@/components/dashboard/header";
+import { DmlyWorkspaceButton } from "@/components/dashboard/dmly-workspace-button";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/db";
 
 const integrations = [
   {
@@ -38,7 +41,13 @@ const integrations = [
   },
 ];
 
-export default function IntegrationsPage() {
+export default async function IntegrationsPage() {
+  const session = await auth();
+  const workspace = session?.user?.id
+    ? await prisma.dmlyWorkspace.findUnique({
+        where: { userId: session.user.id },
+      })
+    : null;
   return (
     <div className="space-y-6">
       <DashboardHeader
@@ -55,9 +64,25 @@ export default function IntegrationsPage() {
           <div>
             <h2 className="font-semibold text-white">AI Communication Channels</h2>
             <p className="mt-1 text-sm leading-6 text-slate-500">
-              Choose the channels you want to connect. Availability depends on your subscription plan.
+              Your messaging infrastructure is powered by an isolated DMly workspace for this business.
             </p>
           </div>
+        </div>
+      </section>
+
+
+
+      <section className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6 shadow-xl sm:p-8">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="font-semibold text-white">Messaging Workspace</h2>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-400">
+              {workspace
+                ? `Workspace ready: ${workspace.name}`
+                : "Create the isolated messaging workspace that will power WhatsApp, Instagram, and Facebook for this business."}
+            </p>
+          </div>
+          <DmlyWorkspaceButton hasWorkspace={Boolean(workspace)} />
         </div>
       </section>
 
