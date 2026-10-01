@@ -14,11 +14,11 @@ export default function PaymentSuccessPage() {
         </p>
 
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-          Payment Successful
+          Your Free Trial Has Started
         </h1>
 
         <p className="mx-auto mt-5 max-w-md text-base leading-7 text-slate-400">
-          Your payment was received. Your subscription is being activated, and your AI employee will be ready once setup is complete.
+          Your 3-day free trial is now active. Your subscription will begin billing after the trial period ends.
         </p>
 
         <div className="mt-10">
@@ -32,7 +32,7 @@ export default function PaymentSuccessPage() {
         </div>
 
         <p className="mt-6 text-sm text-slate-500">
-          Continue to your dashboard to complete your business setup.
+          Continue to your dashboard to complete your business setup and connect your channels.
         </p>
       </div>
     </main>
