@@ -55,7 +55,7 @@ export async function POST(request: Request) {
         workspaceId,
         name: String(workspace.name || body.name || session.user.name || "Cleaning Business"),
         plan: workspace.plan || plan,
-        metadata: workspace,
+        metadata: JSON.parse(JSON.stringify(workspace)),
       },
     });
 
