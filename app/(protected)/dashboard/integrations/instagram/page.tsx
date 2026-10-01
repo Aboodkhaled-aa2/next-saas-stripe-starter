@@ -1,13 +1,4 @@
-import {
-  CheckCircle2,
-  Instagram,
-  MessageCircle,
-  ShieldCheck,
-  Sparkles,
-  Zap,
-} from "lucide-react";
-
-import Link from "next/link";
+import { CheckCircle2, Instagram, MessageCircle, ShieldCheck, Sparkles, Zap } from "lucide-react";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
@@ -17,102 +8,67 @@ export const dynamic = "force-dynamic";
 
 export default async function InstagramIntegrationPage() {
   const session = await auth();
-  const channel = session?.user?.id
-    ? await getFiwanoChannel(session.user.id, "instagram")
+  const workspace = session?.user?.id
+    ? await prisma.dmlyWorkspace.findUnique({
+        where: { userId: session.user.id },
+      })
     : null;
 
   return (
     <div className="space-y-6">
       <DashboardHeader
         heading="Instagram"
-        text="Connect your Instagram account so your AI employee can respond to customer messages and capture new leads."
+        text="Connect Instagram messaging through your Smart Cleaning Desk messaging workspace."
       />
 
       <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/70 shadow-xl">
         <div className="border-b border-slate-800 p-6">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-pink-500/20 bg-pink-500/10">
-              <Instagram className="h-7 w-7 text-pink-400" />
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-800 bg-slate-900">
+              <Instagram className="h-7 w-7 text-slate-200" />
             </div>
-
-            <div className="flex-1">
+            <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-semibold text-white">
-                  Instagram Messaging
-                </h2>
-
-                <span
-                  className={
-                    channel
-                      ? "rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-400"
-                      : "rounded-full border border-slate-800 bg-slate-900 px-2.5 py-1 text-[11px] font-medium text-slate-500"
-                  }
-                >
-                  {channel ? "Connected" : "Not connected"}
+                <h2 className="text-lg font-semibold text-white">Instagram Messaging</h2>
+                <span className={workspace ? "rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-400" : "rounded-full border border-slate-800 bg-slate-900 px-2.5 py-1 text-[11px] font-medium text-slate-500"}>
+                  {workspace ? "Workspace Ready" : "Workspace Not Set Up"}
                 </span>
               </div>
-
               <p className="mt-1 text-sm leading-6 text-slate-500">
-                {channel
-                  ? channel.name
-                    ? `Connected to ${channel.name}`
-                    : "Your Instagram channel is connected and ready."
-                  : "Let your AI employee answer Instagram DMs, qualify leads, provide service information, and help customers book."}
+                {workspace
+                  ? "Your isolated DMly workspace is ready for channel connection."
+                  : "Create your isolated messaging workspace first. Channel authorization will be added after the workspace is provisioned."}
               </p>
             </div>
           </div>
         </div>
 
-
-        <div className="mx-6 mb-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-slate-300">
-          <p className="font-semibold text-amber-300">Instagram Business/Professional account</p>
-          <p className="mt-1 leading-6 text-slate-400">Only connect an Instagram Business or Professional account that belongs to your business. Do not connect a personal Instagram account.</p>
-        </div>
-        <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3">
-          <FeatureCard icon={<MessageCircle className="h-4 w-4" />} title="AI Replies" text="Respond to customer messages automatically." />
-          <FeatureCard icon={<Sparkles className="h-4 w-4" />} title="Lead Capture" text="Collect names, contact details, and service requests." />
-          <FeatureCard icon={<Zap className="h-4 w-4" />} title="24/7 Response" text="Never leave a customer waiting for a reply." />
+        <div className="grid gap-4 p-6 sm:grid-cols-3">
+          <FeatureCard icon={<MessageCircle className="h-4 w-4" />} title="AI Replies" text="Handle eligible customer conversations with your Smart Cleaning Desk AI." />
+          <FeatureCard icon={<Sparkles className="h-4 w-4" />} title="Lead Capture" text="Keep customer conversations connected to your business workflow." />
+          <FeatureCard icon={<Zap className="h-4 w-4" />} title="Unified Infrastructure" text="Use the same messaging workspace across supported channels." />
         </div>
 
         <div className="border-t border-slate-800 bg-slate-900/20 p-6">
-          {channel ? (
-            <div className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-5 text-sm font-semibold text-emerald-400">
+          {workspace ? (
+            <div className="inline-flex h-11 items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-5 text-sm font-semibold text-emerald-400">
               <CheckCircle2 className="h-4 w-4" />
-              Connected
+              DMly workspace ready
             </div>
           ) : (
-            <Link
-              href="/api/integrations/fiwano/connect?channel=instagram"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-pink-600 to-purple-600 px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-            >
-              <Instagram className="h-4 w-4" />
-              Connect Instagram
-            </Link>
+            <p className="text-sm text-slate-400">
+              Go to Integrations and provision your messaging workspace first.
+            </p>
           )}
-
-          <p className="mt-3 text-xs leading-5 text-slate-600">
-            Instagram connection is handled through Fiwano&apos;s secure hosted authorization flow.
-          </p>
         </div>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <InfoCard icon={<ShieldCheck className="h-5 w-5" />} title="Secure Connection" text="Your Instagram account will use Fiwano's hosted authorization system. Your password is never shared with Smart Cleaning Desk." />
-        <InfoCard icon={<CheckCircle2 className="h-5 w-5" />} title="What Happens After Connecting" text="Fiwano handles the Instagram authorization and channel connection so Smart Cleaning Desk can work with eligible customer conversations." />
+        <InfoCard icon={<ShieldCheck className="h-5 w-5" />} title="Isolated Workspace" text="Each Smart Cleaning Desk customer gets a separate messaging workspace." />
+        <InfoCard icon={<CheckCircle2 className="h-5 w-5" />} title="Secure Server-Side Connection" text="Provider credentials stay on the server and are never exposed in the browser." />
       </section>
     </div>
   );
-}
-
-async function getFiwanoChannel(userId: string, channelType: string) {
-  try {
-    return await prisma.fiwanoChannel.findFirst({
-      where: { userId, channelType, isActive: true },
-    });
-  } catch (error) {
-    console.error("Fiwano channel status lookup failed:", error);
-    return null;
-  }
 }
 
 function FeatureCard({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
