@@ -2,9 +2,15 @@ import { env } from "@/env.mjs";
 
 type DmlyRequestOptions = {
   baseUrl?: string;
-  method?: "GET" | "POST" | "PUT" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   path: string;
   body?: unknown;
+};
+
+type DmlyApiErrorPayload = {
+  message?: string;
+  error?: string;
+  [key: string]: unknown;
 };
 
 async function dmlyRequest<T>({
@@ -27,25 +33,29 @@ async function dmlyRequest<T>({
     },
   );
 
-  const text = await response.text();
+  const responseText = await response.text();
   let data: unknown = null;
 
-  if (text) {
+  if (responseText) {
     try {
-      data = JSON.parse(text);
+      data = JSON.parse(responseText);
     } catch {
-      data = text;
+      data = responseText;
     }
   }
 
   if (!response.ok) {
+    const payload =
+      typeof data === "object" && data !== null
+        ? (data as DmlyApiErrorPayload)
+        : null;
+
     const message =
-      typeof data === "object" &&
-      data !== null &&
-      "message" in data &&
-      typeof data.message === "string"
-        ? data.message
-        : `DMLY API request failed with status ${response.status}`;
+      typeof payload?.message === "string"
+        ? payload.message
+        : typeof payload?.error === "string"
+          ? payload.error
+          : `DMLY API request failed with status ${response.status}`;
 
     throw new Error(message);
   }
@@ -55,17 +65,28 @@ async function dmlyRequest<T>({
 
 export type DmlyWorkspaceResponse = {
   id?: string;
+  uuid?: string;
   workspaceId?: string;
   name?: string;
-  plan?: string;
+  plan?: string | null;
   status?: string;
+  created_at?: string;
   [key: string]: unknown;
+};
+
+export type DmlyWorkspacesListResponse = {
+  data: DmlyWorkspaceResponse[];
+  meta?: {
+    current_page?: number;
+    last_page?: number;
+    per_page?: number;
+    total?: number;
+    [key: string]: unknown;
+  };
 };
 
 export async function createDmlyWorkspace(input: {
   name: string;
-  plan: string;
-  brand?: { color?: string };
 }) {
   return dmlyRequest<DmlyWorkspaceResponse>({
     method: "POST",
@@ -75,9 +96,9 @@ export async function createDmlyWorkspace(input: {
 }
 
 export async function listDmlyWorkspaces() {
-  return dmlyRequest<unknown[]>({
+  return dmlyRequest<DmlyWorkspacesListResponse>({
     method: "GET",
-    path: "v1/workspaces",
+    path: "workspaces",
   });
 }
 
