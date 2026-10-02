@@ -27,19 +27,24 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const requestedPlan = String(body.plan || session.user.plan || "STARTER").toUpperCase();
-    const plan = validPlans.has(requestedPlan) ? requestedPlan.toLowerCase() : "starter";
+    const requestedPlan = String(
+      body.plan || session.user.plan || "STARTER",
+    ).toUpperCase();
+    const plan = validPlans.has(requestedPlan)
+      ? requestedPlan.toLowerCase()
+      : "starter";
 
     const workspace = await createDmlyWorkspace({
-      name: String(body.name || session.user.name || "Cleaning Business").trim(),
-      plan,
-      brand: {
-        color: "#22c55e",
-      },
+      name: String(
+        body.name || session.user.name || "Cleaning Business",
+      ).trim(),
     });
 
     const workspaceId = String(
-      workspace.workspaceId || workspace.id || "",
+      workspace.uuid ||
+        workspace.workspaceId ||
+        workspace.id ||
+        "",
     ).trim();
 
     if (!workspaceId) {
@@ -53,8 +58,14 @@ export async function POST(request: Request) {
       data: {
         userId: session.user.id,
         workspaceId,
-        name: String(workspace.name || body.name || session.user.name || "Cleaning Business"),
+        name: String(
+          workspace.name ||
+            body.name ||
+            session.user.name ||
+            "Cleaning Business",
+        ),
         plan: workspace.plan || plan,
+        status: workspace.status || "active",
         metadata: JSON.parse(JSON.stringify(workspace)),
       },
     });
