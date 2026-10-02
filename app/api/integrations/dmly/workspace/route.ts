@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { createDmlyWorkspace } from "@/lib/dmly";
 
-const validPlans = new Set(["STARTER", "BUSINESS", "PRO"]);
+// DMLY workspace provisioning is provider-owned; the customer plan stays in our local database.\nconst validPlans = new Set(["STARTER", "BUSINESS", "PRO"]);
 
 export async function POST(request: Request) {
   const session = await auth();
