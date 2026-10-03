@@ -25,7 +25,8 @@ export async function POST(request: Request) {
     const email = String(body.email || "").toLowerCase().trim();
     const password = String(body.password || "");
     const planValue = body.plan;
-    const plan = typeof planValue === "string" ? planValue.toLowerCase().trim() : "";
+    const plan =
+      typeof planValue === "string" ? planValue.toLowerCase().trim() : "";
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!validPlans.includes(plan as Plan)) {
+    if (plan && !validPlans.includes(plan as Plan)) {
       return NextResponse.json(
         { error: "Invalid plan selected." },
         { status: 400 }
@@ -83,7 +84,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const selectedPlan = planMap[plan as Plan];
+    const selectedPlan = plan ? planMap[plan as Plan] : undefined;
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -106,7 +107,7 @@ export async function POST(request: Request) {
         data: {
           name,
           passwordHash,
-          plan: selectedPlan,
+          ...(selectedPlan ? { plan: selectedPlan } : {}),
         },
       });
     } else {
@@ -115,7 +116,7 @@ export async function POST(request: Request) {
           name,
           email,
           passwordHash,
-          plan: selectedPlan,
+          plan: selectedPlan || "STARTER",
         },
       });
     }
@@ -146,7 +147,7 @@ export async function POST(request: Request) {
       success: true,
       message: "Verification code sent.",
       userId: user.id,
-      plan,
+      ...(plan ? { plan } : {}),
     });
   } catch (error) {
     console.error("Registration error:", error);
