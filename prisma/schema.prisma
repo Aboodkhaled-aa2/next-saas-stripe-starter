@@ -284,7 +284,7 @@ model VoiceUsage {
   source VoiceUsageSource @default(VAPI_CALL)
 
   durationSeconds Int
-  billedMinutes Int
+  billedMinutes Float
 
   startedAt DateTime?
   endedAt DateTime?
