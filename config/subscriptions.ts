@@ -74,7 +74,7 @@ export const pricingData: SubscriptionPlan[] = [
     benefits: [
       "Everything in Business",
       "Dedicated Business Phone Number Available as an Add-on",
-      "500 Voice Minutes / Month",
+      "100 Voice Minutes / Month",
       "Advanced Call Handling",
       "Call Transfer",
       "Advanced Lead Qualification",
@@ -129,7 +129,7 @@ export const comparePlans: PlansRow[] = [
     feature: "AI Voice Receptionist",
     starter: false,
     business: "100 Mins/mo",
-    pro: "500 Mins/mo",
+    pro: "100 Mins/mo",
     tooltip: "Voice AI is available from the Business plan onwards.",
   },
   {
@@ -159,8 +159,8 @@ export const comparePlans: PlansRow[] = [
   {
     feature: "Dedicated Business Phone Number",
     starter: false,
-    business: false,
-    pro: true,
+    business: "Available as Add-on",
+    pro: "Available as Add-on",
   },
   {
     feature: "Advanced Call Handling & Transfer",
