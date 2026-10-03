@@ -73,7 +73,7 @@ export const pricingData: SubscriptionPlan[] = [
       "Advanced AI automation with higher voice usage, dedicated phone service, and advanced controls.",
     benefits: [
       "Everything in Business",
-      "Dedicated Business Phone Number",
+      "Dedicated Business Phone Number Available as an Add-on",
       "500 Voice Minutes / Month",
       "Advanced Call Handling",
       "Call Transfer",
