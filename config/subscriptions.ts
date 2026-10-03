@@ -41,7 +41,7 @@ export const pricingData: SubscriptionPlan[] = [
     benefits: [
       "Everything in Starter",
       "AI Voice Receptionist",
-      "500 Voice Minutes / Month",
+      "100 Voice Minutes / Month — Additional minutes available as add-ons",
       "Appointment Booking",
       "Calendar Integration",
       "Automated Lead Follow-Ups",
@@ -74,7 +74,7 @@ export const pricingData: SubscriptionPlan[] = [
     benefits: [
       "Everything in Business",
       "Dedicated Business Phone Number Available as an Add-on",
-      "100 Voice Minutes / Month",
+      "500 Voice Minutes / Month — Additional minutes available as add-ons",
       "Advanced Call Handling",
       "Call Transfer",
       "Advanced Lead Qualification",
