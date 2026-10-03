@@ -196,6 +196,12 @@ export default async function DashboardPage() {
       ? Math.min((usedVoiceMinutes / includedVoiceMinutes) * 100, 100)
       : 0;
 
+  const extraVoicePackages = [
+    { minutes: 100, price: 15 },
+    { minutes: 500, price: 75 },
+    { minutes: 1000, price: 120 },
+  ];
+
   const [upcomingJobs, recentLeads] = await Promise.all([
     prisma.booking.findMany({
       where: {
@@ -367,6 +373,26 @@ export default async function DashboardPage() {
               </div>
             </CardContent>
           </Card>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            {extraVoicePackages.map((pack) => (
+              <Link
+                key={pack.minutes}
+                href={`/dashboard/billing/voice?minutes=${pack.minutes}`}
+                className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 transition-colors hover:border-blue-500/40 hover:bg-slate-900"
+              >
+                <p className="text-sm font-semibold text-white">
+                  {pack.minutes.toLocaleString()} Extra Minutes
+                </p>
+                <p className="mt-1 text-lg font-bold text-blue-400">
+                  ${pack.price}
+                </p>
+                <p className="mt-2 text-xs text-slate-500">
+                  Purchase additional AI Phone minutes
+                </p>
+              </Link>
+            ))}
+          </div>
         </section>
 
         <section>
