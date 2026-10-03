@@ -155,6 +155,7 @@ model User {
   salesProspects  SalesProspect[]
   metaIntegrations MetaIntegration[]
   fiwanoChannels FiwanoChannel[]
+  voiceUsage VoiceUsage[]
 
   stripeCustomerId       String?   @unique @map("stripe_customer_id")
   stripeSubscriptionId   String?   @unique @map("stripe_subscription_id")
@@ -265,6 +266,37 @@ model BusinessProfile {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("business_profiles")
+}
+
+enum VoiceUsageSource {
+  VAPI_CALL
+  MANUAL
+}
+
+model VoiceUsage {
+  @@schema("public")
+  id String @id @default(cuid())
+
+  userId String
+
+  callId String? @unique
+  source VoiceUsageSource @default(VAPI_CALL)
+
+  durationSeconds Int
+  billedMinutes Int
+
+  startedAt DateTime?
+  endedAt DateTime?
+
+  metadata Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, startedAt])
+  @@map("voice_usage")
 }
 
 model AIPhoneSettings {
