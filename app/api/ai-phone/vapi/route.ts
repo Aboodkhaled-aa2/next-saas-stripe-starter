@@ -355,6 +355,7 @@ async function hasVoiceMinutesAvailable(userId: string, plan: string | null | un
     where: { id: userId },
     select: {
       stripeSubscriptionId: true,
+      extraVoiceMinutes: true,
     },
   });
 
@@ -401,16 +402,21 @@ async function hasVoiceMinutesAvailable(userId: string, plan: string | null | un
       },
     },
     _sum: {
-      durationSeconds: true,
+      includedMinutesUsed: true,
     },
   });
 
-  const usedMinutes = (usage._sum.durationSeconds ?? 0) / 60;
+  const usedIncludedMinutes = usage._sum.includedMinutesUsed ?? 0;
+  const includedRemaining = Math.max(
+    includedVoiceMinutes - usedIncludedMinutes,
+    0,
+  );
+  const extraVoiceMinutes = user.extraVoiceMinutes ?? 0;
 
   return {
-    allowed: usedMinutes < includedVoiceMinutes,
+    allowed: includedRemaining + extraVoiceMinutes > 0,
     reason:
-      usedMinutes >= includedVoiceMinutes
+      includedRemaining + extraVoiceMinutes <= 0
         ? "Voice minutes exhausted. Please add more minutes to continue."
         : null,
   };
@@ -453,14 +459,14 @@ export async function POST(request: Request) {
     }
 
     if (message.type === "assistant-request") {
+      const voiceUser = await prisma.user.findUnique({
+        where: { id: configuration.businessProfile.userId },
+        select: { plan: true },
+      });
+
       const voiceBalance = await hasVoiceMinutesAvailable(
         configuration.businessProfile.userId,
-        (
-          await prisma.user.findUnique({
-            where: { id: configuration.businessProfile.userId },
-            select: { plan: true },
-          })
-        )?.plan,
+        voiceUser?.plan,
       );
 
       if (!voiceBalance.allowed) {
@@ -521,34 +527,119 @@ export async function POST(request: Request) {
 
       const billedMinutes = durationSeconds / 60;
 
-      await prisma.voiceUsage.upsert({
-        where: {
-          callId,
+      const existingUsage = await prisma.voiceUsage.findUnique({
+        where: { callId },
+        select: { id: true },
+      });
+
+      if (existingUsage) {
+        return NextResponse.json({ ok: true });
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: configuration.businessProfile.userId },
+        select: {
+          plan: true,
+          stripeSubscriptionId: true,
         },
-        create: {
-          userId: configuration.businessProfile.userId,
-          callId,
-          source: "VAPI_CALL",
-          durationSeconds,
-          billedMinutes,
-          startedAt: message.call?.startedAt
-            ? new Date(message.call.startedAt)
-            : message.startedAt
-              ? new Date(message.startedAt)
-              : null,
-          endedAt: message.call?.endedAt
-            ? new Date(message.call.endedAt)
-            : message.endedAt
-              ? new Date(message.endedAt)
-              : null,
-          metadata: {
-            endedReason:
-              typeof (message as { endedReason?: unknown }).endedReason === "string"
-                ? (message as { endedReason: string }).endedReason
+      });
+
+      const includedVoiceMinutes =
+        user?.plan === "PRO" ? 500 : user?.plan === "BUSINESS" ? 100 : 0;
+
+      let includedRemaining = 0;
+
+      if (user?.stripeSubscriptionId && includedVoiceMinutes > 0) {
+        try {
+          const subscription = await stripe.subscriptions.retrieve(
+            user.stripeSubscriptionId,
+          );
+
+          if (["active", "trialing"].includes(subscription.status)) {
+            const periodStart = new Date(subscription.current_period_start * 1000);
+            const periodEnd = new Date(subscription.current_period_end * 1000);
+
+            const usage = await prisma.voiceUsage.aggregate({
+              where: {
+                userId: configuration.businessProfile.userId,
+                source: "VAPI_CALL",
+                startedAt: {
+                  gte: periodStart,
+                  lt: periodEnd,
+                },
+              },
+              _sum: {
+                includedMinutesUsed: true,
+              },
+            });
+
+            includedRemaining = Math.max(
+              includedVoiceMinutes - (usage._sum.includedMinutesUsed ?? 0),
+              0,
+            );
+          }
+        } catch (error) {
+          console.error(
+            "Failed to retrieve Stripe subscription while recording AI Phone usage:",
+            error,
+          );
+        }
+      }
+
+      const includedMinutesUsed = Math.min(billedMinutes, includedRemaining);
+      const extraMinutesUsed = Math.max(
+        billedMinutes - includedMinutesUsed,
+        0,
+      );
+
+      await prisma.$transaction(async (tx) => {
+        const currentUsage = await tx.voiceUsage.findUnique({
+          where: { callId },
+          select: { id: true },
+        });
+
+        if (currentUsage) {
+          return;
+        }
+
+        await tx.voiceUsage.create({
+          data: {
+            userId: configuration.businessProfile.userId,
+            callId,
+            source: "VAPI_CALL",
+            durationSeconds,
+            billedMinutes,
+            includedMinutesUsed,
+            extraMinutesUsed,
+            startedAt: message.call?.startedAt
+              ? new Date(message.call.startedAt)
+              : message.startedAt
+                ? new Date(message.startedAt)
                 : null,
+            endedAt: message.call?.endedAt
+              ? new Date(message.call.endedAt)
+              : message.endedAt
+                ? new Date(message.endedAt)
+                : null,
+            metadata: {
+              endedReason:
+                typeof (message as { endedReason?: unknown }).endedReason === "string"
+                  ? (message as { endedReason: string }).endedReason
+                  : null,
+            },
           },
-        },
-        update: {},
+        });
+
+        if (extraMinutesUsed > 0) {
+          await tx.user.update({
+            where: { id: configuration.businessProfile.userId },
+            data: {
+              extraVoiceMinutes: {
+                decrement: extraMinutesUsed,
+              },
+            },
+          });
+        }
       });
 
       return NextResponse.json({ ok: true });
