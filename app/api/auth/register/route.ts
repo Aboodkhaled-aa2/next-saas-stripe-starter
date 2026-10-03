@@ -24,7 +24,8 @@ export async function POST(request: Request) {
     const name = String(body.name || "").trim();
     const email = String(body.email || "").toLowerCase().trim();
     const password = String(body.password || "");
-    const plan = String(body.plan || "starter").toLowerCase();
+    const planValue = body.plan;
+    const plan = typeof planValue === "string" ? planValue.toLowerCase().trim() : "";
 
     if (!name || !email || !password) {
       return NextResponse.json(
