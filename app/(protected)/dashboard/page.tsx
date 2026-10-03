@@ -135,6 +135,30 @@ export default async function DashboardPage() {
     employees,
   });
 
+  const voiceUsage = await prisma.voiceUsage.aggregate({
+    where: {
+      userId: user?.id ?? "",
+      source: "VAPI_CALL",
+    },
+    _sum: {
+      durationSeconds: true,
+    },
+  });
+
+  const includedVoiceMinutes =
+    user?.plan === "PRO" ? 500 : user?.plan === "BUSINESS" ? 100 : 0;
+
+  const usedVoiceSeconds = voiceUsage._sum.durationSeconds ?? 0;
+  const usedVoiceMinutes = usedVoiceSeconds / 60;
+  const remainingVoiceMinutes = Math.max(
+    includedVoiceMinutes - usedVoiceMinutes,
+    0,
+  );
+  const voiceUsagePercent =
+    includedVoiceMinutes > 0
+      ? Math.min((usedVoiceMinutes / includedVoiceMinutes) * 100, 100)
+      : 0;
+
   const [upcomingJobs, recentLeads] = await Promise.all([
     prisma.booking.findMany({
       where: {
@@ -252,6 +276,61 @@ export default async function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+
+        <section>
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-white">
+              Voice Usage
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Track your AI receptionist minutes for the current plan.
+            </p>
+          </div>
+
+          <Card className="border-slate-800 bg-slate-950/70 text-white shadow-lg">
+            <CardContent className="p-6">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-400">
+                    Included Voice Minutes
+                  </p>
+
+                  <div className="mt-2 flex items-baseline gap-2">
+                    <span className="text-3xl font-bold tracking-tight text-white">
+                      {includedVoiceMinutes > 0
+                        ? usedVoiceMinutes.toFixed(1)
+                        : "0"}
+                    </span>
+
+                    <span className="text-sm text-slate-500">
+                      / {includedVoiceMinutes} min used
+                    </span>
+                  </div>
+
+                  <p className="mt-2 text-xs text-slate-500">
+                    {includedVoiceMinutes > 0
+                      ? remainingVoiceMinutes.toFixed(1) + " minutes remaining"
+                      : "Voice is available on Business and Pro plans."}
+                  </p>
+                </div>
+
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10">
+                  <Phone className="h-5 w-5 text-blue-400" />
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+                  <div
+                    className="h-full rounded-full bg-blue-500 transition-all"
+                    style={{ width: voiceUsagePercent + "%" }}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
 
         <section>
           <div className="mb-4">
