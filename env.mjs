@@ -15,6 +15,9 @@ export const env = createEnv({
     STRIPE_API_KEY: z.string().min(1),
     STRIPE_WEBHOOK_SECRET: z.string().min(1),
     OPENAI_API_KEY: z.string().min(1),
+    STRIPE_VOICE_100_PRICE_ID: z.string().optional(),
+    STRIPE_VOICE_500_PRICE_ID: z.string().optional(),
+    STRIPE_VOICE_1000_PRICE_ID: z.string().optional(),
   },
 
   client: {
@@ -37,6 +40,9 @@ export const env = createEnv({
     STRIPE_API_KEY: process.env.STRIPE_API_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    STRIPE_VOICE_100_PRICE_ID: process.env.STRIPE_VOICE_100_PRICE_ID,
+    STRIPE_VOICE_500_PRICE_ID: process.env.STRIPE_VOICE_500_PRICE_ID,
+    STRIPE_VOICE_1000_PRICE_ID: process.env.STRIPE_VOICE_1000_PRICE_ID,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_STRIPE_STARTER_MONTHLY_PLAN_ID:
       process.env.NEXT_PUBLIC_STRIPE_STARTER_MONTHLY_PLAN_ID,
