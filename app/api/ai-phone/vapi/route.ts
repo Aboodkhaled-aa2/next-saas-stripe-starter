@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
+import { stripe } from "@/lib/stripe";
 import {
   buildCustomerAgentSystemPrompt,
   type CustomerAgentBusinessProfile,
@@ -339,6 +340,82 @@ function getCallDurationSeconds(message: VapiMessage) {
   return Math.round((end - start) / 1000);
 }
 
+async function hasVoiceMinutesAvailable(userId: string, plan: string | null | undefined) {
+  const includedVoiceMinutes =
+    plan === "PRO" ? 500 : plan === "BUSINESS" ? 100 : 0;
+
+  if (includedVoiceMinutes <= 0) {
+    return {
+      allowed: false,
+      reason: "AI Phone requires a Business or Pro plan.",
+    };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      stripeSubscriptionId: true,
+    },
+  });
+
+  if (!user?.stripeSubscriptionId) {
+    return {
+      allowed: false,
+      reason: "An active Stripe subscription is required for AI Phone.",
+    };
+  }
+
+  let periodStart: Date;
+  let periodEnd: Date;
+
+  try {
+    const subscription = await stripe.subscriptions.retrieve(
+      user.stripeSubscriptionId,
+    );
+
+    if (!["active", "trialing"].includes(subscription.status)) {
+      return {
+        allowed: false,
+        reason: "Your subscription is not active.",
+      };
+    }
+
+    periodStart = new Date(subscription.current_period_start * 1000);
+    periodEnd = new Date(subscription.current_period_end * 1000);
+  } catch (error) {
+    console.error("Failed to retrieve Stripe subscription for AI Phone:", error);
+
+    return {
+      allowed: false,
+      reason: "Unable to verify your voice balance right now.",
+    };
+  }
+
+  const usage = await prisma.voiceUsage.aggregate({
+    where: {
+      userId,
+      source: "VAPI_CALL",
+      startedAt: {
+        gte: periodStart,
+        lt: periodEnd,
+      },
+    },
+    _sum: {
+      durationSeconds: true,
+    },
+  });
+
+  const usedMinutes = (usage._sum.durationSeconds ?? 0) / 60;
+
+  return {
+    allowed: usedMinutes < includedVoiceMinutes,
+    reason:
+      usedMinutes >= includedVoiceMinutes
+        ? "Voice minutes exhausted. Please add more minutes to continue."
+        : null,
+  };
+}
+
 function safeJsonObject(value: string): Record<string, unknown> {
   try {
     const parsed = JSON.parse(value) as unknown;
@@ -376,6 +453,25 @@ export async function POST(request: Request) {
     }
 
     if (message.type === "assistant-request") {
+      const voiceBalance = await hasVoiceMinutesAvailable(
+        configuration.businessProfile.userId,
+        (
+          await prisma.user.findUnique({
+            where: { id: configuration.businessProfile.userId },
+            select: { plan: true },
+          })
+        )?.plan,
+      );
+
+      if (!voiceBalance.allowed) {
+        return NextResponse.json(
+          {
+            error: voiceBalance.reason ?? "Voice minutes are unavailable.",
+          },
+          { status: 402 },
+        );
+      }
+
       const knowledge = buildKnowledge(configuration.businessProfile);
       const systemPrompt = buildCustomerAgentSystemPrompt(knowledge);
 
