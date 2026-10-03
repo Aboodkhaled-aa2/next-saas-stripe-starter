@@ -76,7 +76,7 @@ export function PricingCards({
           </p>
         </div>
 
-        <div className="mb-6 flex items-baseline">
+        <div className="mb-2 flex items-baseline">
           <span className="text-5xl font-extrabold text-white">
             ${offer.prices.monthly}
           </span>
@@ -85,6 +85,10 @@ export function PricingCards({
             /month
           </span>
         </div>
+
+        <p className="mb-6 text-sm font-semibold text-blue-400">
+          3-day free trial
+        </p>
 
         <div className="mb-8">
           {userId && subscriptionPlan ? (
