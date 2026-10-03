@@ -142,7 +142,7 @@ export default async function DashboardPage() {
   const billingUser = user?.id
     ? await prisma.user.findUnique({
         where: { id: user.id },
-        select: { stripeSubscriptionId: true },
+        select: { stripeSubscriptionId: true, extraVoiceMinutes: true },
       })
     : null;
 
@@ -179,6 +179,8 @@ export default async function DashboardPage() {
     },
     _sum: {
       durationSeconds: true,
+      includedMinutesUsed: true,
+      extraMinutesUsed: true,
     },
   });
 
@@ -187,13 +189,17 @@ export default async function DashboardPage() {
 
   const usedVoiceSeconds = voiceUsage._sum.durationSeconds ?? 0;
   const usedVoiceMinutes = usedVoiceSeconds / 60;
+  const usedIncludedMinutes = voiceUsage._sum.includedMinutesUsed ?? 0;
+  const usedExtraMinutes = voiceUsage._sum.extraMinutesUsed ?? 0;
   const remainingVoiceMinutes = Math.max(
-    includedVoiceMinutes - usedVoiceMinutes,
+    includedVoiceMinutes - usedIncludedMinutes,
     0,
   );
+  const extraVoiceMinutes = Math.max(billingUser?.extraVoiceMinutes ?? 0, 0);
+  const totalRemainingVoiceMinutes = remainingVoiceMinutes + extraVoiceMinutes;
   const voiceUsagePercent =
     includedVoiceMinutes > 0
-      ? Math.min((usedVoiceMinutes / includedVoiceMinutes) * 100, 100)
+      ? Math.min((usedIncludedMinutes / includedVoiceMinutes) * 100, 100)
       : 0;
 
   const extraVoicePackages = [
@@ -370,6 +376,22 @@ export default async function DashboardPage() {
                     style={{ width: voiceUsagePercent + "%" }}
                   />
                 </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                  <p className="text-xs text-slate-500">Extra Minutes</p>
+                  <p className="mt-1 text-lg font-semibold text-blue-400">{extraVoiceMinutes.toFixed(1)}</p>
+                </div>
+                <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                  <p className="text-xs text-slate-500">Total Available</p>
+                  <p className="mt-1 text-lg font-semibold text-emerald-400">{totalRemainingVoiceMinutes.toFixed(1)}</p>
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                <span>Included used: {usedIncludedMinutes.toFixed(1)} min</span>
+                <span>Extra used: {usedExtraMinutes.toFixed(1)} min</span>
               </div>
             </CardContent>
           </Card>
