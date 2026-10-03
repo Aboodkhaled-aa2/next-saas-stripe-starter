@@ -68,8 +68,8 @@ export async function generateUserStripe(
       const stripeSession = await stripe.checkout.sessions.create({
         success_url: absoluteUrl("/payment-success"),
         cancel_url: billingUrl,
-        payment_method_types: ["card"],
         mode: "subscription",
+        payment_method_collection: "if_required",
         billing_address_collection: "auto",
         customer_email: user.email,
         line_items: [
@@ -80,6 +80,11 @@ export async function generateUserStripe(
         ],
         subscription_data: {
           trial_period_days: 3,
+          trial_settings: {
+            end_behavior: {
+              missing_payment_method: "cancel",
+            },
+          },
           metadata: {
             userId: user.id,
           },
