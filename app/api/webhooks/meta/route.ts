@@ -72,6 +72,11 @@ export async function POST(request: Request) {
       entry?: Array<unknown>;
     };
 
+    console.log(
+      "META WEBHOOK PAYLOAD:",
+      JSON.stringify(payload, null, 2),
+    );
+
     console.log("Meta webhook event received:", {
       object: payload.object,
       entries: payload.entry?.length ?? 0,
