@@ -208,10 +208,17 @@ const toolSchemas = [
 type VapiMessage = {
   type?: string;
   call?: {
+    id?: string;
+    status?: string;
+    startedAt?: string | null;
+    endedAt?: string | null;
+    duration?: number | null;
     phoneNumber?: {
       number?: string | null;
     } | null;
   } | null;
+  startedAt?: string | null;
+  endedAt?: string | null;
   phoneNumber?: {
     number?: string | null;
   } | null;
@@ -306,6 +313,32 @@ function normalizeToolCalls(message: VapiMessage) {
   );
 }
 
+
+
+function getCallDurationSeconds(message: VapiMessage) {
+  const duration = message.call?.duration;
+
+  if (typeof duration === "number" && Number.isFinite(duration) && duration >= 0) {
+    return Math.round(duration);
+  }
+
+  const startedAt = message.call?.startedAt ?? message.startedAt;
+  const endedAt = message.call?.endedAt ?? message.endedAt;
+
+  if (!startedAt || !endedAt) {
+    return null;
+  }
+
+  const start = new Date(startedAt).getTime();
+  const end = new Date(endedAt).getTime();
+
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) {
+    return null;
+  }
+
+  return Math.round((end - start) / 1000);
+}
+
 function safeJsonObject(value: string): Record<string, unknown> {
   try {
     const parsed = JSON.parse(value) as unknown;
@@ -362,12 +395,67 @@ export async function POST(request: Request) {
               },
             ],
             tools: toolSchemas,
+          serverMessages: [
+            "end-of-call-report",
+            "tool-calls",
+          ],
           },
           server: {
             url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
           },
         },
       });
+    }
+
+    if (message.type === "end-of-call-report") {
+      const callId = message.call?.id?.trim();
+
+      if (!callId) {
+        return NextResponse.json({ error: "Missing Vapi call ID." }, { status: 400 });
+      }
+
+      const durationSeconds = getCallDurationSeconds(message);
+
+      if (durationSeconds === null) {
+        return NextResponse.json(
+          { error: "Missing Vapi call duration." },
+          { status: 400 },
+        );
+      }
+
+      const billedMinutes = Math.ceil(durationSeconds / 60);
+
+      await prisma.voiceUsage.upsert({
+        where: {
+          callId,
+        },
+        create: {
+          userId: configuration.businessProfile.userId,
+          callId,
+          source: "VAPI_CALL",
+          durationSeconds,
+          billedMinutes,
+          startedAt: message.call?.startedAt
+            ? new Date(message.call.startedAt)
+            : message.startedAt
+              ? new Date(message.startedAt)
+              : null,
+          endedAt: message.call?.endedAt
+            ? new Date(message.call.endedAt)
+            : message.endedAt
+              ? new Date(message.endedAt)
+              : null,
+          metadata: {
+            endedReason:
+              typeof (message as { endedReason?: unknown }).endedReason === "string"
+                ? (message as { endedReason: string }).endedReason
+                : null,
+          },
+        },
+        update: {},
+      });
+
+      return NextResponse.json({ ok: true });
     }
 
     if (message.type === "tool-calls") {
