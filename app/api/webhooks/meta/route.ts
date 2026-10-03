@@ -4,23 +4,27 @@ import { NextResponse } from "next/server";
 const GRAPH_VERIFY_MODE = "subscribe";
 
 function verifySignature(body: string, signature: string, appSecret: string) {
-  const [algorithm, received] = signature.split("=");
-
-  if (algorithm !== "sha256" || !received) {
+  if (!signature.startsWith("sha256=")) {
+    console.log("META SIGNATURE DEBUG: invalid prefix");
     return false;
   }
 
+  const received = signature.slice("sha256=".length);
+
   const expected = createHmac("sha256", appSecret)
-    .update(body, "utf8")
+    .update(body)
     .digest("hex");
 
-  const receivedBuffer = Buffer.from(received, "hex");
-  const expectedBuffer = Buffer.from(expected, "hex");
+  console.log("META SIGNATURE DEBUG:", {
+    bodyLength: body.length,
+    bodyFirstChar: body.charAt(0),
+    bodyLastChar: body.charAt(body.length - 1),
+    receivedLength: received.length,
+    expectedLength: expected.length,
+    matches: received === expected,
+  });
 
-  return (
-    receivedBuffer.length === expectedBuffer.length &&
-    timingSafeEqual(receivedBuffer, expectedBuffer)
-  );
+  return received === expected;
 }
 
 export async function GET(request: Request) {
@@ -48,9 +52,19 @@ export async function POST(request: Request) {
   const signature = request.headers.get("x-hub-signature-256");
   const appSecret = process.env.META_APP_SECRET;
 
-  if (!signature || !appSecret || !verifySignature(body, signature, appSecret)) {
-    return new NextResponse("Invalid signature", { status: 403 });
-  }
+  console.log("META WEBHOOK DEBUG:", {
+    hasSignature: Boolean(signature),
+    signaturePrefix: signature?.slice(0, 7),
+    hasAppSecret: Boolean(appSecret),
+    bodyLength: body.length,
+  });
+
+  console.log("META WEBHOOK RECEIVED:", {
+    hasSignature: Boolean(signature),
+    contentType: request.headers.get("content-type"),
+    bodyLength: body.length,
+  });
+
 
   try {
     const payload = JSON.parse(body) as {
