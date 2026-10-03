@@ -423,7 +423,7 @@ export async function POST(request: Request) {
         );
       }
 
-      const billedMinutes = Math.ceil(durationSeconds / 60);
+      const billedMinutes = durationSeconds / 60;
 
       await prisma.voiceUsage.upsert({
         where: {
