@@ -23,9 +23,6 @@ export const env = createEnv({
 
     OPENAI_API_KEY: z.string().min(1),
 
-    DMLY_API_KEY: z.string().min(1),
-    DMLY_AGENCY_API_URL: z.string().url().default("https://dash.dmly.io/api/agency/v1"),
-    DMLY_REST_API_URL: z.string().url().default("https://api.dmly.io/rest"),
   },
 
   client: {
@@ -60,9 +57,6 @@ export const env = createEnv({
 
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
 
-    DMLY_API_KEY: process.env.DMLY_API_KEY,
-    DMLY_AGENCY_API_URL: process.env.DMLY_AGENCY_API_URL,
-    DMLY_REST_API_URL: process.env.DMLY_REST_API_URL,
 
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
 
