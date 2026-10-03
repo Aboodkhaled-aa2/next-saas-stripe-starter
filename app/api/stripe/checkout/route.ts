@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     const stripeSession = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer_email: user.email ?? undefined,
-      payment_method_types: ["card"],
+      payment_method_collection: "if_required",
       line_items: [
         {
           price: priceId,
@@ -72,6 +72,11 @@ export async function POST(req: Request) {
       ],
       subscription_data: {
         trial_period_days: 3,
+        trial_settings: {
+          end_behavior: {
+            missing_payment_method: "cancel",
+          },
+        },
         metadata: {
           userId: user.id,
           plan,
