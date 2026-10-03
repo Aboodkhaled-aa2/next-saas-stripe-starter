@@ -71,6 +71,7 @@ export async function generateUserStripe(
         mode: "subscription",
         payment_method_collection: "if_required",
         billing_address_collection: "auto",
+        payment_method_collection: "if_required",
         customer_email: user.email,
         line_items: [
           {
