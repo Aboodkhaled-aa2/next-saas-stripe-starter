@@ -8,9 +8,19 @@ import { pricingData } from "@/config/subscriptions";
 import { sendPaymentConfirmation } from "@/lib/email";
 
 const allowedStripePriceIds = new Set(
-  pricingData.flatMap((plan) => [plan.stripeIds.monthly, plan.stripeIds.yearly])
-    .filter((priceId) => priceId && !priceId.startsWith("price_placeholder_")),
+  pricingData
+    .flatMap((plan) => [plan.stripeIds.monthly, plan.stripeIds.yearly])
+    .filter(
+      (priceId) =>
+        priceId && !priceId.startsWith("price_placeholder_"),
+    ),
 );
+
+const voicePackages = {
+  "100": { minutes: 100, amountCents: 1500 },
+  "500": { minutes: 500, amountCents: 7500 },
+  "1000": { minutes: 1000, amountCents: 12000 },
+} as const;
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -44,6 +54,78 @@ export async function POST(req: Request) {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
 
+      if (session.metadata?.type === "voice_minutes") {
+        if (session.mode !== "payment" || session.payment_status !== "paid") {
+          return new Response("Voice payment not completed", { status: 400 });
+        }
+
+        const userId = session.metadata.userId;
+        const packageKey = session.metadata.package;
+
+        if (!userId || !packageKey) {
+          return new Response("Missing voice purchase metadata", {
+            status: 400,
+          });
+        }
+
+        const selected =
+          voicePackages[packageKey as keyof typeof voicePackages];
+
+        if (!selected) {
+          return new Response("Unknown voice package", { status: 400 });
+        }
+
+        if (
+          session.amount_total !== null &&
+          session.amount_total !== selected.amountCents
+        ) {
+          console.error(
+            "Stripe webhook error: Voice package amount mismatch",
+            {
+              sessionId: session.id,
+              expected: selected.amountCents,
+              received: session.amount_total,
+            },
+          );
+
+          return new Response("Voice package amount mismatch", {
+            status: 400,
+          });
+        }
+
+        await prisma.$transaction(async (tx) => {
+          const existingPurchase = await tx.voiceCreditPurchase.findUnique({
+            where: { stripeSessionId: session.id },
+            select: { id: true },
+          });
+
+          if (existingPurchase) {
+            return;
+          }
+
+          await tx.voiceCreditPurchase.create({
+            data: {
+              userId,
+              stripeSessionId: session.id,
+              minutes: selected.minutes,
+              amountCents: selected.amountCents,
+              status: "PAID",
+            },
+          });
+
+          await tx.user.update({
+            where: { id: userId },
+            data: {
+              extraVoiceMinutes: {
+                increment: selected.minutes,
+              },
+            },
+          });
+        });
+
+        return new Response(null, { status: 200 });
+      }
+
       if (!session.subscription) {
         console.error("Stripe webhook error: Missing subscription ID");
         return new Response("Missing subscription ID", { status: 400 });
@@ -63,7 +145,10 @@ export async function POST(req: Request) {
       const priceId = subscription.items.data[0]?.price.id;
 
       if (!priceId || !allowedStripePriceIds.has(priceId)) {
-        console.error("Stripe webhook error: Unknown subscription price", priceId);
+        console.error(
+          "Stripe webhook error: Unknown subscription price",
+          priceId,
+        );
         return new Response("Unknown subscription price", { status: 400 });
       }
 
@@ -127,7 +212,8 @@ export async function POST(req: Request) {
 
           await sendPaymentConfirmation({
             email: user.email,
-            customerName: invoice.customer_name ?? user.name ?? "Customer",
+            customerName:
+              invoice.customer_name ?? user.name ?? "Customer",
             planName: plan?.title ?? "Subscription",
             amount: new Intl.NumberFormat("en-US", {
               style: "currency",
