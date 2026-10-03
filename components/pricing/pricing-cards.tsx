@@ -87,7 +87,7 @@ export function PricingCards({
         </div>
 
         <p className="mb-6 text-sm font-semibold text-blue-400">
-          3-day free trial
+          3-day free trial · No credit card required
         </p>
 
         <div className="mb-8">
