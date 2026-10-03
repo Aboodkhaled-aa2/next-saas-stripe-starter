@@ -302,6 +302,8 @@ model VoiceUsage {
 
   durationSeconds Int
   billedMinutes Float
+  includedMinutesUsed Float @default(0) @map("included_minutes_used")
+  extraMinutesUsed Float @default(0) @map("extra_minutes_used")
 
   startedAt DateTime?
   endedAt DateTime?
