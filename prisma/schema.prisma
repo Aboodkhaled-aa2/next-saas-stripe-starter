@@ -269,6 +269,7 @@ model BusinessProfile {
 }
 
 enum VoiceUsageSource {
+  @@schema("public")
   VAPI_CALL
   MANUAL
 }
