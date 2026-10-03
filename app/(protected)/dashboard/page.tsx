@@ -14,6 +14,7 @@ import {
 
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
+import { stripe } from "@/lib/stripe";
 import { constructMetadata } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -135,10 +136,39 @@ export default async function DashboardPage() {
     employees,
   });
 
+  let currentPeriodStart: Date | null = null;
+  let currentPeriodEnd: Date | null = null;
+
+  if (user?.stripeSubscriptionId) {
+    try {
+      const subscription = await stripe.subscriptions.retrieve(
+        user.stripeSubscriptionId,
+      );
+
+      currentPeriodStart = new Date(subscription.current_period_start * 1000);
+      currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+    } catch (error) {
+      console.error(
+        "Failed to retrieve Stripe subscription for voice usage:",
+        error,
+      );
+    }
+  }
+
   const voiceUsage = await prisma.voiceUsage.aggregate({
     where: {
       userId: user?.id ?? "",
       source: "VAPI_CALL",
+      ...(currentPeriodStart && currentPeriodEnd
+        ? {
+            startedAt: {
+              gte: currentPeriodStart,
+              lt: currentPeriodEnd,
+            },
+          }
+        : {
+            id: "__NO_CURRENT_BILLING_PERIOD__",
+          }),
     },
     _sum: {
       durationSeconds: true,
