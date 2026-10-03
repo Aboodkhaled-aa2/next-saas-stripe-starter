@@ -139,10 +139,17 @@ export default async function DashboardPage() {
   let currentPeriodStart: Date | null = null;
   let currentPeriodEnd: Date | null = null;
 
-  if (user?.stripeSubscriptionId) {
+  const billingUser = user?.id
+    ? await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { stripeSubscriptionId: true },
+      })
+    : null;
+
+  if (billingUser?.stripeSubscriptionId) {
     try {
       const subscription = await stripe.subscriptions.retrieve(
-        user.stripeSubscriptionId,
+        billingUser.stripeSubscriptionId,
       );
 
       currentPeriodStart = new Date(subscription.current_period_start * 1000);
