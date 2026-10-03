@@ -41,7 +41,7 @@ export const pricingData: SubscriptionPlan[] = [
     benefits: [
       "Everything in Starter",
       "AI Voice Receptionist",
-      "100 Voice Minutes / Month",
+      "500 Voice Minutes / Month",
       "Appointment Booking",
       "Calendar Integration",
       "Automated Lead Follow-Ups",
@@ -129,7 +129,7 @@ export const comparePlans: PlansRow[] = [
     feature: "AI Voice Receptionist",
     starter: false,
     business: "100 Mins/mo",
-    pro: "100 Mins/mo",
+    pro: "500 Mins/mo",
     tooltip: "Voice AI is available from the Business plan onwards.",
   },
   {
