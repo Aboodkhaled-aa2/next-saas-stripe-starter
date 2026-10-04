@@ -126,6 +126,133 @@ export async function POST(req: Request) {
         return new Response(null, { status: 200 });
       }
 
+      if (session.metadata?.type === "phone_number") {
+        if (session.mode !== "subscription" || session.payment_status !== "paid") {
+          return new Response("Phone number payment not completed", { status: 400 });
+        }
+
+        const userId = session.metadata.userId;
+        const phoneNumber = session.metadata.phoneNumber;
+
+        if (!userId || !phoneNumber) {
+          return new Response("Missing phone number metadata", { status: 400 });
+        }
+
+        const existing = await prisma.phoneNumber.findUnique({
+          where: { phoneNumber },
+          select: { id: true, status: true },
+        });
+
+        if (existing?.status === "ACTIVE") {
+          return new Response(null, { status: 200 });
+        }
+
+        if (
+          !env.SIGNALWIRE_SPACE_URL ||
+          !env.SIGNALWIRE_PROJECT_ID ||
+          !env.SIGNALWIRE_API_TOKEN
+        ) {
+          console.error("SignalWire is not configured for phone provisioning");
+          return new Response("SignalWire is not configured", { status: 500 });
+        }
+
+        const baseUrl = env.SIGNALWIRE_SPACE_URL.replace(/\\/$/, "");
+        const authorization =
+          "Basic " +
+          Buffer.from(
+            `${env.SIGNALWIRE_PROJECT_ID}:${env.SIGNALWIRE_API_TOKEN}`,
+          ).toString("base64");
+
+        const ownedResponse = await fetch(
+          `${baseUrl}/api/relay/rest/phone_numbers?filter_number=${encodeURIComponent(phoneNumber)}&page_size=10`,
+          {
+            headers: {
+              Accept: "application/json",
+              Authorization: authorization,
+            },
+            cache: "no-store",
+          },
+        );
+
+        const ownedPayload = await ownedResponse.json().catch(() => null);
+        const ownedNumber = Array.isArray(ownedPayload?.data)
+          ? ownedPayload.data.find(
+              (item: { number?: string }) => item.number === phoneNumber,
+            )
+          : null;
+
+        let signalWireNumber = ownedNumber;
+
+        if (!signalWireNumber) {
+          const purchaseResponse = await fetch(
+            `${baseUrl}/api/relay/rest/phone_numbers`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Authorization: authorization,
+              },
+              body: JSON.stringify({ number: phoneNumber }),
+            },
+          );
+
+          const purchasePayload = await purchaseResponse.json().catch(() => null);
+
+          if (!purchaseResponse.ok) {
+            console.error(
+              "SignalWire phone number purchase failed",
+              purchaseResponse.status,
+              purchasePayload,
+            );
+            return new Response("Phone number provisioning failed", {
+              status: 502,
+            });
+          }
+
+          signalWireNumber = purchasePayload;
+        }
+
+        if (!signalWireNumber?.id || signalWireNumber.number !== phoneNumber) {
+          console.error("SignalWire returned an invalid phone number payload");
+          return new Response("Invalid SignalWire phone number response", {
+            status: 502,
+          });
+        }
+
+        await prisma.phoneNumber.upsert({
+          where: { phoneNumber },
+          create: {
+            userId,
+            provider: "SIGNALWIRE",
+            providerId: signalWireNumber.id,
+            phoneNumber,
+            countryCode: signalWireNumber.country_code ?? "US",
+            status: "ACTIVE",
+            monthlyPriceCents: 499,
+            stripeSubscriptionId: session.subscription as string,
+            metadata: {
+              capabilities: signalWireNumber.capabilities ?? [],
+              numberType: signalWireNumber.number_type ?? null,
+            },
+          },
+          update: {
+            userId,
+            providerId: signalWireNumber.id,
+            countryCode: signalWireNumber.country_code ?? "US",
+            status: "ACTIVE",
+            monthlyPriceCents: 499,
+            stripeSubscriptionId: session.subscription as string,
+            metadata: {
+              capabilities: signalWireNumber.capabilities ?? [],
+              numberType: signalWireNumber.number_type ?? null,
+            },
+          },
+        });
+
+        return new Response(null, { status: 200 });
+      }
+
       if (!session.subscription) {
         console.error("Stripe webhook error: Missing subscription ID");
         return new Response("Missing subscription ID", { status: 400 });
