@@ -157,6 +157,7 @@ model User {
   fiwanoChannels FiwanoChannel[]
   voiceUsage VoiceUsage[]
   voiceCreditPurchases VoiceCreditPurchase[]
+  phoneNumbers       PhoneNumber[]
 
   stripeCustomerId       String?   @unique @map("stripe_customer_id")
   stripeSubscriptionId   String?   @unique @map("stripe_subscription_id")
@@ -317,6 +318,32 @@ model VoiceUsage {
   @@index([userId, createdAt])
   @@index([userId, startedAt])
   @@map("voice_usage")
+}
+
+model PhoneNumber {
+  @@schema("public")
+  id String @id @default(cuid())
+
+  userId String
+
+  provider String @default("SIGNALWIRE")
+  providerId String @unique
+  phoneNumber String @unique
+  countryCode String @default("US")
+  region String?
+  city String?
+
+  status String @default("ACTIVE")
+  monthlyPriceCents Int @default(0)
+
+  purchasedAt DateTime @default(now()) @map("purchased_at")
+  releasedAt DateTime?
+  metadata Json?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("phone_numbers")
 }
 
 model AIPhoneSettings {
