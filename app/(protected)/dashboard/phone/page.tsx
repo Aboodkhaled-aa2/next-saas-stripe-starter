@@ -141,10 +141,35 @@ export default function PhoneNumberPage() {
 
               <button
                 type="button"
-                disabled
-                className="mt-5 w-full cursor-not-allowed rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-500"
+                onClick={async () => {
+                  try {
+                    const response = await fetch("/api/stripe/phone-number", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ phoneNumber: item.number }),
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok || !data.url) {
+                      throw new Error(
+                        data.error || "Unable to start checkout.",
+                      );
+                    }
+
+                    window.location.href = data.url;
+                  } catch (err) {
+                    setError(
+                      err instanceof Error
+                        ? err.message
+                        : "Unable to start checkout.",
+                    );
+                  }
+                }}
+                disabled={!item.number}
+                className="mt-5 w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Purchase — Coming Next
+                Get this number — $4.99/month
               </button>
             </div>
           ))}
