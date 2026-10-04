@@ -156,7 +156,7 @@ export async function POST(req: Request) {
           return new Response("SignalWire is not configured", { status: 500 });
         }
 
-        const baseUrl = env.SIGNALWIRE_SPACE_URL.replace(/\\/$/, "");
+        const baseUrl = env.SIGNALWIRE_SPACE_URL.replace(/\/$/, "");
         const authorization =
           "Basic " +
           Buffer.from(
