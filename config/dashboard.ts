@@ -93,6 +93,11 @@ export const sidebarLinks: SidebarNavItem[] = [
         icon: "settings",
         title: "Settings",
       },
+      {
+        href: "mailto:supportsmartcleaningdesk@gmail.com",
+        icon: "messages",
+        title: "Contact Support",
+      },
     ],
   },
 ];
