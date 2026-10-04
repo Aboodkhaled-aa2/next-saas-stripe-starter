@@ -334,7 +334,8 @@ model PhoneNumber {
   city String?
 
   status String @default("ACTIVE")
-  monthlyPriceCents Int @default(0)
+  monthlyPriceCents Int @default(499)
+  stripeSubscriptionId String? @unique @map("stripe_subscription_id")
 
   purchasedAt DateTime @default(now()) @map("purchased_at")
   releasedAt DateTime?
