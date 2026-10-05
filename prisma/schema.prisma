@@ -86,6 +86,25 @@ enum SalesContactStatus {
   VOICEMAIL
 }
 
+enum ConversationChannel {
+  @@schema("public")
+  FACEBOOK
+  INSTAGRAM
+  WHATSAPP
+}
+
+enum ConversationStatus {
+  @@schema("public")
+  OPEN
+  CLOSED
+}
+
+enum MessageDirection {
+  @@schema("public")
+  INBOUND
+  OUTBOUND
+}
+
 enum MetaIntegrationPlatform {
   @@schema("public")
   FACEBOOK
@@ -153,7 +172,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   salesCampaigns  SalesCampaign[]
   salesProspects  SalesProspect[]
-  metaIntegrations MetaIntegration[]
+  metaIntegrations MetaIntegration[]\n  conversations Conversation[]
   fiwanoChannels FiwanoChannel[]
   voiceUsage VoiceUsage[]
   voiceCreditPurchases VoiceCreditPurchase[]
@@ -170,6 +189,47 @@ model User {
   extraVoiceMinutes Float @default(0) @map("extra_voice_minutes")
 
   @@map("users")
+}
+
+model Conversation {
+  @@schema("public")
+  id String @id @default(cuid())
+  userId String
+  channel ConversationChannel
+  externalConversationId String
+  customerName String?
+  customerExternalId String?
+  status ConversationStatus @default(OPEN)
+  lastMessageAt DateTime @default(now())
+  aiResponseId String?
+  metadata Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@unique([userId, channel, externalConversationId])
+  @@index([userId, lastMessageAt])
+  @@map("conversations")
+}
+
+model Message {
+  @@schema("public")
+  id String @id @default(cuid())
+  conversationId String
+  direction MessageDirection
+  externalMessageId String?
+  senderExternalId String?
+  text String @db.Text
+  metadata Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@unique([conversationId, externalMessageId])
+  @@map("messages")
 }
 
 model MetaIntegration {
