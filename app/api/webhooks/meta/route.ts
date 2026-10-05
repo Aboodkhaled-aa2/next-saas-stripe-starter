@@ -4,27 +4,15 @@ import { NextResponse } from "next/server";
 const GRAPH_VERIFY_MODE = "subscribe";
 
 function verifySignature(body: string, signature: string, appSecret: string) {
-  if (!signature.startsWith("sha256=")) {
-    console.log("META SIGNATURE DEBUG: invalid prefix");
-    return false;
-  }
+  if (!signature.startsWith("sha256=")) return false;
 
-  const received = signature.slice("sha256=".length);
+  const received = Buffer.from(signature.slice("sha256=".length), "hex");
+  const expected = createHmac("sha256", appSecret).update(body).digest();
 
-  const expected = createHmac("sha256", appSecret)
-    .update(body)
-    .digest("hex");
-
-  console.log("META SIGNATURE DEBUG:", {
-    bodyLength: body.length,
-    bodyFirstChar: body.charAt(0),
-    bodyLastChar: body.charAt(body.length - 1),
-    receivedLength: received.length,
-    expectedLength: expected.length,
-    matches: received === expected,
-  });
-
-  return received === expected;
+  return (
+    received.length === expected.length &&
+    timingSafeEqual(received, expected)
+  );
 }
 
 export async function GET(request: Request) {
@@ -52,30 +40,15 @@ export async function POST(request: Request) {
   const signature = request.headers.get("x-hub-signature-256");
   const appSecret = process.env.META_APP_SECRET;
 
-  console.log("META WEBHOOK DEBUG:", {
-    hasSignature: Boolean(signature),
-    signaturePrefix: signature?.slice(0, 7),
-    hasAppSecret: Boolean(appSecret),
-    bodyLength: body.length,
-  });
-
-  console.log("META WEBHOOK RECEIVED:", {
-    hasSignature: Boolean(signature),
-    contentType: request.headers.get("content-type"),
-    bodyLength: body.length,
-  });
-
+  if (!signature || !appSecret || !verifySignature(body, signature, appSecret)) {
+    return new NextResponse("Invalid signature", { status: 401 });
+  }
 
   try {
     const payload = JSON.parse(body) as {
       object?: string;
       entry?: Array<unknown>;
     };
-
-    console.log(
-      "META WEBHOOK PAYLOAD:",
-      JSON.stringify(payload, null, 2),
-    );
 
     console.log("Meta webhook event received:", {
       object: payload.object,
