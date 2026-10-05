@@ -32,6 +32,7 @@ export async function GET(request: Request) {
   authUrl.searchParams.set("client_id", appId);
   authUrl.searchParams.set("redirect_uri", redirectUri);
   authUrl.searchParams.set("response_type", "code");
+  authUrl.searchParams.set("state", state);
   authUrl.searchParams.set(
     "scope",
     "instagram_business_basic,instagram_business_manage_comments,instagram_business_manage_messages",
@@ -46,8 +47,5 @@ export async function GET(request: Request) {
     path: "/",
   });
 
-  authUrl.searchParams.set("state", state);
-  return NextResponse.redirect(authUrl, {
-    headers: response.headers,
-  });
+  return response;
 }
