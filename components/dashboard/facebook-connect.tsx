@@ -3,35 +3,19 @@
 import { useEffect, useState } from "react";
 import { Facebook, Loader2 } from "lucide-react";
 
-declare global {
-  interface Window {
-    FB?: {
-      init: (options: {
-        appId: string;
-        cookie?: boolean;
-        xfbml?: boolean;
-        version: string;
-      }) => void;
-      login: (
-        callback: (response: {
-          status?: string;
-          authResponse?: {
-            code?: string;
-          } | null;
-        }) => void,
-        options: {
-          config_id: string;
-          response_type: "code";
-          override_default_response_type: boolean;
-        },
-      ) => void;
-    };
-    fbAsyncInit?: () => void;
-  }
-}
+type FacebookLoginResponse = {
+  authResponse?: {
+    code?: string;
+  };
+};
 
-const APP_ID = "1058014497030757";
-const CONFIG_ID = "113798935317997";
+type FacebookSdk = {
+  init: (options: Record<string, unknown>) => void;
+  login: (
+    callback: (response: FacebookLoginResponse) => void,
+    options: Record<string, unknown>,
+  ) => void;
+};
 
 export function FacebookConnect() {
   const [ready, setReady] = useState(false);
@@ -39,18 +23,23 @@ export function FacebookConnect() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (window.FB) {
+    const fb = (window as Window & { FB?: FacebookSdk }).FB;
+
+    if (fb) {
       setReady(true);
       return;
     }
 
-    const existingScript = document.getElementById("facebook-jssdk");
-
     const initialize = () => {
-      if (!window.FB) return;
+      const sdk = (window as Window & { FB?: FacebookSdk }).FB;
 
-      window.FB.init({
-        appId: APP_ID,
+      if (!sdk) {
+        setError("Facebook SDK failed to load.");
+        return;
+      }
+
+      sdk.init({
+        appId: "1058014497030757",
         cookie: true,
         xfbml: true,
         version: "v26.0",
@@ -59,12 +48,17 @@ export function FacebookConnect() {
       setReady(true);
     };
 
+    (
+      window as Window & {
+        fbAsyncInit?: () => void;
+      }
+    ).fbAsyncInit = initialize;
+
+    const existingScript = document.getElementById("facebook-jssdk");
+
     if (existingScript) {
-      window.fbAsyncInit = initialize;
       return;
     }
-
-    window.fbAsyncInit = initialize;
 
     const script = document.createElement("script");
     script.id = "facebook-jssdk";
@@ -74,16 +68,12 @@ export function FacebookConnect() {
     script.src = "https://connect.facebook.net/en_US/sdk.js";
 
     document.body.appendChild(script);
-
-    return () => {
-      if (window.fbAsyncInit === initialize) {
-        window.fbAsyncInit = undefined;
-      }
-    };
   }, []);
 
   const connectFacebook = () => {
-    if (!window.FB || !ready) {
+    const fb = (window as Window & { FB?: FacebookSdk }).FB;
+
+    if (!fb || !ready) {
       setError("Facebook Login is still loading. Please try again.");
       return;
     }
@@ -91,10 +81,12 @@ export function FacebookConnect() {
     setLoading(true);
     setError("");
 
-    window.FB.login(
+    fb.login(
       async (response) => {
         try {
-          if (!response.authResponse?.code) {
+          const code = response.authResponse?.code;
+
+          if (!code) {
             setLoading(false);
             setError("Facebook authorization was not completed.");
             return;
@@ -107,9 +99,7 @@ export function FacebookConnect() {
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({
-                code: response.authResponse.code,
-              }),
+              body: JSON.stringify({ code }),
             },
           );
 
@@ -127,6 +117,7 @@ export function FacebookConnect() {
           console.error("Facebook connection failed:", err);
 
           setLoading(false);
+
           setError(
             err instanceof Error
               ? err.message
@@ -135,7 +126,7 @@ export function FacebookConnect() {
         }
       },
       {
-        config_id: CONFIG_ID,
+        config_id: "113798935317997",
         response_type: "code",
         override_default_response_type: true,
       },
