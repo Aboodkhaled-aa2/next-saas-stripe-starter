@@ -36,7 +36,13 @@ async function resolveIntegration(
   if (channel === "FACEBOOK") {
     return prisma.metaIntegration.findFirst({
       where: { platform: "FACEBOOK", pageId: recipientId },
-      select: { id: true, userId: true, accessToken: true, pageId: true },
+      select: {
+        id: true,
+        userId: true,
+        accessToken: true,
+        pageId: true,
+        instagramAccountId: true,
+      },
     });
   }
 
