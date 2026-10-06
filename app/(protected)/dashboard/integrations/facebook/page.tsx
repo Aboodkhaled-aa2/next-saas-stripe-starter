@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 
 import { DashboardHeader } from "@/components/dashboard/header";
-import { CheckCircle2, Facebook, MessageCircle, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 
