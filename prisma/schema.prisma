@@ -202,7 +202,7 @@ model Conversation {
   customerExternalId String? @map("external_contact_id")
   status String @default("OPEN")
   lastMessageAt DateTime @default(now()) @map("last_message_at")
-  aiResponseId String?
+  aiResponseId String? @map("ai_response_id")
   metadata Json?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
