@@ -101,6 +101,30 @@ export async function GET(request: Request) {
       },
     });
 
+    const graphVersion = process.env.META_GRAPH_VERSION || "v26.0";
+
+    const subscribeUrl = new URL(
+      "https://graph.facebook.com/" +
+        graphVersion +
+        "/" +
+        instagramId +
+        "/subscribed_apps",
+    );
+    subscribeUrl.searchParams.set("subscribed_fields", "messages");
+    subscribeUrl.searchParams.set("access_token", longLivedData.access_token);
+
+    const subscribeResponse = await fetch(subscribeUrl, {
+      method: "POST",
+      cache: "no-store",
+    });
+    const subscribeData = await subscribeResponse.json().catch(() => null);
+
+    if (!subscribeResponse.ok || subscribeData?.success !== true) {
+      throw new Error(
+        subscribeData?.error?.message ||
+          "Failed to subscribe Instagram account to messaging webhooks.",
+      );
+    }
     const response = NextResponse.redirect(
       new URL("/dashboard/integrations/instagram?connected=1", request.url),
     );
