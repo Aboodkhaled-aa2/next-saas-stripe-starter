@@ -23,15 +23,18 @@ export function FacebookConnect() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const sdk = (window as Window & { FB?: FacebookSdk }).FB;
+    const getFacebook = () =>
+      (window as Window & { FB?: FacebookSdk }).FB;
 
-    if (sdk) {
+    const existing = getFacebook();
+
+    if (existing) {
       setReady(true);
       return;
     }
 
     const initialize = () => {
-      const fb = (window as Window & { FB?: FacebookSdk }).FB;
+      const fb = getFacebook();
 
       if (!fb) {
         setError("Facebook SDK failed to load.");
@@ -48,15 +51,13 @@ export function FacebookConnect() {
       setReady(true);
     };
 
-    (
-      window as Window & {
-        fbAsyncInit?: () => void;
-      }
-    ).fbAsyncInit = initialize;
+    const win = window as Window & {
+      fbAsyncInit?: () => void;
+    };
 
-    const existingScript = document.getElementById("facebook-jssdk");
+    win.fbAsyncInit = initialize;
 
-    if (existingScript) {
+    if (document.getElementById("facebook-jssdk")) {
       return;
     }
 
@@ -99,7 +100,7 @@ export function FacebookConnect() {
 
       const data = await result.json();
 
-      if (!result.ok) {
+      if (!result.ok || !data?.connected) {
         throw new Error(
           data?.error || "Facebook connection failed.",
         );
@@ -108,13 +109,8 @@ export function FacebookConnect() {
       window.location.href =
         "/dashboard/integrations/facebook?connected=1";
     } catch (err) {
-      console.error(
-        "Facebook connection failed:",
-        err,
-      );
-
+      console.error("Facebook connection failed:", err);
       setLoading(false);
-
       setError(
         err instanceof Error
           ? err.message
@@ -123,7 +119,7 @@ export function FacebookConnect() {
     }
   };
 
-  const connectFacebook = async () => {
+  const connectFacebook = () => {
     const fb = (window as Window & { FB?: FacebookSdk }).FB;
 
     if (!fb || !ready) {
@@ -134,48 +130,23 @@ export function FacebookConnect() {
     setLoading(true);
     setError("");
 
-    try {
-      const prepareResponse = await fetch(
-        "/api/integrations/meta/facebook/start?prepare=1",
-        {
-          method: "GET",
-          cache: "no-store",
-        },
-      );
+    const state = crypto.randomUUID();
 
-      const prepareData = await prepareResponse.json();
+    document.cookie =
+      "meta_oauth_state=" +
+      encodeURIComponent(state) +
+      "; Path=/; Max-Age=600; SameSite=Lax; Secure";
 
-      if (!prepareResponse.ok || !prepareData?.state) {
-        throw new Error(
-          prepareData?.error ||
-            "Unable to prepare Facebook authorization.",
-        );
-      }
-
-      fb.login(
-        (response) => {
-          void handleFacebookResponse(response, prepareData.state);
-        },
-        {
-          config_id: "2220941915519031",
-          response_type: "code",
-          override_default_response_type: true,
-        },
-      );
-    } catch (err) {
-      console.error(
-        "Facebook connection preparation failed:",
-        err,
-      );
-
-      setLoading(false);
-
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Facebook connection failed.",
-      );
-    }
+    fb.login(
+      (response) => {
+        void handleFacebookResponse(response, state);
+      },
+      {
+        config_id: "2220941915519031",
+        response_type: "code",
+        override_default_response_type: true,
+      },
+    );
   };
 
   return (
