@@ -356,7 +356,7 @@ async function handleWhatsAppMessage(
 
   try {
     console.log("META AI START:", JSON.stringify({
-      channel: "INSTAGRAM",
+      channel: "WHATSAPP",
       userId: integration.userId,
       conversationId: conversation.id,
       messageLength: text.length,
