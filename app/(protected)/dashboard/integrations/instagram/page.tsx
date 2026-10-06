@@ -3,6 +3,7 @@ import { CheckCircle2, Instagram, MessageCircle, ShieldCheck, Sparkles, Zap } fr
 import { DashboardHeader } from "@/components/dashboard/header";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
+import { InstagramDisconnectButton } from "@/components/dashboard/instagram-disconnect-button";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export default async function InstagramIntegrationPage() {
         <div className="flex flex-col gap-5 border-b border-slate-800 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div><h2 className="text-lg font-semibold text-white">Instagram Business</h2><p className="mt-1 text-sm leading-6 text-slate-500">The customer connects their own Instagram Business or Creator account.</p></div>
           {connection ? (
-            <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300"><CheckCircle2 className="h-4 w-4" />Connected{connection.externalAccountName ? `: @${connection.externalAccountName}` : ""}</div>
+            <div className="flex flex-wrap items-center gap-3"><div className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300"><CheckCircle2 className="h-4 w-4" />Connected{connection.externalAccountName ? `: @${connection.externalAccountName}` : ""}</div><InstagramDisconnectButton /></div>
           ) : (
             <Link href="/api/integrations/meta/instagram/start" className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-pink-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-pink-500"><Instagram className="h-4 w-4" />Connect Instagram</Link>
           )}
