@@ -70,6 +70,59 @@ export function FacebookConnect() {
     document.body.appendChild(script);
   }, []);
 
+  const handleFacebookResponse = async (
+    response: FacebookLoginResponse,
+    state: string,
+  ) => {
+    try {
+      const code = response.authResponse?.code;
+
+      if (!code) {
+        setLoading(false);
+        setError("Facebook authorization was not completed.");
+        return;
+      }
+
+      const result = await fetch(
+        "/api/integrations/meta/facebook/callback",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            code,
+            state,
+          }),
+        },
+      );
+
+      const data = await result.json();
+
+      if (!result.ok) {
+        throw new Error(
+          data?.error || "Facebook connection failed.",
+        );
+      }
+
+      window.location.href =
+        "/dashboard/integrations/facebook?connected=1";
+    } catch (err) {
+      console.error(
+        "Facebook connection failed:",
+        err,
+      );
+
+      setLoading(false);
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Facebook connection failed.",
+      );
+    }
+  };
+
   const connectFacebook = async () => {
     const fb = (window as Window & { FB?: FacebookSdk }).FB;
 
@@ -100,54 +153,8 @@ export function FacebookConnect() {
       }
 
       fb.login(
-        async (response) => {
-          try {
-            const code = response.authResponse?.code;
-
-            if (!code) {
-              setLoading(false);
-              setError("Facebook authorization was not completed.");
-              return;
-            }
-
-            const result = await fetch(
-              "/api/integrations/meta/facebook/callback",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  code,
-                  state: prepareData.state,
-                }),
-              },
-            );
-
-            const data = await result.json();
-
-            if (!result.ok) {
-              throw new Error(
-                data?.error || "Facebook connection failed.",
-              );
-            }
-
-            window.location.href =
-              "/dashboard/integrations/facebook?connected=1";
-          } catch (err) {
-            console.error(
-              "Facebook connection failed:",
-              err,
-            );
-
-            setLoading(false);
-
-            setError(
-              err instanceof Error
-                ? err.message
-                : "Facebook connection failed.",
-            );
-          }
+        (response) => {
+          void handleFacebookResponse(response, prepareData.state);
         },
         {
           config_id: "2220941915519031",
