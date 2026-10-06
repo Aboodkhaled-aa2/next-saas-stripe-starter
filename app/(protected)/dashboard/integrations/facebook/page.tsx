@@ -8,10 +8,23 @@ import {
 
 import { DashboardHeader } from "@/components/dashboard/header";
 import { FacebookConnect } from "@/components/dashboard/facebook-connect";
+import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function FacebookIntegrationPage() {
+  const user = await getCurrentUser();
+
+  const integration = user?.id
+    ? await prisma.metaIntegration.findFirst({
+        where: {
+          userId: user.id,
+          platform: "FACEBOOK",
+        },
+      })
+    : null;
+
   return (
     <div className="space-y-6">
       <DashboardHeader
@@ -33,7 +46,14 @@ export default async function FacebookIntegrationPage() {
               </p>
             </div>
 
-            <FacebookConnect />
+            {integration ? (
+              <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-700/40 bg-emerald-950/40 px-5 py-3 text-sm font-semibold text-emerald-400">
+                <CheckCircle2 className="h-4 w-4" />
+                Connected
+              </div>
+            ) : (
+              <FacebookConnect />
+            )}
           </div>
         </div>
 
@@ -59,8 +79,9 @@ export default async function FacebookIntegrationPage() {
 
         <div className="border-t border-slate-800 bg-slate-900/20 p-6">
           <p className="text-sm text-slate-400">
-            You will choose the Facebook Page you want to connect after
-            signing in with Meta.
+            {integration?.pageName
+              ? "Facebook Page is connected and ready for the Smart Cleaning Desk messaging workflow."
+              : "You will choose the Facebook Page you want to connect after signing in with Meta."}
           </p>
         </div>
       </section>
