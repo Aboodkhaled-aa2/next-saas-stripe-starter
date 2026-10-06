@@ -23,22 +23,22 @@ export function FacebookConnect() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const fb = (window as Window & { FB?: FacebookSdk }).FB;
+    const sdk = (window as Window & { FB?: FacebookSdk }).FB;
 
-    if (fb) {
+    if (sdk) {
       setReady(true);
       return;
     }
 
     const initialize = () => {
-      const sdk = (window as Window & { FB?: FacebookSdk }).FB;
+      const fb = (window as Window & { FB?: FacebookSdk }).FB;
 
-      if (!sdk) {
+      if (!fb) {
         setError("Facebook SDK failed to load.");
         return;
       }
 
-      sdk.init({
+      fb.init({
         appId: "1058014497030757",
         cookie: true,
         xfbml: true,
@@ -70,7 +70,7 @@ export function FacebookConnect() {
     document.body.appendChild(script);
   }, []);
 
-  const connectFacebook = () => {
+  const connectFacebook = async () => {
     const fb = (window as Window & { FB?: FacebookSdk }).FB;
 
     if (!fb || !ready) {
@@ -94,56 +94,60 @@ export function FacebookConnect() {
 
       if (!prepareResponse.ok || !prepareData?.state) {
         throw new Error(
-          prepareData?.error || "Unable to prepare Facebook authorization.",
+          prepareData?.error ||
+            "Unable to prepare Facebook authorization.",
         );
       }
 
       fb.login(
         async (response) => {
-        try {
-          const code = response.authResponse?.code;
+          try {
+            const code = response.authResponse?.code;
 
-          if (!code) {
-            setLoading(false);
-            setError("Facebook authorization was not completed.");
-            return;
-          }
+            if (!code) {
+              setLoading(false);
+              setError("Facebook authorization was not completed.");
+              return;
+            }
 
-          const result = await fetch(
-            "/api/integrations/meta/facebook/callback",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
+            const result = await fetch(
+              "/api/integrations/meta/facebook/callback",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  code,
+                  state: prepareData.state,
+                }),
               },
-              body: JSON.stringify({
-                code,
-                state: prepareData.state,
-              }),
-            },
-          );
+            );
 
-          const data = await result.json();
+            const data = await result.json();
 
-          if (!result.ok) {
-            throw new Error(
-              data?.error || "Facebook connection failed.",
+            if (!result.ok) {
+              throw new Error(
+                data?.error || "Facebook connection failed.",
+              );
+            }
+
+            window.location.href =
+              "/dashboard/integrations/facebook?connected=1";
+          } catch (err) {
+            console.error(
+              "Facebook connection failed:",
+              err,
+            );
+
+            setLoading(false);
+
+            setError(
+              err instanceof Error
+                ? err.message
+                : "Facebook connection failed.",
             );
           }
-
-          window.location.href =
-            "/dashboard/integrations/facebook?connected=1";
-        } catch (err) {
-          console.error("Facebook connection failed:", err);
-
-          setLoading(false);
-
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Facebook connection failed.",
-          );
-        }
         },
         {
           config_id: "2220941915519031",
@@ -152,8 +156,13 @@ export function FacebookConnect() {
         },
       );
     } catch (err) {
-      console.error("Facebook connection preparation failed:", err);
+      console.error(
+        "Facebook connection preparation failed:",
+        err,
+      );
+
       setLoading(false);
+
       setError(
         err instanceof Error
           ? err.message
