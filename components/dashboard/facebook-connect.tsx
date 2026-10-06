@@ -126,7 +126,7 @@ export function FacebookConnect() {
         }
       },
       {
-        config_id: "113798935317997",
+        config_id: "2220941915519031",
         response_type: "code",
         override_default_response_type: true,
       },
