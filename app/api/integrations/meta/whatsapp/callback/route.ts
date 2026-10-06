@@ -65,11 +65,52 @@ export async function POST(request: Request) {
       );
     }
 
-    const externalAccountId = String(
-      body.wabaId ||
-        body.phoneNumberId ||
-        "whatsapp-" + user.id,
+    const wabaId = body.wabaId ? String(body.wabaId) : null;
+    const phoneNumberId = body.phoneNumberId
+      ? String(body.phoneNumberId)
+      : null;
+
+    if (!wabaId || !phoneNumberId) {
+      throw new Error(
+        "Meta did not return the WhatsApp Business Account and phone number IDs.",
+      );
+    }
+
+    const wabaResponse = await fetch(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${encodeURIComponent(
+        wabaId,
+      )}?fields=id,name&access_token=${encodeURIComponent(
+        tokenData.access_token,
+      )}`,
+      { cache: "no-store" },
     );
+    const wabaData = await wabaResponse.json().catch(() => null);
+
+    if (!wabaResponse.ok || !wabaData?.id) {
+      throw new Error(
+        wabaData?.error?.message ||
+          "The connected WhatsApp Business Account could not be verified.",
+      );
+    }
+
+    const phoneResponse = await fetch(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${encodeURIComponent(
+        phoneNumberId,
+      )}?fields=id,display_phone_number,verified_name&access_token=${encodeURIComponent(
+        tokenData.access_token,
+      )}`,
+      { cache: "no-store" },
+    );
+    const phoneData = await phoneResponse.json().catch(() => null);
+
+    if (!phoneResponse.ok || !phoneData?.id) {
+      throw new Error(
+        phoneData?.error?.message ||
+          "The connected WhatsApp phone number could not be verified.",
+      );
+    }
+
+    const externalAccountId = wabaId;
 
     await prisma.metaIntegration.upsert({
       where: {
@@ -80,19 +121,15 @@ export async function POST(request: Request) {
         },
       },
       update: {
-        externalAccountName: body.businessName
-          ? String(body.businessName)
-          : "WhatsApp Business",
+        externalAccountName:
+          wabaData.name ||
+          (body.businessName ? String(body.businessName) : "WhatsApp Business"),
         accessToken: tokenData.access_token,
-        whatsappBusinessId: body.wabaId
-          ? String(body.wabaId)
-          : null,
-        whatsappPhoneNumberId: body.phoneNumberId
-          ? String(body.phoneNumberId)
-          : null,
-        phoneNumber: body.phoneNumber
-          ? String(body.phoneNumber)
-          : null,
+        whatsappBusinessId: wabaId,
+        whatsappPhoneNumberId: phoneNumberId,
+        phoneNumber:
+          phoneData.display_phone_number ||
+          (body.phoneNumber ? String(body.phoneNumber) : null),
         metadata: {
           ...(typeof body.metadata === "object" &&
           body.metadata !== null
@@ -101,6 +138,7 @@ export async function POST(request: Request) {
           businessId: body.businessId
             ? String(body.businessId)
             : null,
+          verifiedName: phoneData.verified_name || null,
         },
         updatedAt: new Date(),
       },
