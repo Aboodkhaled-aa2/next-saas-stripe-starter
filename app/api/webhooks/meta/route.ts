@@ -402,6 +402,21 @@ export async function POST(request: Request) {
       }>;
     };
 
+    console.log("META WEBHOOK RECEIVED:", JSON.stringify({
+      object: payload.object,
+      entryCount: payload.entry?.length ?? 0,
+      firstEntryId: payload.entry?.[0]?.id ?? null,
+      firstMessagingCount: payload.entry?.[0]?.messaging?.length ?? 0,
+      firstMessagingEvent: payload.entry?.[0]?.messaging?.[0]
+        ? {
+            senderId: payload.entry[0].messaging[0].sender?.id ?? null,
+            recipientId: payload.entry[0].messaging[0].recipient?.id ?? null,
+            hasMessage: Boolean(payload.entry[0].messaging[0].message),
+            hasText: Boolean(payload.entry[0].messaging[0].message?.text),
+          }
+        : null,
+    }));
+
     const appSecret =
       payload.object === "instagram"
         ? process.env.META_INSTAGRAM_APP_SECRET
@@ -416,6 +431,13 @@ export async function POST(request: Request) {
 
       for (const entry of payload.entry ?? []) {
         for (const event of entry.messaging ?? []) {
+          console.log("META MESSAGE EVENT:", JSON.stringify({
+            channel,
+            senderId: event.sender?.id ?? null,
+            recipientId: event.recipient?.id ?? null,
+            hasText: Boolean(event.message?.text),
+            messageId: event.message?.mid ?? null,
+          }));
           await handleMetaMessage(channel, event);
         }
       }
