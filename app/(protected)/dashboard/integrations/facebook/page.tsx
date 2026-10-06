@@ -1,5 +1,6 @@
 import {
   CheckCircle2,
+  Facebook,
   MessageCircle,
   ShieldCheck,
   Sparkles,
@@ -7,7 +8,7 @@ import {
 } from "lucide-react";
 
 import { DashboardHeader } from "@/components/dashboard/header";
-import { FacebookConnect } from "@/components/dashboard/facebook-connect";
+import { CheckCircle2, Facebook, MessageCircle, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 
@@ -52,7 +53,13 @@ export default async function FacebookIntegrationPage() {
                 Connected
               </div>
             ) : (
-              <FacebookConnect />
+              <a
+                href="/api/integrations/meta/facebook/start"
+                className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-slate-200"
+              >
+                <Facebook className="h-4 w-4" />
+                Connect Facebook
+              </a>
             )}
           </div>
         </div>
