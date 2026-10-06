@@ -116,7 +116,7 @@ async function sendInstagramMessage(
   recipientId: string,
   text: string,
 ) {
-  const response = await fetch(`${GRAPH_BASE}/${instagramAccountId}/messages`, {
+  const response = await fetch(`https://graph.instagram.com/${instagramAccountId}/messages`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
