@@ -29,6 +29,7 @@ export function MetaWhatsAppConnect() {
   const [setupReady, setSetupReady] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [configId, setConfigId] = useState<string | null>(null);
 
   const stateRef = useRef<string | null>(null);
   const codeRef = useRef<string | null>(null);
@@ -123,6 +124,7 @@ export function MetaWhatsAppConnect() {
         stateRef.current = data.state;
 
         if (!cancelled) {
+          setConfigId(String(data.configId));
           setSetupReady(true);
         }
       } catch (err) {
@@ -249,13 +251,14 @@ export function MetaWhatsAppConnect() {
   const connect = () => {
     const fb = (window as Window & { FB?: FacebookSdk }).FB;
     const state = stateRef.current;
+    const activeConfigId = configId;
 
     if (!fb || !sdkReady) {
       setError("Facebook SDK is still loading.");
       return;
     }
 
-    if (!setupReady || !state) {
+    if (!setupReady || !state || !activeConfigId) {
       setError("Preparing WhatsApp connection. Please try again in a moment.");
       return;
     }
@@ -280,7 +283,7 @@ export function MetaWhatsAppConnect() {
         void submitSignup();
       },
       {
-        config_id: "1728500935589256",
+        config_id: activeConfigId,
         response_type: "code",
         override_default_response_type: true,
         extras: {
