@@ -146,19 +146,15 @@ export async function POST(request: Request) {
         userId: user.id,
         platform: "WHATSAPP",
         externalAccountId,
-        externalAccountName: body.businessName
-          ? String(body.businessName)
-          : "WhatsApp Business",
+        externalAccountName:
+          wabaData.name ||
+          (body.businessName ? String(body.businessName) : "WhatsApp Business"),
         accessToken: tokenData.access_token,
-        whatsappBusinessId: body.wabaId
-          ? String(body.wabaId)
-          : null,
-        whatsappPhoneNumberId: body.phoneNumberId
-          ? String(body.phoneNumberId)
-          : null,
-        phoneNumber: body.phoneNumber
-          ? String(body.phoneNumber)
-          : null,
+        whatsappBusinessId: wabaId,
+        whatsappPhoneNumberId: phoneNumberId,
+        phoneNumber:
+          phoneData.display_phone_number ||
+          (body.phoneNumber ? String(body.phoneNumber) : null),
         metadata: {
           ...(typeof body.metadata === "object" &&
           body.metadata !== null
@@ -167,6 +163,7 @@ export async function POST(request: Request) {
           businessId: body.businessId
             ? String(body.businessId)
             : null,
+          verifiedName: phoneData.verified_name || null,
         },
       },
     });
