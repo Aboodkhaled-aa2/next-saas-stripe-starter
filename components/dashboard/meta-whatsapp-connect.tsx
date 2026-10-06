@@ -54,7 +54,7 @@ export function MetaWhatsAppConnect() {
       fb.init({
         appId: "1058014497030757",
         cookie: true,
-        xfbml: false,
+        xfbml: true,
         version: "v26.0",
       });
 
@@ -277,7 +277,11 @@ export function MetaWhatsAppConnect() {
         config_id: "11071291771802410",
         response_type: "code",
         override_default_response_type: true,
-        extras: {},
+        extras: {
+          setup: {},
+          featureType: "whatsapp_business_app_onboarding",
+          sessionInfoVersion: "3",
+        },
       },
     );
   };
