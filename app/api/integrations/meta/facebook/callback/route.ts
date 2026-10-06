@@ -5,11 +5,24 @@ import { getCurrentUser } from "@/lib/session";
 
 const GRAPH_VERSION = process.env.META_GRAPH_VERSION || "v26.0";
 
-async function handleCallback(request: Request, code: string, state: string | null) {
+type FacebookCallbackMode = "redirect" | "json";
+
+async function handleFacebookCallback(
+  request: Request,
+  code: string,
+  state: string,
+  mode: FacebookCallbackMode,
+) {
   const user = await getCurrentUser();
-  const url = new URL(request.url);
 
   if (!user?.id) {
+    if (mode === "json") {
+      return NextResponse.json(
+        { error: "Unauthorized." },
+        { status: 401 },
+      );
+    }
+
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -21,10 +34,19 @@ async function handleCallback(request: Request, code: string, state: string | nu
     .find((item) => item.startsWith("meta_oauth_state="));
 
   const expectedState = stateCookie
-    ? decodeURIComponent(stateCookie.substring("meta_oauth_state=".length))
+    ? decodeURIComponent(
+        stateCookie.substring("meta_oauth_state=".length),
+      )
     : null;
 
   if (!expectedState || state !== expectedState) {
+    if (mode === "json") {
+      return NextResponse.json(
+        { error: "Invalid OAuth state." },
+        { status: 400 },
+      );
+    }
+
     return NextResponse.redirect(
       new URL(
         "/dashboard/integrations/facebook?error=invalid_oauth_state",
@@ -38,6 +60,13 @@ async function handleCallback(request: Request, code: string, state: string | nu
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
   if (!appId || !appSecret || !appUrl) {
+    if (mode === "json") {
+      return NextResponse.json(
+        { error: "Meta Facebook Login is not configured." },
+        { status: 500 },
+      );
+    }
+
     return NextResponse.redirect(
       new URL(
         "/dashboard/integrations/facebook?error=meta_not_configured",
@@ -53,7 +82,9 @@ async function handleCallback(request: Request, code: string, state: string | nu
 
   try {
     const tokenUrl = new URL(
-      `https://graph.facebook.com/${GRAPH_VERSION}/oauth/access_token`,
+      "https://graph.facebook.com/" +
+        GRAPH_VERSION +
+        "/oauth/access_token",
     );
 
     tokenUrl.searchParams.set("client_id", appId);
@@ -61,39 +92,44 @@ async function handleCallback(request: Request, code: string, state: string | nu
     tokenUrl.searchParams.set("redirect_uri", redirectUri);
     tokenUrl.searchParams.set("code", code);
 
-    const tokenResponse = await fetch(tokenUrl);
+    const tokenResponse = await fetch(tokenUrl, {
+      cache: "no-store",
+    });
 
     const tokenData = await tokenResponse.json();
 
     if (!tokenResponse.ok || !tokenData.access_token) {
       throw new Error(
         tokenData.error?.message ||
-          "Failed to exchange Facebook OAuth code",
+          "Failed to exchange Facebook OAuth code.",
       );
     }
 
     const pagesUrl = new URL(
-      `https://graph.facebook.com/${GRAPH_VERSION}/me/accounts`,
+      "https://graph.facebook.com/" +
+        GRAPH_VERSION +
+        "/me/accounts",
     );
 
     pagesUrl.searchParams.set(
       "fields",
       "id,name,access_token,instagram_business_account{id,username}",
     );
-
     pagesUrl.searchParams.set(
       "access_token",
       tokenData.access_token,
     );
 
-    const pagesResponse = await fetch(pagesUrl);
+    const pagesResponse = await fetch(pagesUrl, {
+      cache: "no-store",
+    });
 
     const pagesData = await pagesResponse.json();
 
     if (!pagesResponse.ok) {
       throw new Error(
         pagesData.error?.message ||
-          "Failed to load Facebook Pages",
+          "Failed to load Facebook Pages.",
       );
     }
 
@@ -101,7 +137,7 @@ async function handleCallback(request: Request, code: string, state: string | nu
 
     if (!page?.id || !page?.access_token) {
       throw new Error(
-        "No Facebook Page was granted to Smart Cleaning Desk",
+        "No Facebook Page was granted to Smart Cleaning Desk.",
       );
     }
 
@@ -139,6 +175,14 @@ async function handleCallback(request: Request, code: string, state: string | nu
       },
     });
 
+    if (mode === "json") {
+      return NextResponse.json({
+        connected: true,
+        pageId: page.id,
+        pageName: page.name,
+      });
+    }
+
     const response = NextResponse.redirect(
       new URL(
         "/dashboard/integrations/facebook?connected=1",
@@ -150,10 +194,19 @@ async function handleCallback(request: Request, code: string, state: string | nu
 
     return response;
   } catch (error) {
-    console.error(
-      "Facebook OAuth callback failed:",
-      error,
-    );
+    console.error("Facebook OAuth callback failed:", error);
+
+    if (mode === "json") {
+      return NextResponse.json(
+        {
+          error:
+            error instanceof Error
+              ? error.message
+              : "Facebook connection failed.",
+        },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.redirect(
       new URL(
@@ -176,21 +229,17 @@ export async function POST(request: Request) {
 
     if (!code || !state) {
       return NextResponse.json(
-        { error: "Facebook authorization code is missing." },
+        { error: "Facebook authorization data is missing." },
         { status: 400 },
       );
     }
 
-    const user = await getCurrentUser();
-
-    if (!user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized." },
-        { status: 401 },
-      );
-    }
-
-    return handleCallback(request, code, state);
+    return handleFacebookCallback(
+      request,
+      code,
+      state,
+      "json",
+    );
   } catch (error) {
     console.error("Facebook OAuth POST failed:", error);
 
@@ -203,11 +252,12 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
+
   const state = url.searchParams.get("state");
   const code = url.searchParams.get("code");
   const error = url.searchParams.get("error");
 
-  if (error || !code || !state) {
+  if (error) {
     return NextResponse.redirect(
       new URL(
         "/dashboard/integrations/facebook?error=meta_denied",
@@ -216,5 +266,19 @@ export async function GET(request: Request) {
     );
   }
 
-  return handleCallback(request, code, state);
+  if (!code || !state) {
+    return NextResponse.redirect(
+      new URL(
+        "/dashboard/integrations/facebook?error=missing_oauth_data",
+        request.url,
+      ),
+    );
+  }
+
+  return handleFacebookCallback(
+    request,
+    code,
+    state,
+    "redirect",
+  );
 }
