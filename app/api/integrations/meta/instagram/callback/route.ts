@@ -62,7 +62,7 @@ export async function GET(request: Request) {
     }
 
     const profileResponse = await fetch(
-      `https://graph.instagram.com/me?fields=id,username,account_type&access_token=${encodeURIComponent(longLivedData.access_token)}`,
+      `https://graph.instagram.com/me?fields=user_id,username,account_type&access_token=${encodeURIComponent(longLivedData.access_token)}`,
     );
     const profile = await profileResponse.json();
 
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
       throw new Error(profile.error?.message || "Failed to load Instagram profile");
     }
 
-    const instagramId = String(profile.id ?? tokenData.user_id);
+    const instagramId = String(profile.user_id ?? tokenData.user_id);
 
     await prisma.metaIntegration.upsert({
       where: {
