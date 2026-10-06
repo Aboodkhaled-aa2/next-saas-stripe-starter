@@ -226,6 +226,7 @@ async function handleMetaMessage(
     const result = await runCustomerAgent({
       userId: integration.userId,
       message: text,
+      previousResponseId: conversation.aiResponseId ?? undefined,
     });
 
     const reply = result.text.trim();
