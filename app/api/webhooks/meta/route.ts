@@ -388,6 +388,7 @@ export async function POST(request: Request) {
 
   try {
     const payload = JSON.parse(body) as {
+      object?: string;
       entry?: Array<{
         id?: string;
         messaging?: MetaMessageEvent[];
