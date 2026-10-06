@@ -5,34 +5,12 @@ import { getCurrentUser } from "@/lib/session";
 
 const GRAPH_VERSION = process.env.META_GRAPH_VERSION || "v26.0";
 
-export async function GET(request: Request) {
+async function handleCallback(request: Request, code: string, state: string | null) {
   const user = await getCurrentUser();
   const url = new URL(request.url);
 
   if (!user?.id) {
     return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  const state = url.searchParams.get("state");
-  const code = url.searchParams.get("code");
-  const error = url.searchParams.get("error");
-
-  if (error) {
-    return NextResponse.redirect(
-      new URL(
-        "/dashboard/integrations/facebook?error=meta_denied",
-        request.url,
-      ),
-    );
-  }
-
-  if (!code || !state) {
-    return NextResponse.redirect(
-      new URL(
-        "/dashboard/integrations/facebook?error=missing_oauth_data",
-        request.url,
-      ),
-    );
   }
 
   const cookieHeader = request.headers.get("cookie") || "";
@@ -184,4 +162,56 @@ export async function GET(request: Request) {
       ),
     );
   }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+
+    const code =
+      typeof body?.code === "string" ? body.code : null;
+
+    if (!code) {
+      return NextResponse.json(
+        { error: "Facebook authorization code is missing." },
+        { status: 400 },
+      );
+    }
+
+    const user = await getCurrentUser();
+
+    if (!user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized." },
+        { status: 401 },
+      );
+    }
+
+    return handleCallback(request, code, null);
+  } catch (error) {
+    console.error("Facebook OAuth POST failed:", error);
+
+    return NextResponse.json(
+      { error: "Facebook connection failed." },
+      { status: 500 },
+    );
+  }
+}
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const state = url.searchParams.get("state");
+  const code = url.searchParams.get("code");
+  const error = url.searchParams.get("error");
+
+  if (error || !code || !state) {
+    return NextResponse.redirect(
+      new URL(
+        "/dashboard/integrations/facebook?error=meta_denied",
+        request.url,
+      ),
+    );
+  }
+
+  return handleCallback(request, code, state);
 }
