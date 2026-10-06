@@ -175,6 +175,27 @@ async function handleFacebookCallback(
       },
     });
 
+    // Subscribe the connected Facebook Page to Messenger webhook events.
+    // This is required so incoming Page messages are delivered to /api/webhooks/meta.
+    const subscribeUrl = new URL(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${encodeURIComponent(page.id)}/subscribed_apps`,
+    );
+    subscribeUrl.searchParams.set("subscribed_fields", "messages");
+    subscribeUrl.searchParams.set("access_token", page.access_token);
+
+    const subscribeResponse = await fetch(subscribeUrl, {
+      method: "POST",
+      cache: "no-store",
+    });
+    const subscribeData = await subscribeResponse.json().catch(() => null);
+
+    if (!subscribeResponse.ok || subscribeData?.success !== true) {
+      throw new Error(
+        subscribeData?.error?.message ||
+          "Failed to subscribe Facebook Page to Messenger webhooks.",
+      );
+    }
+
     if (mode === "json") {
       return NextResponse.json({
         connected: true,
