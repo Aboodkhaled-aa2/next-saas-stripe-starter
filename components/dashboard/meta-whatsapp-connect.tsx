@@ -274,7 +274,7 @@ export function MetaWhatsAppConnect() {
         void submitSignup();
       },
       {
-        config_id: "11071291771802410",
+        config_id: "2290557285065923",
         response_type: "code",
         override_default_response_type: true,
         extras: {
