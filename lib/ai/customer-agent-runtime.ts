@@ -1238,7 +1238,7 @@ export async function runCustomerAgent(
     bookingAccessEnabled && shouldBookIfAvailable(options.message);
 
   let response = await openai.responses.create({
-    model: "gpt-5.6-terra",
+    model: "gpt-5.6-sol",
     reasoning: {
       effort: "low",
     },
@@ -1300,7 +1300,7 @@ export async function runCustomerAgent(
     }
 
     response = await openai.responses.create({
-      model: "gpt-5.6-terra",
+      model: "gpt-5.6-sol",
       reasoning: {
         effort: "low",
       },
