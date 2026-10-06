@@ -81,8 +81,25 @@ export function FacebookConnect() {
     setLoading(true);
     setError("");
 
-    fb.login(
-      async (response) => {
+    try {
+      const prepareResponse = await fetch(
+        "/api/integrations/meta/facebook/start?prepare=1",
+        {
+          method: "GET",
+          cache: "no-store",
+        },
+      );
+
+      const prepareData = await prepareResponse.json();
+
+      if (!prepareResponse.ok || !prepareData?.state) {
+        throw new Error(
+          prepareData?.error || "Unable to prepare Facebook authorization.",
+        );
+      }
+
+      fb.login(
+        async (response) => {
         try {
           const code = response.authResponse?.code;
 
@@ -99,7 +116,10 @@ export function FacebookConnect() {
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ code }),
+              body: JSON.stringify({
+                code,
+                state: prepareData.state,
+              }),
             },
           );
 
@@ -124,13 +144,22 @@ export function FacebookConnect() {
               : "Facebook connection failed.",
           );
         }
-      },
-      {
-        config_id: "2220941915519031",
-        response_type: "code",
-        override_default_response_type: true,
-      },
-    );
+        },
+        {
+          config_id: "2220941915519031",
+          response_type: "code",
+          override_default_response_type: true,
+        },
+      );
+    } catch (err) {
+      console.error("Facebook connection preparation failed:", err);
+      setLoading(false);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Facebook connection failed.",
+      );
+    }
   };
 
   return (
