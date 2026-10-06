@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 
 import { DashboardHeader } from "@/components/dashboard/header";
+import { FacebookDisconnectButton } from "@/components/dashboard/facebook-disconnect-button";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 
@@ -47,9 +48,12 @@ export default async function FacebookIntegrationPage() {
             </div>
 
             {integration ? (
-              <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-700/40 bg-emerald-950/40 px-5 py-3 text-sm font-semibold text-emerald-400">
-                <CheckCircle2 className="h-4 w-4" />
-                Connected
+              <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+                <div className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-700/40 bg-emerald-950/40 px-5 py-3 text-sm font-semibold text-emerald-400">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Connected
+                </div>
+                <FacebookDisconnectButton />
               </div>
             ) : (
               <a
