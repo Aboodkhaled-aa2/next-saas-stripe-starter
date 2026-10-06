@@ -241,8 +241,21 @@ async function handleMetaMessage(
     });
 
     console.log("META AI RESULT:", JSON.stringify({ channel, responseId: result.responseId, replyLength: result.text?.length ?? 0 }));
+    console.log("META AI RESULT:", JSON.stringify({
+      channel,
+      responseId: result.responseId,
+      hasText: Boolean(result.text?.trim()),
+      textLength: result.text?.trim().length ?? 0,
+    }));
+
     const reply = result.text.trim();
     if (!reply) return;
+
+    console.log("META SEND START:", JSON.stringify({
+      channel,
+      recipientId: senderId,
+      instagramAccountId: integration.instagramAccountId ?? null,
+    }));
 
     const sendResult =
       channel === "FACEBOOK"
@@ -253,6 +266,11 @@ async function handleMetaMessage(
             senderId,
             reply,
           );
+
+    console.log("META SEND RESULT:", JSON.stringify({
+      channel,
+      success: true,
+    }));
 
     await prisma.message.create({
       data: {
@@ -335,6 +353,13 @@ async function handleWhatsAppMessage(
   });
 
   try {
+    console.log("META AI START:", JSON.stringify({
+      channel,
+      userId: integration.userId,
+      conversationId: conversation.id,
+      messageLength: text.length,
+    }));
+
     const result = await runCustomerAgent({
       userId: integration.userId,
       message: text,
