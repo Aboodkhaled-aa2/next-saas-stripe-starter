@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { runCustomerAgent } from "@/lib/ai/customer-agent-runtime";
 
+const GRAPH_VERSION = process.env.META_GRAPH_VERSION || "v26.0";
+const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;
 const GRAPH_VERIFY_MODE = "subscribe";
 
 function verifySignature(body: string, signature: string, appSecret: string) {
@@ -19,11 +21,22 @@ type MetaMessageEvent = {
   message?: { mid?: string; text?: string };
 };
 
-async function resolveIntegration(channel: "FACEBOOK" | "INSTAGRAM", recipientId: string) {
+type WhatsAppMessage = {
+  id?: string;
+  from?: string;
+  timestamp?: string;
+  type?: string;
+  text?: { body?: string };
+};
+
+async function resolveIntegration(
+  channel: "FACEBOOK" | "INSTAGRAM",
+  recipientId: string,
+) {
   if (channel === "FACEBOOK") {
     return prisma.metaIntegration.findFirst({
       where: { platform: "FACEBOOK", pageId: recipientId },
-      select: { id: true, userId: true },
+      select: { id: true, userId: true, accessToken: true, pageId: true },
     });
   }
 
@@ -32,11 +45,126 @@ async function resolveIntegration(channel: "FACEBOOK" | "INSTAGRAM", recipientId
       platform: "INSTAGRAM",
       instagramAccountId: recipientId,
     },
-    select: { id: true, userId: true },
+    select: {
+      id: true,
+      userId: true,
+      accessToken: true,
+      instagramAccountId: true,
+    },
   });
 }
 
-async function handleMessage(channel: "FACEBOOK" | "INSTAGRAM", event: MetaMessageEvent) {
+async function resolveWhatsAppIntegration(
+  wabaId: string | undefined,
+  phoneNumberId: string | undefined,
+) {
+  if (!wabaId && !phoneNumberId) return null;
+
+  return prisma.metaIntegration.findFirst({
+    where: {
+      platform: "WHATSAPP",
+      OR: [
+        ...(wabaId ? [{ whatsappBusinessId: wabaId }] : []),
+        ...(phoneNumberId ? [{ whatsappPhoneNumberId: phoneNumberId }] : []),
+      ],
+    },
+    select: {
+      id: true,
+      userId: true,
+      accessToken: true,
+      whatsappPhoneNumberId: true,
+      whatsappBusinessId: true,
+    },
+  });
+}
+
+async function sendFacebookMessage(
+  accessToken: string,
+  recipientId: string,
+  text: string,
+) {
+  const response = await fetch(`${GRAPH_BASE}/me/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      recipient: { id: recipientId },
+      message: { text },
+    }),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(data?.error?.message || "Facebook message send failed.");
+  }
+
+  return data;
+}
+
+async function sendInstagramMessage(
+  accessToken: string,
+  instagramAccountId: string,
+  recipientId: string,
+  text: string,
+) {
+  const response = await fetch(`${GRAPH_BASE}/${instagramAccountId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      recipient: { id: recipientId },
+      message: { text },
+    }),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(data?.error?.message || "Instagram message send failed.");
+  }
+
+  return data;
+}
+
+async function sendWhatsAppMessage(
+  accessToken: string,
+  phoneNumberId: string,
+  recipientPhone: string,
+  text: string,
+) {
+  const response = await fetch(`${GRAPH_BASE}/${phoneNumberId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: recipientPhone,
+      type: "text",
+      text: { preview_url: false, body: text },
+    }),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(data?.error?.message || "WhatsApp message send failed.");
+  }
+
+  return data;
+}
+
+async function handleMetaMessage(
+  channel: "FACEBOOK" | "INSTAGRAM",
+  event: MetaMessageEvent,
+) {
   const senderId = event.sender?.id;
   const recipientId = event.recipient?.id;
   const text = event.message?.text?.trim();
@@ -46,23 +174,19 @@ async function handleMessage(channel: "FACEBOOK" | "INSTAGRAM", event: MetaMessa
   const integration = await resolveIntegration(channel, recipientId);
   if (!integration) return;
 
-  const externalConversationId = senderId;
-
   const conversation = await prisma.conversation.upsert({
     where: {
       userId_channel_externalConversationId: {
         userId: integration.userId,
         channel,
-        externalConversationId,
+        externalConversationId: senderId,
       },
     },
-    update: {
-      lastMessageAt: new Date(),
-    },
+    update: { lastMessageAt: new Date() },
     create: {
       userId: integration.userId,
       channel,
-      externalConversationId,
+      externalConversationId: senderId,
       customerExternalId: senderId,
       lastMessageAt: new Date(),
     },
@@ -98,23 +222,136 @@ async function handleMessage(channel: "FACEBOOK" | "INSTAGRAM", event: MetaMessa
       message: text,
     });
 
-    if (result.text.trim()) {
-      await prisma.message.create({
-        data: {
-          conversationId: conversation.id,
-          direction: "OUTBOUND",
-          text: result.text.trim(),
-          metadata: { aiResponseId: result.responseId },
-        },
-      });
+    const reply = result.text.trim();
+    if (!reply) return;
 
-      await prisma.conversation.update({
-        where: { id: conversation.id },
-        data: { aiResponseId: result.responseId, lastMessageAt: new Date() },
-      });
-    }
+    const sendResult =
+      channel === "FACEBOOK"
+        ? await sendFacebookMessage(integration.accessToken, senderId, reply)
+        : await sendInstagramMessage(
+            integration.accessToken,
+            integration.instagramAccountId!,
+            senderId,
+            reply,
+          );
+
+    await prisma.message.create({
+      data: {
+        conversationId: conversation.id,
+        direction: "OUTBOUND",
+        text: reply,
+        metadata: {
+          aiResponseId: result.responseId,
+          externalSendResult: sendResult,
+        },
+      },
+    });
+
+    await prisma.conversation.update({
+      where: { id: conversation.id },
+      data: {
+        aiResponseId: result.responseId,
+        lastMessageAt: new Date(),
+      },
+    });
   } catch (error) {
-    console.error("Meta AI response failed:", error);
+    console.error(`${channel} AI response/send failed:`, error);
+  }
+}
+
+async function handleWhatsAppMessage(
+  integration: {
+    id: string;
+    userId: string;
+    accessToken: string;
+    whatsappPhoneNumberId: string | null;
+  },
+  message: WhatsAppMessage,
+) {
+  const senderId = message.from;
+  const text = message.text?.body?.trim();
+
+  if (!senderId || !text) return;
+
+  const conversation = await prisma.conversation.upsert({
+    where: {
+      userId_channel_externalConversationId: {
+        userId: integration.userId,
+        channel: "WHATSAPP",
+        externalConversationId: senderId,
+      },
+    },
+    update: { lastMessageAt: new Date() },
+    create: {
+      userId: integration.userId,
+      channel: "WHATSAPP",
+      externalConversationId: senderId,
+      customerExternalId: senderId,
+      lastMessageAt: new Date(),
+    },
+  });
+
+  if (message.id) {
+    const duplicate = await prisma.message.findUnique({
+      where: {
+        conversationId_externalMessageId: {
+          conversationId: conversation.id,
+          externalMessageId: message.id,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (duplicate) return;
+  }
+
+  await prisma.message.create({
+    data: {
+      conversationId: conversation.id,
+      direction: "INBOUND",
+      externalMessageId: message.id ?? null,
+      senderExternalId: senderId,
+      text,
+    },
+  });
+
+  try {
+    const result = await runCustomerAgent({
+      userId: integration.userId,
+      message: text,
+    });
+
+    const reply = result.text.trim();
+    if (!reply || !integration.whatsappPhoneNumberId) return;
+
+    const sendResult = await sendWhatsAppMessage(
+      integration.accessToken,
+      integration.whatsappPhoneNumberId,
+      senderId,
+      reply,
+    );
+
+    await prisma.message.create({
+      data: {
+        conversationId: conversation.id,
+        direction: "OUTBOUND",
+        text: reply,
+        metadata: {
+          aiResponseId: result.responseId,
+          externalSendResult: sendResult,
+        },
+      },
+    });
+
+    await prisma.conversation.update({
+      where: { id: conversation.id },
+      data: {
+        aiResponseId: result.responseId,
+        lastMessageAt: new Date(),
+      },
+    });
+  } catch (error) {
+    console.error("WHATSAPP AI response/send failed:", error);
   }
 }
 
@@ -152,24 +389,48 @@ export async function POST(request: Request) {
       entry?: Array<{
         id?: string;
         messaging?: MetaMessageEvent[];
+        changes?: Array<{
+          field?: string;
+          value?: {
+            metadata?: { phone_number_id?: string };
+            messages?: WhatsAppMessage[];
+          };
+        }>;
       }>;
     };
 
-    const channel =
-      payload.object === "page"
-        ? "FACEBOOK"
-        : payload.object === "instagram"
-          ? "INSTAGRAM"
-          : null;
+    if (payload.object === "page" || payload.object === "instagram") {
+      const channel = payload.object === "page" ? "FACEBOOK" : "INSTAGRAM";
 
-    if (!channel) {
+      for (const entry of payload.entry ?? []) {
+        for (const event of entry.messaging ?? []) {
+          await handleMetaMessage(channel, event);
+        }
+      }
+
       return new NextResponse("EVENT_RECEIVED", { status: 200 });
     }
 
-    for (const entry of payload.entry ?? []) {
-      for (const event of entry.messaging ?? []) {
-        await handleMessage(channel, event);
+    if (payload.object === "whatsapp_business_account") {
+      for (const entry of payload.entry ?? []) {
+        const wabaId = entry.id;
+
+        for (const change of entry.changes ?? []) {
+          const phoneNumberId = change.value?.metadata?.phone_number_id;
+          const integration = await resolveWhatsAppIntegration(
+            wabaId,
+            phoneNumberId,
+          );
+
+          if (!integration) continue;
+
+          for (const message of change.value?.messages ?? []) {
+            await handleWhatsAppMessage(integration, message);
+          }
+        }
       }
+
+      return new NextResponse("EVENT_RECEIVED", { status: 200 });
     }
 
     return new NextResponse("EVENT_RECEIVED", { status: 200 });
