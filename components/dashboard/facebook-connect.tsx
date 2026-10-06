@@ -145,6 +145,8 @@ export function FacebookConnect() {
         config_id: "2220941915519031",
         response_type: "code",
         override_default_response_type: true,
+        redirect_uri:
+          "https://www.smartcleaningdesk.com/api/integrations/meta/facebook/callback",
       },
     );
   };
