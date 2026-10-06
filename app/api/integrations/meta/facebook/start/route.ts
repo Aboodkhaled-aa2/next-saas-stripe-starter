@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 
 const GRAPH_VERSION = process.env.META_GRAPH_VERSION || "v26.0";
-const FACEBOOK_LOGIN_CONFIG_ID = "113798935317997";
+const FACEBOOK_LOGIN_CONFIG_ID = "2220941915519031";
 
 export const dynamic = "force-dynamic";
 
