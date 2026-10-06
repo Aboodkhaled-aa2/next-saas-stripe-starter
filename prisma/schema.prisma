@@ -195,17 +195,17 @@ model User {
 model Conversation {
   @@schema("public")
   id String @id @default(cuid())
-  userId String
-  channel ConversationChannel
-  externalConversationId String
-  customerName String?
-  customerExternalId String?
-  status ConversationStatus @default(OPEN)
-  lastMessageAt DateTime @default(now())
+  userId String @map("user_id")
+  channel String @map("channel_type")
+  externalConversationId String @map("external_conversation_id")
+  customerName String? @map("contact_name")
+  customerExternalId String? @map("external_contact_id")
+  status String @default("OPEN")
+  lastMessageAt DateTime @default(now()) @map("last_message_at")
   aiResponseId String?
   metadata Json?
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages Message[]
@@ -218,13 +218,13 @@ model Conversation {
 model Message {
   @@schema("public")
   id String @id @default(cuid())
-  conversationId String
-  direction MessageDirection
-  externalMessageId String?
-  senderExternalId String?
+  conversationId String @map("conversation_id")
+  direction String
+  externalMessageId String? @map("external_message_id")
+  senderExternalId String? @map("sender_id")
   text String @db.Text
   metadata Json?
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("sent_at")
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
