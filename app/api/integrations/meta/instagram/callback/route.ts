@@ -104,7 +104,7 @@ export async function GET(request: Request) {
     const graphVersion = process.env.META_GRAPH_VERSION || "v26.0";
 
     const subscribeUrl = new URL(
-      "https://graph.facebook.com/" +
+      "https://graph.instagram.com/" +
         graphVersion +
         "/" +
         instagramId +
