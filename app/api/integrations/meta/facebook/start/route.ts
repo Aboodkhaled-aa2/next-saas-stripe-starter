@@ -60,6 +60,23 @@ export async function GET(request: Request) {
   );
   authUrl.searchParams.set("state", state);
 
+  if (new URL(request.url).searchParams.get("prepare") === "1") {
+    const response = NextResponse.json({
+      state,
+      configId: FACEBOOK_LOGIN_CONFIG_ID,
+    });
+
+    response.cookies.set("meta_oauth_state", state, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 10 * 60,
+      path: "/",
+    });
+
+    return response;
+  }
+
   const response = NextResponse.redirect(authUrl);
 
   response.cookies.set("meta_oauth_state", state, {
