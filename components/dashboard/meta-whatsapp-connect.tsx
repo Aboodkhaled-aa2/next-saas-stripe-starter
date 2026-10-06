@@ -193,16 +193,22 @@ export function MetaWhatsAppConnect() {
 
     const code = codeRef.current;
     const state = stateRef.current;
+    const sessionInfo = sessionInfoRef.current;
 
-    if (!code || !state) {
+    // Meta can deliver the FINISH postMessage before or after FB.login
+    // returns the authorization code. Wait until both are available.
+    if (
+      !code ||
+      !state ||
+      !sessionInfo?.waba_id ||
+      !sessionInfo?.phone_number_id
+    ) {
       return;
     }
 
     submittedRef.current = true;
 
     try {
-      const sessionInfo = sessionInfoRef.current;
-
       const response = await fetch(
         "/api/integrations/meta/whatsapp/callback",
         {
