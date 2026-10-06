@@ -385,15 +385,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const body = await request.text();
   const signature = request.headers.get("x-hub-signature-256");
-  const appSecret = process.env.META_APP_SECRET;
-
-  if (!signature || !appSecret || !verifySignature(body, signature, appSecret)) {
-    return new NextResponse("Invalid signature", { status: 401 });
-  }
 
   try {
     const payload = JSON.parse(body) as {
-      object?: string;
       entry?: Array<{
         id?: string;
         messaging?: MetaMessageEvent[];
@@ -406,6 +400,15 @@ export async function POST(request: Request) {
         }>;
       }>;
     };
+
+    const appSecret =
+      payload.object === "instagram"
+        ? process.env.META_INSTAGRAM_APP_SECRET
+        : process.env.META_APP_SECRET;
+
+    if (!signature || !appSecret || !verifySignature(body, signature, appSecret)) {
+      return new NextResponse("Invalid signature", { status: 401 });
+    }
 
     if (payload.object === "page" || payload.object === "instagram") {
       const channel = payload.object === "page" ? "FACEBOOK" : "INSTAGRAM";
