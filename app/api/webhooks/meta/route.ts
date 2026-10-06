@@ -178,7 +178,17 @@ async function handleMetaMessage(
   if (!senderId || !recipientId || !text) return;
 
   const integration = await resolveIntegration(channel, recipientId);
-  if (!integration) return;
+  console.log("META INTEGRATION LOOKUP:", JSON.stringify({
+    channel,
+    recipientId,
+    found: Boolean(integration),
+    userId: integration?.userId ?? null,
+    instagramAccountId: integration?.instagramAccountId ?? null,
+  }));
+  if (!integration) {
+    console.log("META INTEGRATION NOT FOUND:", JSON.stringify({ channel, recipientId }));
+    return;
+  }
 
   const conversation = await prisma.conversation.upsert({
     where: {
@@ -223,12 +233,14 @@ async function handleMetaMessage(
   });
 
   try {
+    console.log("META AI START:", JSON.stringify({ channel, userId: integration.userId, textLength: text.length }));
     const result = await runCustomerAgent({
       userId: integration.userId,
       message: text,
       previousResponseId: conversation.aiResponseId ?? undefined,
     });
 
+    console.log("META AI RESULT:", JSON.stringify({ channel, responseId: result.responseId, replyLength: result.text?.length ?? 0 }));
     const reply = result.text.trim();
     if (!reply) return;
 
