@@ -171,7 +171,10 @@ export async function POST(request: Request) {
     const code =
       typeof body?.code === "string" ? body.code : null;
 
-    if (!code) {
+    const state =
+      typeof body?.state === "string" ? body.state : null;
+
+    if (!code || !state) {
       return NextResponse.json(
         { error: "Facebook authorization code is missing." },
         { status: 400 },
@@ -187,7 +190,7 @@ export async function POST(request: Request) {
       );
     }
 
-    return handleCallback(request, code, null);
+    return handleCallback(request, code, state);
   } catch (error) {
     console.error("Facebook OAuth POST failed:", error);
 
