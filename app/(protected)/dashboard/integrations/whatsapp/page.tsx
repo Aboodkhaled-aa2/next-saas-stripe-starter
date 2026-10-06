@@ -1,6 +1,7 @@
 import { CheckCircle2, MessageCircle, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { MetaWhatsAppConnect } from "@/components/dashboard/meta-whatsapp-connect";
+import { WhatsAppDisconnectButton } from "@/components/dashboard/whatsapp-disconnect-button";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
 
@@ -20,7 +21,10 @@ export default async function WhatsAppIntegrationPage() {
         <div className="flex flex-col gap-5 border-b border-slate-800 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div><h2 className="text-lg font-semibold text-white">WhatsApp Business</h2><p className="mt-1 text-sm leading-6 text-slate-500">Complete Meta's embedded onboarding to connect the business phone number.</p></div>
           {connection ? (
-            <div className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300"><CheckCircle2 className="h-4 w-4" />Connected{connection.phoneNumber ? `: ${connection.phoneNumber}` : ""}</div>
+            <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+              <div className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300"><CheckCircle2 className="h-4 w-4" />Connected{connection.phoneNumber ? `: ${connection.phoneNumber}` : ""}</div>
+              <WhatsAppDisconnectButton />
+            </div>
           ) : <MetaWhatsAppConnect />}
         </div>
         <div className="grid gap-4 p-6 sm:grid-cols-3">
