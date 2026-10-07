@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/session";
 
-export async function POST(request: Request) {
+async function runTest(request: Request) {
   const user = await getCurrentUser();
 
   if (!user?.id) {
@@ -76,4 +76,12 @@ export async function POST(request: Request) {
     webhookResponse: responseText,
     expectedWebhookStatus: 200,
   });
+}
+
+export async function GET(request: Request) {
+  return runTest(request);
+}
+
+export async function POST(request: Request) {
+  return runTest(request);
 }
