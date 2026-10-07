@@ -112,6 +112,29 @@ export async function POST(request: Request) {
 
     const externalAccountId = wabaId;
 
+    // Subscribe the WhatsApp Business Account to this app's webhooks.
+    const subscribeResponse = await fetch(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${encodeURIComponent(
+        wabaId,
+      )}/subscribed_apps`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+        },
+        cache: "no-store",
+      },
+    );
+
+    const subscribeData = await subscribeResponse.json().catch(() => null);
+
+    if (!subscribeResponse.ok || subscribeData?.success !== true) {
+      throw new Error(
+        subscribeData?.error?.message ||
+          "Failed to subscribe the WhatsApp Business Account to webhooks.",
+      );
+    }
+
     await prisma.metaIntegration.upsert({
       where: {
         userId_platform_externalAccountId: {
