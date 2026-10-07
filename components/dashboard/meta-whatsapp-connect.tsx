@@ -165,6 +165,27 @@ export function MetaWhatsAppConnect() {
           return;
         }
 
+        console.log("WhatsApp Embedded Signup event:", message);
+
+        if (message?.event === "CANCEL") {
+          setLoading(false);
+          setError(
+            message.data?.current_step
+              ? `WhatsApp signup was cancelled at: ${message.data.current_step}`
+              : "WhatsApp signup was cancelled.",
+          );
+          return;
+        }
+
+        if (message?.event === "ERROR") {
+          setLoading(false);
+          setError(
+            message.data?.error_message ||
+              "Meta reported an error during WhatsApp signup.",
+          );
+          return;
+        }
+
         if (message?.event !== "FINISH") {
           return;
         }
@@ -287,7 +308,6 @@ export function MetaWhatsAppConnect() {
         response_type: "code",
         override_default_response_type: true,
         extras: {
-          sessionInfoVersion: "3",
           setup: {},
         },
       },
