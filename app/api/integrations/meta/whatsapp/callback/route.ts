@@ -128,6 +128,15 @@ export async function POST(request: Request) {
 
     const subscribeData = await subscribeResponse.json().catch(() => null);
 
+    console.log("WHATSAPP WEBHOOK SUBSCRIBE:", JSON.stringify({
+      wabaId,
+      phoneNumberId,
+      ok: subscribeResponse.ok,
+      status: subscribeResponse.status,
+      success: subscribeData?.success ?? null,
+      error: subscribeData?.error?.message ?? null,
+    }));
+
     if (!subscribeResponse.ok || subscribeData?.success !== true) {
       throw new Error(
         subscribeData?.error?.message ||
