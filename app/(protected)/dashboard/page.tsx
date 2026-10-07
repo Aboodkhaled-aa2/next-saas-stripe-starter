@@ -369,29 +369,62 @@ export default async function DashboardPage() {
                 </div>
               </div>
 
-              <div className="mt-5">
-                <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-                  <div
-                    className="h-full rounded-full bg-blue-500 transition-all"
-                    style={{ width: voiceUsagePercent + "%" }}
-                  />
-                </div>
-              </div>
+              <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                      Minutes Remaining
+                    </p>
+                    <p className="mt-1 text-3xl font-bold tracking-tight text-emerald-400">
+                      {totalRemainingVoiceMinutes.toFixed(1)}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {usedVoiceMinutes.toFixed(1)} min used this billing period
+                    </p>
+                  </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
-                  <p className="text-xs text-slate-500">Extra Minutes</p>
-                  <p className="mt-1 text-lg font-semibold text-blue-400">{extraVoiceMinutes.toFixed(1)}</p>
+                  <div className="text-right">
+                    <p className="text-xs text-slate-500">Included</p>
+                    <p className="mt-1 text-sm font-semibold text-white">
+                      {remainingVoiceMinutes.toFixed(1)} / {includedVoiceMinutes} min
+                    </p>
+                  </div>
                 </div>
-                <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
-                  <p className="text-xs text-slate-500">Total Available</p>
-                  <p className="mt-1 text-lg font-semibold text-emerald-400">{totalRemainingVoiceMinutes.toFixed(1)}</p>
-                </div>
-              </div>
 
-              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                <span>Included used: {usedIncludedMinutes.toFixed(1)} min</span>
-                <span>Extra used: {usedExtraMinutes.toFixed(1)} min</span>
+                <div className="mt-4">
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>Voice usage</span>
+                    <span>{voiceUsagePercent.toFixed(0)}%</span>
+                  </div>
+                  <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-800">
+                    <div
+                      className="h-full rounded-full bg-blue-500 transition-all duration-500"
+                      style={{ width: voiceUsagePercent + "%" }}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-slate-800 bg-slate-950/70 p-3">
+                    <p className="text-xs text-slate-500">Included Remaining</p>
+                    <p className="mt-1 text-base font-semibold text-white">
+                      {remainingVoiceMinutes.toFixed(1)} min
+                    </p>
+                    <p className="mt-1 text-[11px] text-slate-600">
+                      {usedIncludedMinutes.toFixed(1)} min used
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-slate-800 bg-slate-950/70 p-3">
+                    <p className="text-xs text-slate-500">Extra Balance</p>
+                    <p className="mt-1 text-base font-semibold text-blue-400">
+                      {extraVoiceMinutes.toFixed(1)} min
+                    </p>
+                    <p className="mt-1 text-[11px] text-slate-600">
+                      {usedExtraMinutes.toFixed(1)} min used
+                    </p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
