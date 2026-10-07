@@ -422,6 +422,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  console.log("META WEBHOOK POST HIT:", new Date().toISOString());
   const body = await request.text();
   const signature = request.headers.get("x-hub-signature-256");
 
@@ -485,6 +486,18 @@ export async function POST(request: Request) {
     }
 
     if (payload.object === "whatsapp_business_account") {
+      console.log("META WHATSAPP WEBHOOK:", JSON.stringify({
+        entryCount: payload.entry?.length ?? 0,
+        entries: (payload.entry ?? []).map((entry) => ({
+          wabaId: entry.id ?? null,
+          changes: (entry.changes ?? []).map((change) => ({
+            field: change.field ?? null,
+            phoneNumberId: change.value?.metadata?.phone_number_id ?? null,
+            messageCount: change.value?.messages?.length ?? 0,
+          })),
+        })),
+      }));
+
       for (const entry of payload.entry ?? []) {
         const wabaId = entry.id;
 
