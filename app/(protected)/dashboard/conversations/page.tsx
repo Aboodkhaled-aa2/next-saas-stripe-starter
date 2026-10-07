@@ -93,7 +93,7 @@ export default async function ConversationsPage() {
                   </div>
                   <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end">
                     <span className="text-xs text-slate-600">{formatRelativeTime(conversation.lastMessageAt)}</span>
-                    <Link href="/dashboard/ai" className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors hover:text-white">View<ArrowRight className="h-3.5 w-3.5" /></Link>
+                    <Link href={`/dashboard/conversations/${conversation.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors hover:text-white">View<ArrowRight className="h-3.5 w-3.5" /></Link>
                   </div>
                 </div>
               );
