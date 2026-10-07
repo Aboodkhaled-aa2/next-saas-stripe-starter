@@ -396,25 +396,55 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            {extraVoicePackages.map((pack) => (
-              <Link
-                key={pack.minutes}
-                href={`/dashboard/billing/voice?minutes=${pack.minutes}`}
-                className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 transition-colors hover:border-blue-500/40 hover:bg-slate-900"
-              >
-                <p className="text-sm font-semibold text-white">
-                  {pack.minutes.toLocaleString()} Extra Minutes
-                </p>
-                <p className="mt-1 text-lg font-bold text-blue-400">
-                  ${pack.price}
-                </p>
-                <p className="mt-2 text-xs text-slate-500">
-                  Purchase additional AI Phone minutes
-                </p>
-              </Link>
-            ))}
-          </div>
+          {includedVoiceMinutes > 0 && (
+            <details className="group mt-4 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 transition-colors hover:bg-slate-900 [&::-webkit-details-marker]:hidden">
+                <div>
+                  <p className="text-sm font-semibold text-white">
+                    Extra Minutes
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Purchase additional AI Phone minutes
+                  </p>
+                </div>
+
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-950 text-slate-400 transition-transform group-open:rotate-180">
+                  <svg
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </span>
+              </summary>
+
+              <div className="grid gap-3 border-t border-slate-800 p-3 sm:grid-cols-3">
+                {extraVoicePackages.map((pack) => (
+                  <Link
+                    key={pack.minutes}
+                    href={`/dashboard/billing/voice?minutes=${pack.minutes}`}
+                    className="rounded-lg border border-slate-800 bg-slate-950/70 p-4 transition-colors hover:border-blue-500/40 hover:bg-slate-900"
+                  >
+                    <p className="text-sm font-semibold text-white">
+                      {pack.minutes.toLocaleString()} Minutes
+                    </p>
+                    <p className="mt-1 text-lg font-bold text-blue-400">
+                      ${pack.price}
+                    </p>
+                    <p className="mt-2 text-xs text-slate-500">
+                      Add to your AI Phone minutes
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </details>
+          )}
         </section>
 
         <section>
