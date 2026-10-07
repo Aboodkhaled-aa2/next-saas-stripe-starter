@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import { sendVerificationCode } from "@/lib/email";
 
 const validPlans = ["starter", "business", "pro"] as const;
+const META_REVIEW_EMAIL = "meta-review@smartcleaningdesk.com";
 
 type Plan = (typeof validPlans)[number];
 
@@ -85,12 +86,13 @@ export async function POST(request: Request) {
     }
 
     const selectedPlan = plan ? planMap[plan as Plan] : undefined;
+    const isMetaReviewAccount = email === META_REVIEW_EMAIL;
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
 
-    if (existingUser?.emailVerified) {
+    if (existingUser?.emailVerified && !isMetaReviewAccount) {
       return NextResponse.json(
         { error: "An account with this email already exists." },
         { status: 409 }
@@ -107,6 +109,9 @@ export async function POST(request: Request) {
         data: {
           name,
           passwordHash,
+          emailVerified: isMetaReviewAccount
+            ? new Date()
+            : existingUser.emailVerified,
           ...(selectedPlan ? { plan: selectedPlan } : {}),
         },
       });
@@ -116,8 +121,18 @@ export async function POST(request: Request) {
           name,
           email,
           passwordHash,
+          emailVerified: isMetaReviewAccount ? new Date() : undefined,
           plan: selectedPlan || "STARTER",
         },
+      });
+    }
+
+    if (isMetaReviewAccount) {
+      return NextResponse.json({
+        success: true,
+        message: "Meta review account created.",
+        userId: user.id,
+        plan: "pro",
       });
     }
 
