@@ -51,6 +51,36 @@ export async function GET() {
 
     const data = await response.json().catch(() => null);
 
+    const phoneResponse = await fetch(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${encodeURIComponent(
+        integration.whatsappPhoneNumberId,
+      )}?fields=id,display_phone_number,verified_name,quality_rating,status,code_verification_status,messaging_limit_tier,platform_type`,
+      {
+        headers: {
+          Authorization: `Bearer ${integration.accessToken}`,
+        },
+        cache: "no-store",
+      },
+    );
+
+    const phoneData = await phoneResponse.json().catch(() => null);
+
+    const wabaPhoneNumbersResponse = await fetch(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${encodeURIComponent(
+        integration.whatsappBusinessId,
+      )}/phone_numbers?fields=id,display_phone_number,verified_name,quality_rating,status,code_verification_status,messaging_limit_tier,platform_type`,
+      {
+        headers: {
+          Authorization: `Bearer ${integration.accessToken}`,
+        },
+        cache: "no-store",
+      },
+    );
+
+    const wabaPhoneNumbersData = await wabaPhoneNumbersResponse
+      .json()
+      .catch(() => null);
+
     const apps = Array.isArray(data?.data) ? data.data : [];
     const appId = process.env.META_APP_ID;
     const currentApp = apps.find(
@@ -69,6 +99,16 @@ export async function GET() {
       currentAppSubscribed: Boolean(currentApp),
       currentApp: currentApp ?? null,
       metaError: data?.error?.message ?? null,
+      phone: {
+        ok: phoneResponse.ok,
+        status: phoneResponse.status,
+        data: phoneData,
+      },
+      wabaPhoneNumbers: {
+        ok: wabaPhoneNumbersResponse.ok,
+        status: wabaPhoneNumbersResponse.status,
+        data: wabaPhoneNumbersData,
+      },
     });
   } catch (error) {
     return NextResponse.json(
