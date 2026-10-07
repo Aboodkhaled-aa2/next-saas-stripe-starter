@@ -202,6 +202,19 @@ export default async function DashboardPage() {
       ? Math.min((usedIncludedMinutes / includedVoiceMinutes) * 100, 100)
       : 0;
 
+  // Show a low-balance warning when the customer's total voice balance
+  // reaches 20% or less of the minutes currently available to them.
+  const voiceBalanceBaseline =
+    includedVoiceMinutes + usedExtraMinutes + extraVoiceMinutes;
+  const voiceLowBalanceThreshold = Math.max(
+    voiceBalanceBaseline * 0.2,
+    20,
+  );
+  const isVoiceLowBalance =
+    includedVoiceMinutes > 0 &&
+    totalRemainingVoiceMinutes > 0 &&
+    totalRemainingVoiceMinutes <= voiceLowBalanceThreshold;
+
   const extraVoicePackages = [
     { minutes: 100, price: 15 },
     { minutes: 500, price: 75 },
@@ -337,6 +350,26 @@ export default async function DashboardPage() {
             </p>
           </div>
 
+          {isVoiceLowBalance && (
+            <Link
+              href="/dashboard/billing/voice"
+              className="mb-4 flex items-center justify-between gap-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 transition-colors hover:border-red-400/50 hover:bg-red-500/15"
+            >
+              <div>
+                <p className="text-sm font-semibold text-red-300">
+                  Your AI Phone minutes are running low
+                </p>
+                <p className="mt-1 text-xs leading-5 text-red-200/70">
+                  Only {totalRemainingVoiceMinutes.toFixed(1)} minutes remain.
+                  Would you like to add more minutes?
+                </p>
+              </div>
+              <span className="shrink-0 rounded-lg bg-red-500 px-3 py-2 text-xs font-semibold text-white">
+                Add Minutes
+              </span>
+            </Link>
+          )}
+
           <Card className="border-slate-800 bg-slate-950/70 text-white shadow-lg">
             <CardContent className="p-6">
               <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
@@ -375,7 +408,12 @@ export default async function DashboardPage() {
                     <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
                       Minutes Remaining
                     </p>
-                    <p className="mt-1 text-3xl font-bold tracking-tight text-emerald-400">
+                    <p
+                      className={
+                        "mt-1 text-3xl font-bold tracking-tight " +
+                        (isVoiceLowBalance ? "text-red-400" : "text-emerald-400")
+                      }
+                    >
                       {totalRemainingVoiceMinutes.toFixed(1)}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
