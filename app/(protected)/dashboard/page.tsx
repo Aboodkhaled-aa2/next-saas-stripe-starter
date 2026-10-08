@@ -212,18 +212,15 @@ export default async function DashboardPage() {
 
   const voicePlanEnabled = user?.plan === "BUSINESS" || user?.plan === "PRO";
 
-  const includedVoiceMinutes = voicePlanEnabled
-    ? trialActive
-    ? user?.plan === "PRO"
-      ? 30
-      : user?.plan === "BUSINESS"
-        ? 15
-        : 0
-    : user?.plan === "PRO"
-      ? 500
-      : user?.plan === "BUSINESS"
-        ? 200
-        : 0;
+  const includedVoiceMinutes = !voicePlanEnabled
+    ? 0
+    : trialActive
+      ? user?.plan === "PRO"
+        ? 30
+        : 15
+      : user?.plan === "PRO"
+        ? 500
+        : 200;
 
   const usedVoiceSeconds = voicePlanEnabled
     ? voiceUsage._sum.durationSeconds ?? 0
