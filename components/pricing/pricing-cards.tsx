@@ -29,7 +29,13 @@ export function PricingCards({
   const checkoutStarted = useRef(false);
 
   useEffect(() => {
-    if (!userId || !subscriptionPlan || checkoutStarted.current) return;
+    if (
+      !userId ||
+      !subscriptionPlan ||
+      checkoutStarted.current ||
+      subscriptionPlan.isTrial
+    )
+      return;
 
     const planParam = searchParams.get("plan")?.toLowerCase();
     if (!planParam) return;
@@ -87,7 +93,7 @@ export function PricingCards({
         </div>
 
         <p className="mb-6 text-sm font-semibold text-blue-400">
-          3-day free trial · No credit card required
+          7-day free trial · No credit card required
         </p>
 
         <div className="mb-8">
