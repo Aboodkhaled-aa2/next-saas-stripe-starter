@@ -390,9 +390,14 @@ async function hasVoiceMinutesAvailable(userId: string, plan: string | null | un
     const remaining = Math.max(trialVoiceMinutes - usedTrialMinutes, 0);
 
     return {
-      allowed: remaining > 0,
+      allowed: remaining >= 10 / 60,
+      remaining,
+      maxDurationSeconds: Math.max(
+        10,
+        Math.floor(remaining * 60),
+      ),
       reason:
-        remaining <= 0
+        remaining < 10 / 60
           ? "Trial voice minutes exhausted. Choose a plan to continue."
           : null,
     };
@@ -462,10 +467,17 @@ async function hasVoiceMinutesAvailable(userId: string, plan: string | null | un
   );
   const extraVoiceMinutes = user.extraVoiceMinutes ?? 0;
 
+  const remaining = includedRemaining + extraVoiceMinutes;
+
   return {
-    allowed: includedRemaining + extraVoiceMinutes > 0,
+    allowed: remaining >= 10 / 60,
+    remaining,
+    maxDurationSeconds: Math.max(
+      10,
+      Math.floor(remaining * 60),
+    ),
     reason:
-      includedRemaining + extraVoiceMinutes <= 0
+      remaining < 10 / 60
         ? "Voice minutes exhausted. Please add more minutes to continue."
         : null,
   };
@@ -535,6 +547,7 @@ export async function POST(request: Request) {
           firstMessage:
             configuration.greeting ||
             `Hi, thanks for calling ${configuration.businessProfile.businessName || "our cleaning company"}. How can I help you today?`,
+          maxDurationSeconds: voiceBalance.maxDurationSeconds,
           model: {
             provider: "openai",
             model: "gpt-4o",
