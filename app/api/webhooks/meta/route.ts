@@ -196,7 +196,7 @@ async function canUseTrialMessaging(userId: string) {
 
   const limit =
     user?.plan === "PRO" ? 200 : user?.plan === "BUSINESS" ? 100 : 50;
-  const startedAt = user.trialStartedAt ?? new Date(now);
+  const startedAt = user?.trialStartedAt ?? new Date(now);
 
   const usage = await prisma.message.count({
     where: {
