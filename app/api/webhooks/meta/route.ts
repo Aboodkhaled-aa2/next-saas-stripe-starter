@@ -167,6 +167,60 @@ async function sendWhatsAppMessage(
   return data;
 }
 
+async function canUseTrialMessaging(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      stripeSubscriptionId: true,
+      trialStartedAt: true,
+      trialEndsAt: true,
+      plan: true,
+    },
+  });
+
+  if (user?.stripeSubscriptionId) {
+    return { allowed: true, remaining: null };
+  }
+
+  const now = Date.now();
+  const trialActive =
+    Boolean(user?.trialEndsAt && user.trialEndsAt.getTime() > now);
+
+  if (!trialActive) {
+    return {
+      allowed: false,
+      remaining: 0,
+      reason: "Your free trial has ended. Choose a plan to continue.",
+    };
+  }
+
+  const limit =
+    user?.plan === "PRO" ? 200 : user?.plan === "BUSINESS" ? 100 : 50;
+  const startedAt = user.trialStartedAt ?? new Date(now);
+
+  const usage = await prisma.message.count({
+    where: {
+      direction: "OUTBOUND",
+      createdAt: {
+        gte: startedAt,
+        lt: user.trialEndsAt ?? new Date(now),
+      },
+      conversation: {
+        userId,
+      },
+    },
+  });
+
+  return {
+    allowed: usage < limit,
+    remaining: Math.max(limit - usage, 0),
+    reason:
+      usage >= limit
+        ? "Trial messaging limit reached. Choose a plan to continue."
+        : null,
+  };
+}
+
 async function handleMetaMessage(
   channel: "FACEBOOK" | "INSTAGRAM",
   event: MetaMessageEvent,
@@ -234,6 +288,17 @@ async function handleMetaMessage(
   });
 
   try {
+    const trialMessaging = await canUseTrialMessaging(integration.userId);
+
+    if (!trialMessaging.allowed) {
+      console.log("META TRIAL MESSAGING BLOCKED:", JSON.stringify({
+        channel,
+        userId: integration.userId,
+        reason: trialMessaging.reason,
+      }));
+      return;
+    }
+
     console.log("META AI START:", JSON.stringify({ channel, userId: integration.userId, textLength: text.length }));
     const result = await runCustomerAgent({
       userId: integration.userId,
@@ -355,6 +420,17 @@ async function handleWhatsAppMessage(
   });
 
   try {
+    const trialMessaging = await canUseTrialMessaging(integration.userId);
+
+    if (!trialMessaging.allowed) {
+      console.log("META TRIAL MESSAGING BLOCKED:", JSON.stringify({
+        channel: "WHATSAPP",
+        userId: integration.userId,
+        reason: trialMessaging.reason,
+      }));
+      return;
+    }
+
     console.log("META AI START:", JSON.stringify({
       channel: "WHATSAPP",
       userId: integration.userId,
