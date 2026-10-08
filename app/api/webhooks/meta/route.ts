@@ -366,6 +366,8 @@ async function handleMetaMessage(
     },
   });
 
+  let reservedExtraCredit = false;
+
   try {
     const trialMessaging = await canUseMessaging(integration.userId);
 
@@ -374,18 +376,6 @@ async function handleMetaMessage(
         channel,
         userId: integration.userId,
         reason: trialMessaging.reason,
-      }));
-      return;
-    }
-
-    const reservedExtraCredit = trialMessaging.usesExtraCredit
-      ? await reserveExtraMessageCredit(integration.userId)
-      : false;
-
-    if (trialMessaging.usesExtraCredit && !reservedExtraCredit) {
-      console.log("META EXTRA MESSAGE CREDIT RESERVATION FAILED:", JSON.stringify({
-        channel,
-        userId: integration.userId,
       }));
       return;
     }
@@ -407,6 +397,18 @@ async function handleMetaMessage(
 
     const reply = result.text.trim();
     if (!reply) return;
+
+    reservedExtraCredit = trialMessaging.usesExtraCredit
+      ? await reserveExtraMessageCredit(integration.userId)
+      : false;
+
+    if (trialMessaging.usesExtraCredit && !reservedExtraCredit) {
+      console.log("META EXTRA MESSAGE CREDIT RESERVATION FAILED:", JSON.stringify({
+        channel,
+        userId: integration.userId,
+      }));
+      return;
+    }
 
     console.log("META SEND START:", JSON.stringify({
       channel,
@@ -515,6 +517,8 @@ async function handleWhatsAppMessage(
     },
   });
 
+  let reservedExtraCredit = false;
+
   try {
     const trialMessaging = await canUseMessaging(integration.userId);
 
@@ -523,18 +527,6 @@ async function handleWhatsAppMessage(
         channel: "WHATSAPP",
         userId: integration.userId,
         reason: trialMessaging.reason,
-      }));
-      return;
-    }
-
-    const reservedExtraCredit = trialMessaging.usesExtraCredit
-      ? await reserveExtraMessageCredit(integration.userId)
-      : false;
-
-    if (trialMessaging.usesExtraCredit && !reservedExtraCredit) {
-      console.log("META EXTRA MESSAGE CREDIT RESERVATION FAILED:", JSON.stringify({
-        channel: "WHATSAPP",
-        userId: integration.userId,
       }));
       return;
     }
@@ -554,6 +546,18 @@ async function handleWhatsAppMessage(
 
     const reply = result.text.trim();
     if (!reply || !integration.whatsappPhoneNumberId) return;
+
+    reservedExtraCredit = trialMessaging.usesExtraCredit
+      ? await reserveExtraMessageCredit(integration.userId)
+      : false;
+
+    if (trialMessaging.usesExtraCredit && !reservedExtraCredit) {
+      console.log("META EXTRA MESSAGE CREDIT RESERVATION FAILED:", JSON.stringify({
+        channel: "WHATSAPP",
+        userId: integration.userId,
+      }));
+      return;
+    }
 
     const sendResult = await sendWhatsAppMessage(
       integration.accessToken,
