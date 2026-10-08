@@ -63,6 +63,8 @@ export type UserSubscriptionPlan = SubscriptionPlan &
   Pick<User, "stripeCustomerId" | "stripeSubscriptionId" | "stripePriceId"> & {
     stripeCurrentPeriodEnd: number;
     isPaid: boolean;
+    isTrial?: boolean;
+    trialEndsAt?: Date | null;
     interval: "month" | "year" | null;
     isCanceled?: boolean;
   };
