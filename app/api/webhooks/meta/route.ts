@@ -176,11 +176,17 @@ async function canUseMessaging(userId: string) {
       trialStartedAt: true,
       trialEndsAt: true,
       plan: true,
+      extraMessageCredits: true,
     },
   });
 
   if (!user) {
-    return { allowed: false, remaining: 0, reason: "Account not found." };
+    return {
+      allowed: false,
+      remaining: 0,
+      usesExtraCredit: false,
+      reason: "Account not found.",
+    };
   }
 
   const now = new Date();
@@ -190,6 +196,7 @@ async function canUseMessaging(userId: string) {
       return {
         allowed: false,
         remaining: 0,
+        usesExtraCredit: false,
         reason: "Your free trial has ended. Choose a plan to continue.",
       };
     }
@@ -215,6 +222,7 @@ async function canUseMessaging(userId: string) {
       remaining: Math.max(limit - used, 0),
       used,
       limit,
+      usesExtraCredit: false,
       reason:
         used >= limit
           ? "Trial messaging limit reached. Choose a plan to continue."
@@ -249,18 +257,48 @@ async function canUseMessaging(userId: string) {
   });
 
   const used = conversations.length;
+  const hasExtraMessageCredits = user.extraMessageCredits > 0;
+  const usesExtraCredit = used >= paidLimit && hasExtraMessageCredits;
 
   return {
-    allowed: used < paidLimit,
-    remaining: Math.max(paidLimit - used, 0),
+    allowed: used < paidLimit || hasExtraMessageCredits,
+    remaining:
+      used < paidLimit
+        ? Math.max(paidLimit - used, 0)
+        : user.extraMessageCredits,
     used,
     limit: paidLimit,
+    usesExtraCredit,
     reason:
-      used >= paidLimit
-        ? "Your monthly messaging limit has been reached."
+      used >= paidLimit && !hasExtraMessageCredits
+        ? "Your monthly messaging limit has been reached. Purchase additional message credits to continue."
         : null,
   };
 }
+
+async function reserveExtraMessageCredit(userId: string) {
+  const result = await prisma.user.updateMany({
+    where: {
+      id: userId,
+      extraMessageCredits: { gt: 0 },
+    },
+    data: {
+      extraMessageCredits: { decrement: 1 },
+    },
+  });
+
+  return result.count === 1;
+}
+
+async function refundExtraMessageCredit(userId: string) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      extraMessageCredits: { increment: 1 },
+    },
+  });
+}
+
 
 async function handleMetaMessage(
   channel: "FACEBOOK" | "INSTAGRAM",
@@ -340,6 +378,18 @@ async function handleMetaMessage(
       return;
     }
 
+    const reservedExtraCredit = trialMessaging.usesExtraCredit
+      ? await reserveExtraMessageCredit(integration.userId)
+      : false;
+
+    if (trialMessaging.usesExtraCredit && !reservedExtraCredit) {
+      console.log("META EXTRA MESSAGE CREDIT RESERVATION FAILED:", JSON.stringify({
+        channel,
+        userId: integration.userId,
+      }));
+      return;
+    }
+
     console.log("META AI START:", JSON.stringify({ channel, userId: integration.userId, textLength: text.length }));
     const result = await runCustomerAgent({
       userId: integration.userId,
@@ -399,6 +449,11 @@ async function handleMetaMessage(
       },
     });
   } catch (error) {
+    if (reservedExtraCredit) {
+      await refundExtraMessageCredit(integration.userId).catch((refundError) =>
+        console.error("Failed to refund message credit:", refundError),
+      );
+    }
     console.error(`${channel} AI response/send failed:`, error);
   }
 }
@@ -472,6 +527,18 @@ async function handleWhatsAppMessage(
       return;
     }
 
+    const reservedExtraCredit = trialMessaging.usesExtraCredit
+      ? await reserveExtraMessageCredit(integration.userId)
+      : false;
+
+    if (trialMessaging.usesExtraCredit && !reservedExtraCredit) {
+      console.log("META EXTRA MESSAGE CREDIT RESERVATION FAILED:", JSON.stringify({
+        channel: "WHATSAPP",
+        userId: integration.userId,
+      }));
+      return;
+    }
+
     console.log("META AI START:", JSON.stringify({
       channel: "WHATSAPP",
       userId: integration.userId,
@@ -515,6 +582,11 @@ async function handleWhatsAppMessage(
       },
     });
   } catch (error) {
+    if (reservedExtraCredit) {
+      await refundExtraMessageCredit(integration.userId).catch((refundError) =>
+        console.error("Failed to refund WhatsApp message credit:", refundError),
+      );
+    }
     console.error("WHATSAPP AI response/send failed:", error);
   }
 }
