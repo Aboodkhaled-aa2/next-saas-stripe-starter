@@ -142,9 +142,30 @@ export default async function DashboardPage() {
   const billingUser = user?.id
     ? await prisma.user.findUnique({
         where: { id: user.id },
-        select: { stripeSubscriptionId: true, extraVoiceMinutes: true },
+        select: {
+          stripeSubscriptionId: true,
+          extraVoiceMinutes: true,
+          plan: true,
+          trialStartedAt: true,
+          trialEndsAt: true,
+        },
       })
     : null;
+
+  const trialActive =
+    Boolean(
+      billingUser?.trialEndsAt &&
+        billingUser.trialEndsAt.getTime() > Date.now(),
+    ) && !billingUser?.stripeSubscriptionId;
+
+  if (
+    billingUser &&
+    !billingUser.stripeSubscriptionId &&
+    billingUser.trialEndsAt &&
+    billingUser.trialEndsAt.getTime() <= Date.now()
+  ) {
+    redirect(`/pricing?plan=${billingUser.plan.toLowerCase()}`);
+  }
 
   if (billingUser?.stripeSubscriptionId) {
     try {
@@ -160,6 +181,11 @@ export default async function DashboardPage() {
         error,
       );
     }
+  }
+
+  if (trialActive) {
+    currentPeriodStart = billingUser?.trialStartedAt ?? new Date();
+    currentPeriodEnd = billingUser?.trialEndsAt ?? new Date();
   }
 
   const voiceUsage = await prisma.voiceUsage.aggregate({
@@ -184,12 +210,23 @@ export default async function DashboardPage() {
     },
   });
 
-  const includedVoiceMinutes =
-    user?.plan === "PRO" ? 500 : user?.plan === "BUSINESS" ? 100 : 0;
+  const includedVoiceMinutes = trialActive
+    ? user?.plan === "PRO"
+      ? 30
+      : user?.plan === "BUSINESS"
+        ? 15
+        : 0
+    : user?.plan === "PRO"
+      ? 500
+      : user?.plan === "BUSINESS"
+        ? 200
+        : 0;
 
   const usedVoiceSeconds = voiceUsage._sum.durationSeconds ?? 0;
   const usedVoiceMinutes = usedVoiceSeconds / 60;
-  const usedIncludedMinutes = voiceUsage._sum.includedMinutesUsed ?? 0;
+  const usedIncludedMinutes = trialActive
+    ? usedVoiceMinutes
+    : voiceUsage._sum.includedMinutesUsed ?? 0;
   const usedExtraMinutes = voiceUsage._sum.extraMinutesUsed ?? 0;
   const remainingVoiceMinutes = Math.max(
     includedVoiceMinutes - usedIncludedMinutes,
@@ -338,6 +375,22 @@ export default async function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+
+        {trialActive && billingUser?.trialEndsAt && (
+          <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-4">
+            <p className="text-sm font-semibold text-blue-200">
+              Free trial active
+            </p>
+            <p className="mt-1 text-xs leading-5 text-blue-200/70">
+              Your trial ends on{" "}
+              {billingUser.trialEndsAt.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })}. AI Phone trial allowance:{" "}
+              {includedVoiceMinutes} minutes total.
+            </p>
+          </div>
+        )}
 
         <section>
           <div className="mb-4">
