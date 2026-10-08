@@ -41,26 +41,9 @@ export function PricingCards({
     if (!selectedOffer) return;
 
     if (subscriptionPlan.isTrial) {
-      if (subscriptionPlan.title.toLowerCase() === planParam) {
-        window.location.href = "/dashboard";
-        return;
-      }
-
-      checkoutStarted.current = true;
-
-      fetch("/api/trial/select-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planParam }),
-      })
-        .then(async (response) => {
-          if (!response.ok) throw new Error("Unable to select trial plan.");
-          window.location.href = "/dashboard";
-        })
-        .catch(() => {
-          checkoutStarted.current = false;
-        });
-
+      // The plan was selected during signup and is already saved on the account.
+      // Never make a trial customer select a different plan from the pricing page.
+      window.location.href = "/dashboard";
       return;
     }
 
