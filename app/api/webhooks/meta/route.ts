@@ -196,7 +196,7 @@ async function canUseMessaging(userId: string) {
 
     const limit =
       user.plan === "PRO" ? 200 : user.plan === "BUSINESS" ? 100 : 50;
-    const startedAt = user.trialStartedAt ?? now;
+    const startedAt = user?.trialStartedAt ?? now;
 
     const conversations = await prisma.message.findMany({
       where: {
