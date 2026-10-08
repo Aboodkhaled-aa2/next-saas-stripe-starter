@@ -169,7 +169,7 @@ export default function PhoneNumberPage() {
                 disabled={!item.number}
                 className="mt-5 w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Get this number — $4.99/month
+                Get this number — $9.99/month
               </button>
             </div>
           ))}
