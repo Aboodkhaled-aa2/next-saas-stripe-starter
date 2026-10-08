@@ -341,8 +341,65 @@ function getCallDurationSeconds(message: VapiMessage) {
 }
 
 async function hasVoiceMinutesAvailable(userId: string, plan: string | null | undefined) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      stripeSubscriptionId: true,
+      extraVoiceMinutes: true,
+      trialStartedAt: true,
+      trialEndsAt: true,
+    },
+  });
+
+  const now = Date.now();
+  const trialActive =
+    !user?.stripeSubscriptionId &&
+    Boolean(user?.trialEndsAt && user.trialEndsAt.getTime() > now);
+
+  const trialVoiceMinutes =
+    plan === "PRO" ? 30 : plan === "BUSINESS" ? 15 : 0;
+
+  if (trialActive) {
+    if (trialVoiceMinutes <= 0) {
+      return {
+        allowed: false,
+        reason: "AI Phone requires a Business or Pro plan.",
+      };
+    }
+
+    const trialStart = user?.trialStartedAt ?? new Date(now);
+    const usage = await prisma.voiceUsage.aggregate({
+      where: {
+        userId,
+        source: "VAPI_CALL",
+        startedAt: {
+          gte: trialStart,
+          lt: user?.trialEndsAt ?? new Date(now),
+        },
+        metadata: {
+          path: ["billingPeriod"],
+          equals: "trial",
+        },
+      },
+      _sum: {
+        billedMinutes: true,
+      },
+    });
+
+    const usedTrialMinutes = usage._sum.billedMinutes ?? 0;
+    const remaining = Math.max(trialVoiceMinutes - usedTrialMinutes, 0);
+
+    return {
+      allowed: remaining > 0,
+      reason:
+        remaining <= 0
+          ? "Trial voice minutes exhausted. Choose a plan to continue."
+          : null,
+    };
+  }
+
   const includedVoiceMinutes =
-    plan === "PRO" ? 500 : plan === "BUSINESS" ? 100 : 0;
+    plan === "PRO" ? 500 : plan === "BUSINESS" ? 200 : 0;
 
   if (includedVoiceMinutes <= 0) {
     return {
@@ -350,14 +407,6 @@ async function hasVoiceMinutesAvailable(userId: string, plan: string | null | un
       reason: "AI Phone requires a Business or Pro plan.",
     };
   }
-
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      stripeSubscriptionId: true,
-      extraVoiceMinutes: true,
-    },
-  });
 
   if (!user?.stripeSubscriptionId) {
     return {
@@ -421,7 +470,6 @@ async function hasVoiceMinutesAvailable(userId: string, plan: string | null | un
         : null,
   };
 }
-
 function safeJsonObject(value: string): Record<string, unknown> {
   try {
     const parsed = JSON.parse(value) as unknown;
@@ -541,15 +589,52 @@ export async function POST(request: Request) {
         select: {
           plan: true,
           stripeSubscriptionId: true,
+          trialStartedAt: true,
+          trialEndsAt: true,
+          extraVoiceMinutes: true,
         },
       });
 
+      const trialActive =
+        !user?.stripeSubscriptionId &&
+        Boolean(user?.trialEndsAt && user.trialEndsAt.getTime() > Date.now());
+
       const includedVoiceMinutes =
-        user?.plan === "PRO" ? 500 : user?.plan === "BUSINESS" ? 100 : 0;
+        user?.plan === "PRO" ? 500 : user?.plan === "BUSINESS" ? 200 : 0;
+      const trialVoiceMinutes =
+        user?.plan === "PRO" ? 30 : user?.plan === "BUSINESS" ? 15 : 0;
 
       let includedRemaining = 0;
+      let trialUsageMinutes = 0;
 
-      if (user?.stripeSubscriptionId && includedVoiceMinutes > 0) {
+      if (trialActive && trialVoiceMinutes > 0) {
+        const trialStart = user?.trialStartedAt ?? new Date();
+        const trialUsage = await prisma.voiceUsage.aggregate({
+          where: {
+            userId: configuration.businessProfile.userId,
+            source: "VAPI_CALL",
+            startedAt: {
+              gte: trialStart,
+              lt: user?.trialEndsAt ?? new Date(),
+            },
+            metadata: {
+              path: ["billingPeriod"],
+              equals: "trial",
+            },
+          },
+          _sum: {
+            billedMinutes: true,
+          },
+        });
+
+        trialUsageMinutes = trialUsage._sum.billedMinutes ?? 0;
+        includedRemaining = Math.max(
+          trialVoiceMinutes - trialUsageMinutes,
+          0,
+        );
+      }
+
+      if (!trialActive && user?.stripeSubscriptionId && includedVoiceMinutes > 0) {
         try {
           const subscription = await stripe.subscriptions.retrieve(
             user.stripeSubscriptionId,
@@ -586,11 +671,15 @@ export async function POST(request: Request) {
         }
       }
 
-      const includedMinutesUsed = Math.min(billedMinutes, includedRemaining);
-      const extraMinutesUsed = Math.max(
-        billedMinutes - includedMinutesUsed,
-        0,
-      );
+      const includedMinutesUsed = trialActive
+        ? 0
+        : Math.min(billedMinutes, includedRemaining);
+      const trialMinutesUsed = trialActive
+        ? Math.min(billedMinutes, includedRemaining)
+        : 0;
+      const extraMinutesUsed = trialActive
+        ? 0
+        : Math.max(billedMinutes - includedMinutesUsed, 0);
 
       await prisma.$transaction(async (tx) => {
         const currentUsage = await tx.voiceUsage.findUnique({
@@ -622,6 +711,8 @@ export async function POST(request: Request) {
                 ? new Date(message.endedAt)
                 : null,
             metadata: {
+              billingPeriod: trialActive ? "trial" : "subscription",
+              trialMinutesUsed: trialMinutesUsed,
               endedReason:
                 typeof (message as { endedReason?: unknown }).endedReason === "string"
                   ? (message as { endedReason: string }).endedReason
