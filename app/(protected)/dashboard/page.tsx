@@ -253,6 +253,54 @@ export default async function DashboardPage() {
     totalRemainingVoiceMinutes > 0 &&
     totalRemainingVoiceMinutes <= voiceLowBalanceThreshold;
 
+  const messagingLimit = trialActive
+    ? billingUser?.plan === "PRO"
+      ? 200
+      : billingUser?.plan === "BUSINESS"
+        ? 100
+        : 50
+    : billingUser?.plan === "PRO"
+      ? 5000
+      : billingUser?.plan === "BUSINESS"
+        ? 2000
+        : 500;
+
+  const messagingUsageRows = await prisma.message.findMany({
+    where: {
+      direction: "OUTBOUND",
+      ...(currentPeriodStart && currentPeriodEnd
+        ? {
+            createdAt: {
+              gte: currentPeriodStart,
+              lt: currentPeriodEnd,
+            },
+          }
+        : {
+            id: "__NO_CURRENT_BILLING_PERIOD__",
+          }),
+      conversation: {
+        userId: user?.id ?? "",
+      },
+    },
+    distinct: ["conversationId"],
+    select: {
+      conversationId: true,
+    },
+  });
+
+  const usedMessagingConversations = messagingUsageRows.length;
+  const remainingMessagingConversations = Math.max(
+    messagingLimit - usedMessagingConversations,
+    0,
+  );
+  const messagingUsagePercent =
+    messagingLimit > 0
+      ? Math.min(
+          (usedMessagingConversations / messagingLimit) * 100,
+          100,
+        )
+      : 0;
+
   const extraVoicePackages = [
     { minutes: 100, price: 15 },
     { minutes: 500, price: 75 },
@@ -571,6 +619,54 @@ export default async function DashboardPage() {
         )}
 
         <section>
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-white">
+              Messaging Usage
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Track unique customer conversations for the current period.
+            </p>
+          </div>
+
+          <Card className="border-slate-800 bg-slate-950/70 text-white shadow-lg">
+            <CardContent className="p-6">
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                    Conversations
+                  </p>
+                  <p className="mt-1 text-3xl font-bold tracking-tight text-white">
+                    {usedMessagingConversations.toLocaleString()}
+                  </p>
+                </div>
+                <p className="text-sm font-semibold text-slate-400">
+                  / {messagingLimit.toLocaleString()}
+                </p>
+              </div>
+
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span>{remainingMessagingConversations.toLocaleString()} remaining</span>
+                  <span>{messagingUsagePercent.toFixed(0)}%</span>
+                </div>
+                <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-800">
+                  <div
+                    className="h-full rounded-full bg-blue-500 transition-all duration-500"
+                    style={{ width: messagingUsagePercent + "%" }}
+                  />
+                </div>
+              </div>
+
+              {usedMessagingConversations >= messagingLimit && (
+                <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+                  Your messaging limit has been reached. AI replies are paused until the next billing period.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+
+
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-white">
               Business Overview
