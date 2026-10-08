@@ -229,7 +229,7 @@ export async function POST(req: Request) {
             phoneNumber,
             countryCode: signalWireNumber.country_code ?? "US",
             status: "ACTIVE",
-            monthlyPriceCents: 499,
+            monthlyPriceCents: 999,
             stripeSubscriptionId: session.subscription as string,
             metadata: {
               capabilities: signalWireNumber.capabilities ?? [],
@@ -241,7 +241,7 @@ export async function POST(req: Request) {
             providerId: signalWireNumber.id,
             countryCode: signalWireNumber.country_code ?? "US",
             status: "ACTIVE",
-            monthlyPriceCents: 499,
+            monthlyPriceCents: 999,
             stripeSubscriptionId: session.subscription as string,
             metadata: {
               capabilities: signalWireNumber.capabilities ?? [],
