@@ -24,6 +24,9 @@ export async function getUserSubscriptionPlan(
       stripeCurrentPeriodEnd: true,
       stripeCustomerId: true,
       stripePriceId: true,
+      plan: true,
+      trialStartedAt: true,
+      trialEndsAt: true,
     },
   });
 
@@ -46,6 +49,8 @@ export async function getUserSubscriptionPlan(
   }
 
   const currentPeriodEnd = user.stripeCurrentPeriodEnd?.getTime() ?? 0;
+  const trialEndsAt = user.trialEndsAt?.getTime() ?? 0;
+  const isTrial = !user.stripeSubscriptionId && trialEndsAt > Date.now();
 
   const isPaid =
     Boolean(user.stripePriceId) &&
@@ -85,11 +90,18 @@ export async function getUserSubscriptionPlan(
     }
   }
 
+  const trialPlan =
+    pricingData.find(
+      (item) => item.title.toUpperCase() === user.plan,
+    ) || plan;
+
   return {
-    ...plan,
+    ...(isTrial ? trialPlan : plan),
     ...user,
     stripeCurrentPeriodEnd: currentPeriodEnd,
     isPaid,
+    isTrial,
+    trialEndsAt: user.trialEndsAt,
     interval,
     isCanceled,
   };
