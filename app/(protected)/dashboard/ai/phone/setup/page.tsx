@@ -5,6 +5,9 @@ import { ArrowLeft, CheckCircle2, Phone, Save, Sparkles } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 
 export default function AIPhoneSetupPage() {
+  const [speakingStyle, setSpeakingStyle] = useState("Professional and friendly");
+  const [handoffInstructions, setHandoffInstructions] = useState("");
+  const [businessProfile, setBusinessProfile] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -18,6 +21,10 @@ export default function AIPhoneSetupPage() {
         if (!response.ok) return;
 
         const data = await response.json();
+        if (!cancelled) {
+          setBusinessProfile(data.businessProfile ?? null);
+        }
+
         if (!cancelled && data.aiPhoneSettings) {
           const settings = data.aiPhoneSettings;
           const form = document.querySelector<HTMLFormElement>("form");
@@ -32,6 +39,15 @@ export default function AIPhoneSetupPage() {
           setValue("assistantName", settings.assistantName);
           setValue("greeting", settings.greeting);
           setValue("provider", settings.provider);
+        }
+
+        if (!cancelled && data.businessProfile) {
+          setSpeakingStyle(
+            data.businessProfile.aiTone || "Professional and friendly",
+          );
+          setHandoffInstructions(
+            data.businessProfile.humanHandoffInstructions || "",
+          );
         }
       } catch {
         if (!cancelled) setError("Unable to load AI Phone settings.");
@@ -64,6 +80,9 @@ export default function AIPhoneSetupPage() {
           assistantName: formData.get("assistantName"),
           greeting: formData.get("greeting"),
           provider: formData.get("provider"),
+          speakingStyle: speakingStyle || formData.get("speakingStyle"),
+          handoffInstructions:
+            handoffInstructions || formData.get("handoffInstructions"),
         }),
       });
 
@@ -172,6 +191,43 @@ export default function AIPhoneSetupPage() {
 
         <section className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-xl sm:p-8">
           <div className="mb-6">
+            <h2 className="font-semibold text-white">Business knowledge</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              AI Phone uses the same services, service areas, hours, pricing,
+              and booking rules from your Business Profile.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ProfileCard label="Business" value={businessProfile?.businessName || "Not configured"} />
+            <ProfileCard label="Services" value={formatProfileValue(businessProfile?.services)} />
+            <ProfileCard label="Service areas" value={formatProfileValue(businessProfile?.serviceAreas)} />
+            <ProfileCard label="Business hours" value={formatProfileValue(businessProfile?.businessHours)} />
+            <ProfileCard label="Booking rules" value={formatProfileValue(businessProfile?.bookingRules)} />
+            <ProfileCard label="Pricing" value={formatProfileValue(businessProfile?.pricing)} />
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-xl sm:p-8">
+          <div className="mb-6">
+            <h2 className="font-semibold text-white">Human handoff</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Define when the AI should transfer the caller to a human employee.
+            </p>
+          </div>
+
+          <textarea
+            name="handoffInstructions"
+            value={handoffInstructions}
+            onChange={(event) => setHandoffInstructions(event.target.value)}
+            rows={5}
+            placeholder="Transfer when the customer asks for a human, has a billing issue, requests something outside the configured services, or when the AI cannot confidently help."
+            className="w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-violet-500"
+          />
+        </section>
+
+        <section className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-xl sm:p-8">
+          <div className="mb-6">
             <h2 className="font-semibold text-white">Call behavior</h2>
             <p className="mt-1 text-sm text-slate-500">
               The AI will follow your existing business rules and handoff instructions.
@@ -251,10 +307,14 @@ function Field({
 function SelectField({
   label,
   name,
+  value,
+  onChange,
   options,
 }: {
   label: string;
   name: string;
+  value?: string;
+  onChange?: (value: string) => void;
   options: string[];
 }) {
   return (
@@ -265,7 +325,9 @@ function SelectField({
       <select
         id={name}
         name={name}
-        defaultValue={options[0]}
+        value={value}
+        defaultValue={value ? undefined : options[0]}
+        onChange={onChange ? (event) => onChange(event.target.value) : undefined}
         className="mt-2 h-11 w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 text-sm text-white outline-none focus:border-violet-500"
       >
         {options.map((option) => (
@@ -289,4 +351,44 @@ function BehaviorItem({
       <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
     </div>
   );
+}
+
+
+function ProfileCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
+      <p className="mt-2 max-h-24 overflow-auto whitespace-pre-wrap text-sm leading-5 text-slate-300">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function formatProfileValue(value: unknown) {
+  if (value === null || value === undefined || value === "") {
+    return "Not configured";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.length
+      ? value
+          .map((item) =>
+            typeof item === "string" ? item : JSON.stringify(item),
+          )
+          .join(", ")
+      : "Not configured";
+  }
+
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return "Configured";
+  }
 }
