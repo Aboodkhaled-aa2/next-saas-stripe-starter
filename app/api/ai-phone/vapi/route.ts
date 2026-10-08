@@ -704,6 +704,61 @@ export async function POST(request: Request) {
           return;
         }
 
+        let chargeableExtraMinutes = extraMinutesUsed;
+
+        if (chargeableExtraMinutes > 0) {
+          const deducted = await tx.user.updateMany({
+            where: {
+              id: configuration.businessProfile.userId,
+              extraVoiceMinutes: {
+                gte: chargeableExtraMinutes,
+              },
+            },
+            data: {
+              extraVoiceMinutes: {
+                decrement: chargeableExtraMinutes,
+              },
+            },
+          });
+
+          if (deducted.count === 0) {
+            const latestUser = await tx.user.findUnique({
+              where: { id: configuration.businessProfile.userId },
+              select: { extraVoiceMinutes: true },
+            });
+
+            const availableExtraMinutes = Math.max(
+              latestUser?.extraVoiceMinutes ?? 0,
+              0,
+            );
+
+            chargeableExtraMinutes = Math.min(
+              chargeableExtraMinutes,
+              availableExtraMinutes,
+            );
+
+            if (chargeableExtraMinutes > 0) {
+              const retryDeduction = await tx.user.updateMany({
+                where: {
+                  id: configuration.businessProfile.userId,
+                  extraVoiceMinutes: {
+                    gte: chargeableExtraMinutes,
+                  },
+                },
+                data: {
+                  extraVoiceMinutes: {
+                    decrement: chargeableExtraMinutes,
+                  },
+                },
+              });
+
+              if (retryDeduction.count === 0) {
+                chargeableExtraMinutes = 0;
+              }
+            }
+          }
+        }
+
         await tx.voiceUsage.create({
           data: {
             userId: configuration.businessProfile.userId,
@@ -712,7 +767,7 @@ export async function POST(request: Request) {
             durationSeconds,
             billedMinutes,
             includedMinutesUsed,
-            extraMinutesUsed,
+            extraMinutesUsed: chargeableExtraMinutes,
             startedAt: message.call?.startedAt
               ? new Date(message.call.startedAt)
               : message.startedAt
@@ -725,7 +780,7 @@ export async function POST(request: Request) {
                 : null,
             metadata: {
               billingPeriod: trialActive ? "trial" : "subscription",
-              trialMinutesUsed: trialMinutesUsed,
+              trialMinutesUsed,
               endedReason:
                 typeof (message as { endedReason?: unknown }).endedReason === "string"
                   ? (message as { endedReason: string }).endedReason
@@ -733,17 +788,6 @@ export async function POST(request: Request) {
             },
           },
         });
-
-        if (extraMinutesUsed > 0) {
-          await tx.user.update({
-            where: { id: configuration.businessProfile.userId },
-            data: {
-              extraVoiceMinutes: {
-                decrement: extraMinutesUsed,
-              },
-            },
-          });
-        }
       });
 
       return NextResponse.json({ ok: true });
