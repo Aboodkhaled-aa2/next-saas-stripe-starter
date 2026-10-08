@@ -666,7 +666,7 @@ export default async function DashboardPage() {
           </Card>
         </section>
 
-
+        <section>
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-white">
               Business Overview
