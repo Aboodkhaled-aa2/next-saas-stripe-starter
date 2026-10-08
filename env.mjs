@@ -26,6 +26,9 @@ export const env = createEnv({
     STRIPE_VOICE_100_PRICE_ID: z.string().optional(),
     STRIPE_VOICE_500_PRICE_ID: z.string().optional(),
     STRIPE_VOICE_1000_PRICE_ID: z.string().optional(),
+    STRIPE_MESSAGES_1000_PRICE_ID: z.string().optional(),
+    STRIPE_MESSAGES_5000_PRICE_ID: z.string().optional(),
+    STRIPE_MESSAGES_10000_PRICE_ID: z.string().optional(),
   },
 
   client: {
@@ -59,6 +62,9 @@ export const env = createEnv({
     STRIPE_VOICE_100_PRICE_ID: process.env.STRIPE_VOICE_100_PRICE_ID,
     STRIPE_VOICE_500_PRICE_ID: process.env.STRIPE_VOICE_500_PRICE_ID,
     STRIPE_VOICE_1000_PRICE_ID: process.env.STRIPE_VOICE_1000_PRICE_ID,
+    STRIPE_MESSAGES_1000_PRICE_ID: process.env.STRIPE_MESSAGES_1000_PRICE_ID,
+    STRIPE_MESSAGES_5000_PRICE_ID: process.env.STRIPE_MESSAGES_5000_PRICE_ID,
+    STRIPE_MESSAGES_10000_PRICE_ID: process.env.STRIPE_MESSAGES_10000_PRICE_ID,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_STRIPE_STARTER_MONTHLY_PLAN_ID:
       process.env.NEXT_PUBLIC_STRIPE_STARTER_MONTHLY_PLAN_ID,
