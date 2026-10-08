@@ -163,6 +163,16 @@ export default async function DashboardPage() {
         billingUser.trialEndsAt.getTime() <= Date.now(),
     ) && !billingUser?.stripeSubscriptionId;
 
+  const trialDaysRemaining = billingUser?.trialEndsAt
+    ? Math.max(
+        Math.ceil(
+          (billingUser.trialEndsAt.getTime() - Date.now()) /
+            (24 * 60 * 60 * 1000),
+        ),
+        0,
+      )
+    : 0;
+
   const paidActive = Boolean(billingUser?.stripeSubscriptionId);
 
   if (billingUser?.stripeSubscriptionId) {
@@ -434,11 +444,15 @@ export default async function DashboardPage() {
               Free trial active
             </p>
             <p className="mt-1 text-xs leading-5 text-blue-200/70">
-              Your trial ends on{" "}
-              {billingUser.trialEndsAt.toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-              })}. AI Phone trial allowance: {includedVoiceMinutes} minutes total.
+              {trialDaysRemaining <= 1
+                ? "Your free trial ends tomorrow."
+                : trialDaysRemaining <= 3
+                  ? `Your free trial ends in ${trialDaysRemaining} days.`
+                  : `Your trial ends on ${billingUser.trialEndsAt.toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}.`}
+              {" "}AI Phone trial allowance: {includedVoiceMinutes} minutes total.
             </p>
           </div>
         )}
@@ -476,6 +490,25 @@ export default async function DashboardPage() {
                 Track your AI receptionist minutes for the current plan.
               </p>
             </div>
+
+            {totalRemainingVoiceMinutes <= 0 && (
+              <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
+                <p className="text-sm font-semibold text-red-300">
+                  Your AI Phone minutes are exhausted
+                </p>
+                <p className="mt-1 text-xs leading-5 text-red-200/70">
+                  {trialActive
+                    ? "Your trial voice allowance has been used. Choose your plan to continue."
+                    : "Your included minutes are used. Add extra minutes to keep receiving AI calls."}
+                </p>
+                <Link
+                  href={trialActive ? `/pricing?plan=${billingUser?.plan?.toLowerCase() ?? "business"}` : "/dashboard/billing/voice"}
+                  className="mt-3 inline-flex rounded-lg bg-red-500 px-3 py-2 text-xs font-semibold text-white hover:bg-red-400"
+                >
+                  {trialActive ? "Choose Plan" : "Add Minutes"}
+                </Link>
+              </div>
+            )}
 
             {isVoiceLowBalance && (
               <Link
@@ -681,6 +714,12 @@ export default async function DashboardPage() {
                   />
                 </div>
               </div>
+
+              {messagingUsagePercent >= 80 && (
+                <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
+                  You have used {messagingUsagePercent.toFixed(0)}% of your messaging conversations for this period.
+                </div>
+              )}
 
               {usedMessagingConversations >= messagingLimit && (
                 <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
