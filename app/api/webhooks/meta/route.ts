@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { runCustomerAgent } from "@/lib/ai/customer-agent-runtime";
+import { stripe } from "@/lib/stripe";
 
 const GRAPH_VERSION = process.env.META_GRAPH_VERSION || "v26.0";
 const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;
@@ -167,7 +168,7 @@ async function sendWhatsAppMessage(
   return data;
 }
 
-async function canUseTrialMessaging(userId: string) {
+async function canUseMessaging(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -178,45 +179,85 @@ async function canUseTrialMessaging(userId: string) {
     },
   });
 
-  if (user?.stripeSubscriptionId) {
-    return { allowed: true, remaining: null };
+  if (!user) {
+    return { allowed: false, remaining: 0, reason: "Account not found." };
   }
 
-  const now = Date.now();
-  const trialActive =
-    Boolean(user?.trialEndsAt && user.trialEndsAt.getTime() > now);
+  const now = new Date();
 
-  if (!trialActive) {
+  if (!user.stripeSubscriptionId) {
+    if (!user.trialEndsAt || user.trialEndsAt <= now) {
+      return {
+        allowed: false,
+        remaining: 0,
+        reason: "Your free trial has ended. Choose a plan to continue.",
+      };
+    }
+
+    const limit =
+      user.plan === "PRO" ? 200 : user.plan === "BUSINESS" ? 100 : 50;
+    const startedAt = user.trialStartedAt ?? now;
+
+    const conversations = await prisma.message.findMany({
+      where: {
+        direction: "OUTBOUND",
+        createdAt: { gte: startedAt, lt: user.trialEndsAt },
+        conversation: { userId },
+      },
+      distinct: ["conversationId"],
+      select: { conversationId: true },
+    });
+
+    const used = conversations.length;
+
     return {
-      allowed: false,
-      remaining: 0,
-      reason: "Your free trial has ended. Choose a plan to continue.",
+      allowed: used < limit,
+      remaining: Math.max(limit - used, 0),
+      used,
+      limit,
+      reason:
+        used >= limit
+          ? "Trial messaging limit reached. Choose a plan to continue."
+          : null,
     };
   }
 
-  const limit =
-    user?.plan === "PRO" ? 200 : user?.plan === "BUSINESS" ? 100 : 50;
-  const startedAt = user?.trialStartedAt ?? new Date(now);
+  const paidLimit =
+    user.plan === "PRO" ? 5000 : user.plan === "BUSINESS" ? 2000 : 500;
 
-  const usage = await prisma.message.count({
+  let periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  let periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  try {
+    const subscription = await stripe.subscriptions.retrieve(
+      user.stripeSubscriptionId,
+    );
+    periodStart = new Date(subscription.current_period_start * 1000);
+    periodEnd = new Date(subscription.current_period_end * 1000);
+  } catch (error) {
+    console.error("Failed to retrieve Stripe period for messaging usage:", error);
+  }
+
+  const conversations = await prisma.message.findMany({
     where: {
       direction: "OUTBOUND",
-      createdAt: {
-        gte: startedAt,
-        lt: user?.trialEndsAt ?? new Date(now),
-      },
-      conversation: {
-        userId,
-      },
+      createdAt: { gte: periodStart, lt: periodEnd },
+      conversation: { userId },
     },
+    distinct: ["conversationId"],
+    select: { conversationId: true },
   });
 
+  const used = conversations.length;
+
   return {
-    allowed: usage < limit,
-    remaining: Math.max(limit - usage, 0),
+    allowed: used < paidLimit,
+    remaining: Math.max(paidLimit - used, 0),
+    used,
+    limit: paidLimit,
     reason:
-      usage >= limit
-        ? "Trial messaging limit reached. Choose a plan to continue."
+      used >= paidLimit
+        ? "Your monthly messaging limit has been reached."
         : null,
   };
 }
@@ -288,7 +329,7 @@ async function handleMetaMessage(
   });
 
   try {
-    const trialMessaging = await canUseTrialMessaging(integration.userId);
+    const trialMessaging = await canUseMessaging(integration.userId);
 
     if (!trialMessaging.allowed) {
       console.log("META TRIAL MESSAGING BLOCKED:", JSON.stringify({
@@ -420,7 +461,7 @@ async function handleWhatsAppMessage(
   });
 
   try {
-    const trialMessaging = await canUseTrialMessaging(integration.userId);
+    const trialMessaging = await canUseMessaging(integration.userId);
 
     if (!trialMessaging.allowed) {
       console.log("META TRIAL MESSAGING BLOCKED:", JSON.stringify({
