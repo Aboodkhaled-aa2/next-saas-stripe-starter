@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   ArrowRight,
   Bot,
@@ -773,7 +774,7 @@ export default async function DashboardPage() {
                 </div>
 
                 <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
-                  <p className="text-xs text-slate-500">Extra Message Credits</p>
+                  <p className="text-xs text-slate-500">Extra Message Balance</p>
                   <p className="mt-1 text-2xl font-bold text-blue-400">
                     {(billingUser?.extraMessageCredits ?? 0).toLocaleString()}
                   </p>
