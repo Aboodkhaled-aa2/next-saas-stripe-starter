@@ -203,7 +203,7 @@ async function canUseTrialMessaging(userId: string) {
       direction: "OUTBOUND",
       createdAt: {
         gte: startedAt,
-        lt: user.trialEndsAt ?? new Date(now),
+        lt: user?.trialEndsAt ?? new Date(now),
       },
       conversation: {
         userId,
