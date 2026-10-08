@@ -547,7 +547,7 @@ export async function POST(request: Request) {
           firstMessage:
             configuration.greeting ||
             `Hi, thanks for calling ${configuration.businessProfile.businessName || "our cleaning company"}. How can I help you today?`,
-          maxDurationSeconds: voiceBalance.maxDurationSeconds,
+          maxDurationSeconds: voiceBalance.maxDurationSeconds ?? 600,
           model: {
             provider: "openai",
             model: "gpt-4o",
