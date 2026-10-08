@@ -147,6 +147,7 @@ export default async function DashboardPage() {
           plan: true,
           trialStartedAt: true,
           trialEndsAt: true,
+          extraMessageCredits: true,
         },
       })
     : null;
@@ -278,6 +279,25 @@ export default async function DashboardPage() {
           : 500
       : 0;
 
+  const messagingMessageCount = await prisma.message.count({
+    where: {
+      direction: "OUTBOUND",
+      ...(currentPeriodStart && currentPeriodEnd
+        ? {
+            createdAt: {
+              gte: currentPeriodStart,
+              lt: currentPeriodEnd,
+            },
+          }
+        : {
+            id: "__NO_CURRENT_BILLING_PERIOD__",
+          }),
+      conversation: {
+        userId: user?.id ?? "",
+      },
+    },
+  });
+
   const messagingUsageRows = await prisma.message.findMany({
     where: {
       direction: "OUTBOUND",
@@ -318,6 +338,12 @@ export default async function DashboardPage() {
     { minutes: 100, price: 15 },
     { minutes: 500, price: 75 },
     { minutes: 1000, price: 120 },
+  ];
+
+  const extraMessagePackages = [
+    { messages: 1000, price: 10 },
+    { messages: 5000, price: 40 },
+    { messages: 10000, price: 70 },
   ];
 
   const [upcomingJobs, recentLeads] = await Promise.all([
@@ -721,10 +747,90 @@ export default async function DashboardPage() {
                 </div>
               )}
 
-              {usedMessagingConversations >= messagingLimit && (
-                <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
-                  Your messaging limit has been reached. AI replies are paused until the next billing period.
+              {usedMessagingConversations >= messagingLimit &&
+                (billingUser?.extraMessageCredits ?? 0) > 0 && (
+                  <div className="mt-4 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-blue-200">
+                    Your included conversation limit is reached. Your extra message credits are now being used.
+                  </div>
+                )}
+
+              {usedMessagingConversations >= messagingLimit &&
+                (billingUser?.extraMessageCredits ?? 0) <= 0 && (
+                  <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+                    Your messaging limit has been reached. Purchase extra message credits to keep AI replies active.
+                  </div>
+                )}
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
+                  <p className="text-xs text-slate-500">AI Messages Sent</p>
+                  <p className="mt-1 text-2xl font-bold text-white">
+                    {messagingMessageCount.toLocaleString()}
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-600">
+                    Outbound AI replies this billing period
+                  </p>
                 </div>
+
+                <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
+                  <p className="text-xs text-slate-500">Extra Message Credits</p>
+                  <p className="mt-1 text-2xl font-bold text-blue-400">
+                    {(billingUser?.extraMessageCredits ?? 0).toLocaleString()}
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-600">
+                    One-time credits available after your included limit
+                  </p>
+                </div>
+              </div>
+
+              {paidActive && (
+                <details className="group mt-4 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 transition-colors hover:bg-slate-900 [&::-webkit-details-marker]:hidden">
+                    <div>
+                      <p className="text-sm font-semibold text-white">
+                        Buy Extra Messages
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        One-time message credits that do not expire
+                      </p>
+                    </div>
+
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-950 text-slate-400 transition-transform group-open:rotate-180">
+                      <svg
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="h-4 w-4"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 1.04l-4.25-4.5a.75.75 0 01.02-1.06z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </span>
+                  </summary>
+
+                  <div className="grid gap-3 border-t border-slate-800 p-3 sm:grid-cols-3">
+                    {extraMessagePackages.map((pack) => (
+                      <Link
+                        key={pack.messages}
+                        href={`/api/stripe/message-credits?messages=${pack.messages}`}
+                        className="rounded-lg border border-slate-800 bg-slate-950/70 p-4 transition-colors hover:border-blue-500/40 hover:bg-slate-900"
+                      >
+                        <p className="text-sm font-semibold text-white">
+                          {pack.messages.toLocaleString()} Messages
+                        </p>
+                        <p className="mt-1 text-lg font-bold text-blue-400">
+                          ${pack.price}
+                        </p>
+                        <p className="mt-2 text-xs text-slate-500">
+                          One-time credit package
+                        </p>
+                      </Link>
+                    ))}
+                  </div>
+                </details>
               )}
             </CardContent>
           </Card>
