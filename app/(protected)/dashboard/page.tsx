@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -643,7 +642,8 @@ export default async function DashboardPage() {
           </section>
         )}
 
-        <section>
+        {messagingLimit > 0 && (
+          <section>
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-white">
               Messaging Usage
@@ -689,7 +689,8 @@ export default async function DashboardPage() {
               )}
             </CardContent>
           </Card>
-        </section>
+          </section>
+        )}
 
         <section>
           <div className="mb-4">
