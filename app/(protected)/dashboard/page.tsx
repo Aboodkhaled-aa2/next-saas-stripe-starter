@@ -210,7 +210,10 @@ export default async function DashboardPage() {
     },
   });
 
-  const includedVoiceMinutes = trialActive
+  const voicePlanEnabled = user?.plan === "BUSINESS" || user?.plan === "PRO";
+
+  const includedVoiceMinutes = voicePlanEnabled
+    ? trialActive
     ? user?.plan === "PRO"
       ? 30
       : user?.plan === "BUSINESS"
@@ -222,7 +225,9 @@ export default async function DashboardPage() {
         ? 200
         : 0;
 
-  const usedVoiceSeconds = voiceUsage._sum.durationSeconds ?? 0;
+  const usedVoiceSeconds = voicePlanEnabled
+    ? voiceUsage._sum.durationSeconds ?? 0
+    : 0;
   const usedVoiceMinutes = usedVoiceSeconds / 60;
   const usedIncludedMinutes = trialActive
     ? usedVoiceMinutes
@@ -232,7 +237,9 @@ export default async function DashboardPage() {
     includedVoiceMinutes - usedIncludedMinutes,
     0,
   );
-  const extraVoiceMinutes = Math.max(billingUser?.extraVoiceMinutes ?? 0, 0);
+  const extraVoiceMinutes = voicePlanEnabled
+    ? Math.max(billingUser?.extraVoiceMinutes ?? 0, 0)
+    : 0;
   const totalRemainingVoiceMinutes = remainingVoiceMinutes + extraVoiceMinutes;
   const voiceUsagePercent =
     includedVoiceMinutes > 0
@@ -389,7 +396,7 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {includedVoiceMinutes > 0 && (
+        {voicePlanEnabled && includedVoiceMinutes > 0 && (
           <section>
             <div className="mb-4">
               <h2 className="text-lg font-semibold text-white">
