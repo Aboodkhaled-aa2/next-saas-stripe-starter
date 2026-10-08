@@ -243,10 +243,9 @@ export default async function DashboardPage() {
   // reaches 20% or less of the minutes currently available to them.
   const voiceBalanceBaseline =
     includedVoiceMinutes + usedExtraMinutes + extraVoiceMinutes;
-  const voiceLowBalanceThreshold = Math.max(
-    voiceBalanceBaseline * 0.2,
-    20,
-  );
+  const voiceLowBalanceThreshold = trialActive
+    ? includedVoiceMinutes * 0.2
+    : Math.max(voiceBalanceBaseline * 0.2, 20);
   const isVoiceLowBalance =
     includedVoiceMinutes > 0 &&
     totalRemainingVoiceMinutes > 0 &&
