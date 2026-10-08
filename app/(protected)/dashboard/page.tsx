@@ -239,8 +239,6 @@ export default async function DashboardPage() {
       ? Math.min((usedIncludedMinutes / includedVoiceMinutes) * 100, 100)
       : 0;
 
-  // Show a low-balance warning when the customer's total voice balance
-  // reaches 20% or less of the minutes currently available to them.
   const voiceBalanceBaseline =
     includedVoiceMinutes + usedExtraMinutes + extraVoiceMinutes;
   const voiceLowBalanceThreshold = trialActive
@@ -391,184 +389,182 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        <section>
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-white">
-              Voice Usage
-            </h2>
+        {includedVoiceMinutes > 0 && (
+          <section>
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-white">
+                Voice Usage
+              </h2>
 
-            <p className="mt-1 text-sm text-slate-500">
-              Track your AI receptionist minutes for the current plan.
-            </p>
-          </div>
+              <p className="mt-1 text-sm text-slate-500">
+                Track your AI receptionist minutes for the current plan.
+              </p>
+            </div>
 
-          {isVoiceLowBalance && (
-            <Link
-              href="/dashboard/billing/voice"
-              className="mb-4 flex items-center justify-between gap-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 transition-colors hover:border-red-400/50 hover:bg-red-500/15"
-            >
-              <div>
-                <p className="text-sm font-semibold text-red-300">
-                  Your AI Phone minutes are running low
-                </p>
-                <p className="mt-1 text-xs leading-5 text-red-200/70">
-                  Only {totalRemainingVoiceMinutes.toFixed(1)} minutes remain.
-                  Would you like to add more minutes?
-                </p>
-              </div>
-              <span className="shrink-0 rounded-lg bg-red-500 px-3 py-2 text-xs font-semibold text-white">
-                Add Minutes
-              </span>
-            </Link>
-          )}
-
-          <Card className="border-slate-800 bg-slate-950/70 text-white shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            {isVoiceLowBalance && (
+              <Link
+                href="/dashboard/billing/voice"
+                className="mb-4 flex items-center justify-between gap-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 transition-colors hover:border-red-400/50 hover:bg-red-500/15"
+              >
                 <div>
-                  <p className="text-sm font-medium text-slate-400">
-                    Included Voice Minutes
+                  <p className="text-sm font-semibold text-red-300">
+                    Your AI Phone minutes are running low
                   </p>
+                  <p className="mt-1 text-xs leading-5 text-red-200/70">
+                    Only {totalRemainingVoiceMinutes.toFixed(1)} minutes remain.
+                    Would you like to add more minutes?
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-lg bg-red-500 px-3 py-2 text-xs font-semibold text-white">
+                  Add Minutes
+                </span>
+              </Link>
+            )}
 
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-3xl font-bold tracking-tight text-white">
-                      {includedVoiceMinutes > 0
-                        ? usedVoiceMinutes.toFixed(1)
-                        : "0"}
-                    </span>
+            <Card className="border-slate-800 bg-slate-950/70 text-white shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-400">
+                      Included Voice Minutes
+                    </p>
 
-                    <span className="text-sm text-slate-500">
-                      / {includedVoiceMinutes} min used
-                    </span>
+                    <div className="mt-2 flex items-baseline gap-2">
+                      <span className="text-3xl font-bold tracking-tight text-white">
+                        {usedVoiceMinutes.toFixed(1)}
+                      </span>
+
+                      <span className="text-sm text-slate-500">
+                        / {includedVoiceMinutes} min used
+                      </span>
+                    </div>
+
+                    <p className="mt-2 text-xs text-slate-500">
+                      {remainingVoiceMinutes.toFixed(1)} minutes remaining
+                    </p>
                   </div>
 
-                  <p className="mt-2 text-xs text-slate-500">
-                    {includedVoiceMinutes > 0
-                      ? remainingVoiceMinutes.toFixed(1) + " minutes remaining"
-                      : "Voice is available on Business and Pro plans."}
-                  </p>
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10">
+                    <Phone className="h-5 w-5 text-blue-400" />
+                  </div>
                 </div>
 
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10">
-                  <Phone className="h-5 w-5 text-blue-400" />
-                </div>
-              </div>
+                <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                        Minutes Remaining
+                      </p>
+                      <p
+                        className={
+                          "mt-1 text-3xl font-bold tracking-tight " +
+                          (isVoiceLowBalance ? "text-red-400" : "text-emerald-400")
+                        }
+                      >
+                        {totalRemainingVoiceMinutes.toFixed(1)}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {usedVoiceMinutes.toFixed(1)} min used this billing period
+                      </p>
+                    </div>
 
-              <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-                <div className="flex items-end justify-between gap-4">
+                    <div className="text-right">
+                      <p className="text-xs text-slate-500">Included</p>
+                      <p className="mt-1 text-sm font-semibold text-white">
+                        {remainingVoiceMinutes.toFixed(1)} / {includedVoiceMinutes} min
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <span>Voice usage</span>
+                      <span>{voiceUsagePercent.toFixed(0)}%</span>
+                    </div>
+                    <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-800">
+                      <div
+                        className="h-full rounded-full bg-blue-500 transition-all duration-500"
+                        style={{ width: voiceUsagePercent + "%" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="rounded-lg border border-slate-800 bg-slate-950/70 p-3">
+                      <p className="text-xs text-slate-500">Included Remaining</p>
+                      <p className="mt-1 text-base font-semibold text-white">
+                        {remainingVoiceMinutes.toFixed(1)} min
+                      </p>
+                      <p className="mt-1 text-[11px] text-slate-600">
+                        {usedIncludedMinutes.toFixed(1)} min used
+                      </p>
+                    </div>
+
+                    <div className="rounded-lg border border-slate-800 bg-slate-950/70 p-3">
+                      <p className="text-xs text-slate-500">Extra Balance</p>
+                      <p className="mt-1 text-base font-semibold text-blue-400">
+                        {extraVoiceMinutes.toFixed(1)} min
+                      </p>
+                      <p className="mt-1 text-[11px] text-slate-600">
+                        {usedExtraMinutes.toFixed(1)} min used
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {!trialActive && (
+              <details className="group mt-4 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 transition-colors hover:bg-slate-900 [&::-webkit-details-marker]:hidden">
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                      Minutes Remaining
-                    </p>
-                    <p
-                      className={
-                        "mt-1 text-3xl font-bold tracking-tight " +
-                        (isVoiceLowBalance ? "text-red-400" : "text-emerald-400")
-                      }
-                    >
-                      {totalRemainingVoiceMinutes.toFixed(1)}
+                    <p className="text-sm font-semibold text-white">
+                      Extra Minutes
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
-                      {usedVoiceMinutes.toFixed(1)} min used this billing period
+                      Purchase additional AI Phone minutes
                     </p>
                   </div>
 
-                  <div className="text-right">
-                    <p className="text-xs text-slate-500">Included</p>
-                    <p className="mt-1 text-sm font-semibold text-white">
-                      {remainingVoiceMinutes.toFixed(1)} / {includedVoiceMinutes} min
-                    </p>
-                  </div>
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-950 text-slate-400 transition-transform group-open:rotate-180">
+                    <svg
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="h-4 w-4"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </span>
+                </summary>
+
+                <div className="grid gap-3 border-t border-slate-800 p-3 sm:grid-cols-3">
+                  {extraVoicePackages.map((pack) => (
+                    <Link
+                      key={pack.minutes}
+                      href={`/dashboard/billing/voice?minutes=${pack.minutes}`}
+                      className="rounded-lg border border-slate-800 bg-slate-950/70 p-4 transition-colors hover:border-blue-500/40 hover:bg-slate-900"
+                    >
+                      <p className="text-sm font-semibold text-white">
+                        {pack.minutes.toLocaleString()} Minutes
+                      </p>
+                      <p className="mt-1 text-lg font-bold text-blue-400">
+                        ${pack.price}
+                      </p>
+                      <p className="mt-2 text-xs text-slate-500">
+                        Add to your AI Phone minutes
+                      </p>
+                    </Link>
+                  ))}
                 </div>
-
-                <div className="mt-4">
-                  <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>Voice usage</span>
-                    <span>{voiceUsagePercent.toFixed(0)}%</span>
-                  </div>
-                  <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-800">
-                    <div
-                      className="h-full rounded-full bg-blue-500 transition-all duration-500"
-                      style={{ width: voiceUsagePercent + "%" }}
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  <div className="rounded-lg border border-slate-800 bg-slate-950/70 p-3">
-                    <p className="text-xs text-slate-500">Included Remaining</p>
-                    <p className="mt-1 text-base font-semibold text-white">
-                      {remainingVoiceMinutes.toFixed(1)} min
-                    </p>
-                    <p className="mt-1 text-[11px] text-slate-600">
-                      {usedIncludedMinutes.toFixed(1)} min used
-                    </p>
-                  </div>
-
-                  <div className="rounded-lg border border-slate-800 bg-slate-950/70 p-3">
-                    <p className="text-xs text-slate-500">Extra Balance</p>
-                    <p className="mt-1 text-base font-semibold text-blue-400">
-                      {extraVoiceMinutes.toFixed(1)} min
-                    </p>
-                    <p className="mt-1 text-[11px] text-slate-600">
-                      {usedExtraMinutes.toFixed(1)} min used
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {includedVoiceMinutes > 0 && !trialActive && (
-            <details className="group mt-4 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 transition-colors hover:bg-slate-900 [&::-webkit-details-marker]:hidden">
-                <div>
-                  <p className="text-sm font-semibold text-white">
-                    Extra Minutes
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Purchase additional AI Phone minutes
-                  </p>
-                </div>
-
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-950 text-slate-400 transition-transform group-open:rotate-180">
-                  <svg
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="h-4 w-4"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </span>
-              </summary>
-
-              <div className="grid gap-3 border-t border-slate-800 p-3 sm:grid-cols-3">
-                {extraVoicePackages.map((pack) => (
-                  <Link
-                    key={pack.minutes}
-                    href={`/dashboard/billing/voice?minutes=${pack.minutes}`}
-                    className="rounded-lg border border-slate-800 bg-slate-950/70 p-4 transition-colors hover:border-blue-500/40 hover:bg-slate-900"
-                  >
-                    <p className="text-sm font-semibold text-white">
-                      {pack.minutes.toLocaleString()} Minutes
-                    </p>
-                    <p className="mt-1 text-lg font-bold text-blue-400">
-                      ${pack.price}
-                    </p>
-                    <p className="mt-2 text-xs text-slate-500">
-                      Add to your AI Phone minutes
-                    </p>
-                  </Link>
-                ))}
-              </div>
-            </details>
-          )}
-        </section>
+              </details>
+            )}
+          </section>
+        )}
 
         <section>
           <div className="mb-4">
