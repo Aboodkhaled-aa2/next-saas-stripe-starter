@@ -815,7 +815,7 @@ export default async function DashboardPage() {
                     {extraMessagePackages.map((pack) => (
                       <Link
                         key={pack.messages}
-                        href={`/api/stripe/message-credits?messages=${pack.messages}`}
+                        href={`/dashboard/billing/messages?messages=${pack.messages}`}
                         className="rounded-lg border border-slate-800 bg-slate-950/70 p-4 transition-colors hover:border-blue-500/40 hover:bg-slate-900"
                       >
                         <p className="text-sm font-semibold text-white">
