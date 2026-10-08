@@ -24,6 +24,19 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       aiPhoneSettings: businessProfile?.aiPhoneSettings ?? null,
+      businessProfile: businessProfile
+        ? {
+            businessName: businessProfile.businessName,
+            services: businessProfile.services,
+            serviceAreas: businessProfile.serviceAreas,
+            pricing: businessProfile.pricing,
+            businessHours: businessProfile.businessHours,
+            bookingRules: businessProfile.bookingRules,
+            aiTone: businessProfile.aiTone,
+            humanHandoffInstructions:
+              businessProfile.humanHandoffInstructions,
+          }
+        : null,
     });
   } catch (error) {
     console.error("AI Phone settings fetch error:", error);
@@ -67,6 +80,14 @@ export async function POST(request: Request) {
       typeof body.greeting === "string" ? body.greeting.trim() : "";
     const provider =
       typeof body.provider === "string" ? body.provider.trim() : "Vapi";
+    const speakingStyle =
+      typeof body.speakingStyle === "string"
+        ? body.speakingStyle.trim()
+        : "";
+    const handoffInstructions =
+      typeof body.handoffInstructions === "string"
+        ? body.handoffInstructions.trim()
+        : "";
 
     if (!phoneNumber || !assistantName) {
       return NextResponse.json(
@@ -89,6 +110,8 @@ export async function POST(request: Request) {
       select: {
         id: true,
         onboardingCompleted: true,
+        aiTone: true,
+        humanHandoffInstructions: true,
       },
     });
 
@@ -121,6 +144,20 @@ export async function POST(request: Request) {
         enabled: false,
       },
     });
+
+    if (speakingStyle || handoffInstructions) {
+      await prisma.businessProfile.update({
+        where: {
+          id: businessProfile.id,
+        },
+        data: {
+          ...(speakingStyle ? { aiTone: speakingStyle } : {}),
+          ...(handoffInstructions
+            ? { humanHandoffInstructions: handoffInstructions }
+            : {}),
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,
