@@ -4,7 +4,7 @@ import { env } from "@/env.mjs";
 import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 
-const PHONE_NUMBER_MONTHLY_PRICE_CENTS = 499;
+const PHONE_NUMBER_MONTHLY_PRICE_CENTS = 999;
 
 export async function POST(req: Request) {
   try {
