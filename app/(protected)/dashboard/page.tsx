@@ -158,14 +158,13 @@ export default async function DashboardPage() {
         billingUser.trialEndsAt.getTime() > Date.now(),
     ) && !billingUser?.stripeSubscriptionId;
 
-  if (
-    billingUser &&
-    !billingUser.stripeSubscriptionId &&
-    billingUser.trialEndsAt &&
-    billingUser.trialEndsAt.getTime() <= Date.now()
-  ) {
-    redirect(`/pricing?plan=${billingUser.plan.toLowerCase()}`);
-  }
+  const trialExpired =
+    Boolean(
+      billingUser?.trialEndsAt &&
+        billingUser.trialEndsAt.getTime() <= Date.now(),
+    ) && !billingUser?.stripeSubscriptionId;
+
+  const paidActive = Boolean(billingUser?.stripeSubscriptionId);
 
   if (billingUser?.stripeSubscriptionId) {
     try {
@@ -212,15 +211,18 @@ export default async function DashboardPage() {
 
   const voicePlanEnabled = user?.plan === "BUSINESS" || user?.plan === "PRO";
 
-  const includedVoiceMinutes = !voicePlanEnabled
-    ? 0
-    : trialActive
-      ? user?.plan === "PRO"
-        ? 30
-        : 15
-      : user?.plan === "PRO"
-        ? 500
-        : 200;
+  const includedVoiceMinutes =
+    !voicePlanEnabled
+      ? 0
+      : trialActive
+        ? user?.plan === "PRO"
+          ? 30
+          : 15
+        : paidActive
+          ? user?.plan === "PRO"
+            ? 500
+            : 200
+          : 0;
 
   const usedVoiceSeconds = voicePlanEnabled
     ? voiceUsage._sum.durationSeconds ?? 0
@@ -259,11 +261,13 @@ export default async function DashboardPage() {
       : billingUser?.plan === "BUSINESS"
         ? 100
         : 50
-    : billingUser?.plan === "PRO"
-      ? 5000
-      : billingUser?.plan === "BUSINESS"
-        ? 2000
-        : 500;
+    : paidActive
+      ? billingUser?.plan === "PRO"
+        ? 5000
+        : billingUser?.plan === "BUSINESS"
+          ? 2000
+          : 500
+      : 0;
 
   const messagingUsageRows = await prisma.message.findMany({
     where: {
@@ -435,9 +439,30 @@ export default async function DashboardPage() {
               {billingUser.trialEndsAt.toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
-              })}. AI Phone trial allowance:{" "}
-              {includedVoiceMinutes} minutes total.
+              })}. AI Phone trial allowance: {includedVoiceMinutes} minutes total.
             </p>
+          </div>
+        )}
+
+        {trialExpired && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-amber-200">
+                  Your free trial has ended
+                </p>
+                <p className="mt-1 text-xs leading-5 text-amber-200/70">
+                  Your workspace is still here, but AI Phone and AI messaging are paused.
+                  Continue with your {billingUser?.plan?.toLowerCase() ?? "selected"} plan to unlock them.
+                </p>
+              </div>
+              <Link
+                href={`/pricing?plan=${billingUser?.plan?.toLowerCase() ?? "starter"}`}
+                className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-center text-xs font-semibold text-white hover:bg-blue-500"
+              >
+                Continue with {billingUser?.plan ?? "STARTER"}
+              </Link>
+            </div>
           </div>
         )}
 
