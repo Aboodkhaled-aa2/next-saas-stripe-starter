@@ -7,7 +7,14 @@ import { FormEvent, useEffect, useState } from "react";
 export default function AIPhoneSetupPage() {
   const [speakingStyle, setSpeakingStyle] = useState("Professional and friendly");
   const [handoffInstructions, setHandoffInstructions] = useState("");
-  const [businessProfile, setBusinessProfile] = useState<any>(null);
+  const [businessProfile, setBusinessProfile] = useState<{
+    businessName?: string | null;
+    services?: unknown;
+    serviceAreas?: unknown;
+    pricing?: unknown;
+    businessHours?: unknown;
+    bookingRules?: unknown;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -179,12 +186,14 @@ export default function AIPhoneSetupPage() {
             <SelectField
               label="Speaking style"
               name="speakingStyle"
+              value={speakingStyle}
+              onChange={setSpeakingStyle}
               options={["Professional and friendly", "Warm and casual", "Concise and direct"]}
             />
             <SelectField
               label="Provider"
               name="provider"
-              options={["Vapi", "Not connected yet"]}
+              options={["Vapi"]}
             />
           </div>
         </section>
