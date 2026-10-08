@@ -29,13 +29,7 @@ export function PricingCards({
   const checkoutStarted = useRef(false);
 
   useEffect(() => {
-    if (
-      !userId ||
-      !subscriptionPlan ||
-      checkoutStarted.current ||
-      subscriptionPlan.isTrial
-    )
-      return;
+    if (!userId || !subscriptionPlan || checkoutStarted.current) return;
 
     const planParam = searchParams.get("plan")?.toLowerCase();
     if (!planParam) return;
@@ -43,6 +37,32 @@ export function PricingCards({
     const selectedOffer = pricingData.find(
       (offer) => offer.title.toLowerCase() === planParam,
     );
+
+    if (!selectedOffer) return;
+
+    if (subscriptionPlan.isTrial) {
+      if (subscriptionPlan.title.toLowerCase() === planParam) {
+        window.location.href = "/dashboard";
+        return;
+      }
+
+      checkoutStarted.current = true;
+
+      fetch("/api/trial/select-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planParam }),
+      })
+        .then(async (response) => {
+          if (!response.ok) throw new Error("Unable to select trial plan.");
+          window.location.href = "/dashboard";
+        })
+        .catch(() => {
+          checkoutStarted.current = false;
+        });
+
+      return;
+    }
 
     if (!selectedOffer?.stripeIds.monthly) return;
 
