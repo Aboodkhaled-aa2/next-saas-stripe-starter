@@ -22,6 +22,12 @@ const voicePackages = {
   "1000": { minutes: 1000, amountCents: 12000 },
 } as const;
 
+const messagePackages = {
+  "1000": { messages: 1000, amountCents: 1000 },
+  "5000": { messages: 5000, amountCents: 4000 },
+  "10000": { messages: 10000, amountCents: 7000 },
+} as const;
+
 export async function POST(req: Request) {
   const body = await req.text();
   const signature = headers().get("Stripe-Signature");
@@ -118,6 +124,78 @@ export async function POST(req: Request) {
             data: {
               extraVoiceMinutes: {
                 increment: selected.minutes,
+              },
+            },
+          });
+        });
+
+        return new Response(null, { status: 200 });
+      }
+
+      if (session.metadata?.type === "message_credits") {
+        if (session.mode !== "payment" || session.payment_status !== "paid") {
+          return new Response("Message payment not completed", { status: 400 });
+        }
+
+        const userId = session.metadata.userId;
+        const packageKey = session.metadata.package;
+
+        if (!userId || !packageKey) {
+          return new Response("Missing message purchase metadata", {
+            status: 400,
+          });
+        }
+
+        const selected =
+          messagePackages[packageKey as keyof typeof messagePackages];
+
+        if (!selected) {
+          return new Response("Unknown message package", { status: 400 });
+        }
+
+        if (
+          session.amount_total !== null &&
+          session.amount_total !== selected.amountCents
+        ) {
+          console.error(
+            "Stripe webhook error: Message package amount mismatch",
+            {
+              sessionId: session.id,
+              expected: selected.amountCents,
+              received: session.amount_total,
+            },
+          );
+
+          return new Response("Message package amount mismatch", {
+            status: 400,
+          });
+        }
+
+        await prisma.$transaction(async (tx) => {
+          const existingPurchase = await tx.messageCreditPurchase.findUnique({
+            where: { stripeSessionId: session.id },
+            select: { id: true },
+          });
+
+          if (existingPurchase) {
+            return;
+          }
+
+          await tx.messageCreditPurchase.create({
+            data: {
+              userId,
+              stripeSessionId: session.id,
+              messages: selected.messages,
+              amountCents: selected.amountCents,
+              status: "PAID",
+            },
+          });
+
+          await tx.user.update({
+            where: { id: userId },
+            data: {
+              extraMessageCredits: {
+                increment: selected.messages,
               },
             },
           });
