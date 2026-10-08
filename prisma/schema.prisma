@@ -177,6 +177,7 @@ model User {
   fiwanoChannels FiwanoChannel[]
   voiceUsage VoiceUsage[]
   voiceCreditPurchases VoiceCreditPurchase[]
+  messageCreditPurchases MessageCreditPurchase[]
   phoneNumbers       PhoneNumber[]
 
   stripeCustomerId       String?   @unique @map("stripe_customer_id")
@@ -188,6 +189,7 @@ model User {
   trialEndsAt    DateTime? @map("trial_ends_at")
 
   extraVoiceMinutes Float @default(0) @map("extra_voice_minutes")
+  extraMessageCredits Int @default(0) @map("extra_message_credits")
 
   @@map("users")
 }
@@ -351,6 +353,22 @@ model VoiceCreditPurchase {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@index([userId, createdAt])
   @@map("voice_credit_purchases")
+}
+
+model MessageCreditPurchase {
+  @@schema("public")
+  id String @id @default(cuid())
+  userId String
+  stripeSessionId String @unique
+  messages Int
+  amountCents Int
+  status String @default("PAID")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("message_credit_purchases")
 }
 
 model VoiceUsage {
