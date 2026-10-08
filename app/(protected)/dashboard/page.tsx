@@ -519,7 +519,7 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
 
-          {includedVoiceMinutes > 0 && (
+          {includedVoiceMinutes > 0 && !trialActive && (
             <details className="group mt-4 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 transition-colors hover:bg-slate-900 [&::-webkit-details-marker]:hidden">
                 <div>
