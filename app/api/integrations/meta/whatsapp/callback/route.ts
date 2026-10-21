@@ -66,14 +66,36 @@ export async function POST(request: Request) {
     }
 
     const wabaId = body.wabaId ? String(body.wabaId) : null;
-    const phoneNumberId = body.phoneNumberId
+    let phoneNumberId = body.phoneNumberId
       ? String(body.phoneNumberId)
       : null;
 
-    if (!wabaId || !phoneNumberId) {
+    if (!wabaId) {
       throw new Error(
-        "Meta did not return the WhatsApp Business Account and phone number IDs.",
+        "Meta did not return the WhatsApp Business Account ID.",
       );
+    }
+
+    if (!phoneNumberId) {
+      const numbersResponse = await fetch(
+        `https://graph.facebook.com/${GRAPH_VERSION}/${encodeURIComponent(
+          wabaId,
+        )}/phone_numbers?fields=id,display_phone_number,verified_name&access_token=${encodeURIComponent(
+          tokenData.access_token,
+        )}`,
+        { cache: "no-store" },
+      );
+      const numbersData = await numbersResponse.json().catch(() => null);
+      const numbers = Array.isArray(numbersData?.data) ? numbersData.data : [];
+
+      if (!numbersResponse.ok || numbers.length !== 1 || !numbers[0]?.id) {
+        throw new Error(
+          numbersData?.error?.message ||
+            "Meta did not return a unique phone number for this WhatsApp Business Account.",
+        );
+      }
+
+      phoneNumberId = String(numbers[0].id);
     }
 
     const wabaResponse = await fetch(
