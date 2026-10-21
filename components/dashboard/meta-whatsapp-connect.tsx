@@ -30,6 +30,7 @@ export function MetaWhatsAppConnect() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [configId, setConfigId] = useState<string | null>(null);
+  const [appId, setAppId] = useState<string | null>(null);
 
   const stateRef = useRef<string | null>(null);
   const codeRef = useRef<string | null>(null);
@@ -37,6 +38,8 @@ export function MetaWhatsAppConnect() {
   const submittedRef = useRef(false);
 
   useEffect(() => {
+    if (!appId) return;
+
     let cancelled = false;
 
     const getFacebook = () =>
@@ -53,7 +56,7 @@ export function MetaWhatsAppConnect() {
       }
 
       fb.init({
-        appId: "1058014497030757",
+        appId,
         cookie: true,
         xfbml: true,
         version: "v26.0",
@@ -101,7 +104,7 @@ export function MetaWhatsAppConnect() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [appId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -115,7 +118,7 @@ export function MetaWhatsAppConnect() {
 
         const data = await response.json();
 
-        if (!response.ok || !data?.state || !data?.configId) {
+        if (!response.ok || !data?.state || !data?.configId || !data?.appId) {
           throw new Error(
             data?.error || "WhatsApp Embedded Signup is unavailable.",
           );
@@ -124,6 +127,7 @@ export function MetaWhatsAppConnect() {
         stateRef.current = data.state;
 
         if (!cancelled) {
+          setAppId(String(data.appId));
           setConfigId(String(data.configId));
           setSetupReady(true);
         }
