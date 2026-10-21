@@ -17,9 +17,23 @@ export default async function InstagramIntegrationPage() {
   return (
     <div className="space-y-6">
       <DashboardHeader heading="Instagram" text="Connect a professional Instagram account directly through Instagram Business Login." />
+      <section className="rounded-2xl border border-amber-700/40 bg-amber-950/20 p-4 sm:p-5" aria-label="Instagram account requirement">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+          <div>
+            <h2 className="text-sm font-semibold text-amber-200">
+              A Professional Instagram Account is Required
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-300">
+              You cannot connect a personal Instagram account. Switch your Instagram account to a Business or Creator account first, then connect it here. This connection uses Instagram Business Login, so a Facebook Page is not required for this flow.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/70 shadow-xl">
         <div className="flex flex-col gap-5 border-b border-slate-800 p-6 sm:flex-row sm:items-center sm:justify-between">
-          <div><h2 className="text-lg font-semibold text-white">Instagram Business</h2><p className="mt-1 text-sm leading-6 text-slate-500">The customer connects their own Instagram Business or Creator account.</p></div>
+          <div><h2 className="text-lg font-semibold text-white">Instagram Business</h2><p className="mt-1 text-sm leading-6 text-slate-500">Connect the Business or Creator account used by your cleaning company.</p></div>
           {connection ? (
             <div className="flex flex-wrap items-center gap-3"><div className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300"><CheckCircle2 className="h-4 w-4" />Connected{connection.externalAccountName ? `: @${connection.externalAccountName}` : ""}</div><InstagramDisconnectButton /></div>
           ) : (
