@@ -190,7 +190,10 @@ export function MetaWhatsAppConnect() {
           return;
         }
 
-        if (message?.event !== "FINISH") {
+        if (
+          message?.event !== "FINISH" &&
+          message?.event !== "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING"
+        ) {
           return;
         }
 
@@ -227,8 +230,7 @@ export function MetaWhatsAppConnect() {
     if (
       !code ||
       !state ||
-      !sessionInfo?.waba_id ||
-      !sessionInfo?.phone_number_id
+      !sessionInfo?.waba_id
     ) {
       return;
     }
@@ -314,6 +316,7 @@ export function MetaWhatsAppConnect() {
         extras: {
           setup: {},
           featureType: "whatsapp_business_app_onboarding",
+          sessionInfoVersion: "3",
         },
       },
     );
