@@ -33,6 +33,20 @@ export default async function FacebookIntegrationPage() {
         text="Connect your Facebook Page to Smart Cleaning Desk."
       />
 
+      <section className="rounded-2xl border border-amber-700/40 bg-amber-950/20 p-4 sm:p-5" aria-label="Facebook Page requirement">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+          <div>
+            <h2 className="text-sm font-semibold text-amber-200">
+              A Facebook Business Page is required
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-300">
+              You cannot connect a personal Facebook profile by itself. Sign in with the Facebook account that manages your business Facebook Page, then select the Page you want to connect. If you do not have a Page yet, create one for your cleaning business first.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/70 shadow-xl">
         <div className="border-b border-slate-800 p-6">
           <div className="flex items-center justify-between gap-4">
@@ -58,7 +72,7 @@ export default async function FacebookIntegrationPage() {
             ) : (
               <a
                 href="/api/integrations/meta/facebook/start"
-                className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-slate-200"
+                className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-slate-200 sm:w-auto"
               >
                 <Facebook className="h-4 w-4" />
                 Connect Facebook
