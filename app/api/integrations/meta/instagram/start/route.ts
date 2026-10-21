@@ -28,7 +28,6 @@ export async function GET(request: Request) {
   ).toString();
 
   const authUrl = new URL("https://www.instagram.com/oauth/authorize");
-  authUrl.searchParams.set("force_reauth", "true");
   authUrl.searchParams.set("client_id", appId);
   authUrl.searchParams.set("redirect_uri", redirectUri);
   authUrl.searchParams.set("response_type", "code");
