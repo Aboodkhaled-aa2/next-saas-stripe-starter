@@ -22,10 +22,10 @@ export default async function InstagramIntegrationPage() {
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
           <div>
             <h2 className="text-sm font-semibold text-amber-200">
-              A Professional Instagram Account is Required
+              An Instagram Business Account is Required
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-300">
-              You cannot connect a personal Instagram account. Switch your Instagram account to a Business or Creator account first, then connect it here. This connection uses Instagram Business Login, so a Facebook Page is not required for this flow.
+              You cannot connect a personal Instagram profile by itself. Sign in with the Instagram account that manages your business Instagram account, then select the professional account you want to connect. If you do not have a professional Instagram account yet, create or switch to one for your cleaning business first.
             </p>
           </div>
         </div>
