@@ -1,9 +1,54 @@
+import { createCipheriv, createHash, randomBytes } from "node:crypto";
+
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 
 const GRAPH_VERSION = process.env.META_GRAPH_VERSION || "v26.0";
+
+type PendingFacebookPage = {
+  id: string;
+  name: string;
+  access_token: string;
+  instagram_business_account?: { id: string; username?: string };
+};
+
+function encryptPendingPages(pages: PendingFacebookPage[], userId: string) {
+  const secret = process.env.META_APP_SECRET;
+  if (!secret) throw new Error("Facebook integration is not configured.");
+  const key = createHash("sha256").update(secret).digest();
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", key, iv);
+  const encrypted = Buffer.concat([
+    cipher.update(JSON.stringify({ pages, userId }), "utf8"),
+    cipher.final(),
+  ]);
+  const tag = cipher.getAuthTag();
+  return Buffer.concat([iv, tag, encrypted]).toString("base64url");
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => {
+    const entities: Record<string, string> = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    };
+    return entities[character] || character;
+  });
+}
+
+function renderPageSelection(pages: PendingFacebookPage[]) {
+  const options = pages.map((page, index) => {
+    const checked = index === 0 ? " checked" : "";
+    return `<label class="option"><input type="radio" name="pageId" value="${escapeHtml(page.id)}"${checked} required><span><strong>${escapeHtml(page.name || "Facebook Page")}</strong><small>Business Page</small></span></label>`;
+  }).join("");
+  return `<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Select Facebook Page</title><style>*{box-sizing:border-box}body{margin:0;background:#090d16;color:#f8fafc;font-family:system-ui,-apple-system,sans-serif;padding:24px}.card{max-width:560px;margin:7vh auto;background:#111827;border:1px solid #293548;border-radius:20px;padding:24px}h1{font-size:24px;margin:0 0 8px}p{color:#aab6c8;line-height:1.55}.option{display:flex;gap:12px;align-items:center;padding:16px;border:1px solid #334155;border-radius:12px;margin:12px 0;cursor:pointer}.option input{width:18px;height:18px;accent-color:#2563eb}.option span{display:flex;flex-direction:column;gap:4px}.option small{color:#94a3b8}button{width:100%;margin-top:16px;padding:14px;border:0;border-radius:12px;background:#fff;color:#111827;font-weight:700;font-size:16px;cursor:pointer}</style></head><body><main class="card"><h1>Choose your business Page</h1><p>Select the Facebook Page Smart Cleaning Desk should connect to. Personal profiles cannot be connected by themselves.</p><form method="post" action="/api/integrations/meta/facebook/select">${options}<button type="submit">Connect selected Page</button></form></main></body></html>`;
+}
+
 
 type FacebookCallbackMode = "redirect" | "json";
 
@@ -133,14 +178,30 @@ async function handleFacebookCallback(
       );
     }
 
-    const page = pagesData.data?.[0];
+    const pages = (Array.isArray(pagesData.data) ? pagesData.data : [])
+      .filter((page: PendingFacebookPage) => page?.id && page?.access_token);
 
-    if (!page?.id || !page?.access_token) {
+    if (pages.length === 0) {
       throw new Error(
-        "No Facebook Page was granted to Smart Cleaning Desk.",
+        "No Facebook Business Page was granted. Sign in with a Facebook account that manages a Page, then grant access to that Page.",
       );
     }
 
+    if (mode === "redirect") {
+      const response = new NextResponse(renderPageSelection(pages), {
+        headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
+      });
+      response.cookies.set("meta_fb_pending_pages", encryptPendingPages(pages, user.id), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 10 * 60,
+        path: "/",
+      });
+      return response;
+    }
+
+    const page = pages[0];
     const instagram = page.instagram_business_account;
 
     await prisma.metaIntegration.upsert({
