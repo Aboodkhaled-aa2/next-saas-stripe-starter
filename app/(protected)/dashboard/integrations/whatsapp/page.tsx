@@ -17,6 +17,19 @@ export default async function WhatsAppIntegrationPage() {
   return (
     <div className="space-y-6">
       <DashboardHeader heading="WhatsApp" text="Connect the customer's WhatsApp Business account through Meta Embedded Signup." />
+      <section className="rounded-2xl border border-amber-700/40 bg-amber-950/20 p-4 sm:p-5" aria-label="WhatsApp Business requirement">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+          <div>
+            <h2 className="text-sm font-semibold text-amber-200">
+              A WhatsApp Business Account is Required
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-300">
+              You must connect a WhatsApp Business account to use this integration. Follow Meta's setup steps to connect your business phone number. A personal WhatsApp account alone is not enough.
+            </p>
+          </div>
+        </div>
+      </section>
       <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/70 shadow-xl">
         <div className="flex flex-col gap-5 border-b border-slate-800 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div><h2 className="text-lg font-semibold text-white">WhatsApp Business</h2><p className="mt-1 text-sm leading-6 text-slate-500">Complete Meta's embedded onboarding to connect the business phone number.</p></div>
