@@ -30,7 +30,7 @@ export default async function FacebookIntegrationPage() {
     <div className="space-y-6">
       <DashboardHeader
         heading="Facebook"
-        text="Connect your Facebook Page to Smart Cleaning Desk."
+        text="Connect a Facebook Business Page to Smart Cleaning Desk. A personal profile alone cannot be connected."
       />
 
       <section className="rounded-2xl border border-amber-700/40 bg-amber-950/20 p-4 sm:p-5" aria-label="Facebook Page requirement">
@@ -49,7 +49,7 @@ export default async function FacebookIntegrationPage() {
 
       <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/70 shadow-xl">
         <div className="border-b border-slate-800 p-6">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
             <div>
               <h2 className="text-lg font-semibold text-white">
                 Facebook Page
