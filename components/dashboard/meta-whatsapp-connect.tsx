@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2, MessageCircle } from "lucide-react";
+import { Loader2, MessageCircle, Phone } from "lucide-react";
 
 type FacebookLoginResponse = {
   status?: string;
@@ -31,6 +31,8 @@ export function MetaWhatsAppConnect() {
   const [error, setError] = useState("");
   const [configId, setConfigId] = useState<string | null>(null);
   const [appId, setAppId] = useState<string | null>(null);
+  const [countryCallingCode, setCountryCallingCode] = useState("1");
+  const [businessPhone, setBusinessPhone] = useState("");
 
   const stateRef = useRef<string | null>(null);
   const codeRef = useRef<string | null>(null);
@@ -290,6 +292,13 @@ export function MetaWhatsAppConnect() {
       return;
     }
 
+    const normalizedBusinessPhone = businessPhone.replace(/\D/g, "");
+
+    if (normalizedBusinessPhone.length < 6 || normalizedBusinessPhone.length > 15) {
+      setError("Enter a valid WhatsApp Business number using the selected country code.");
+      return;
+    }
+
     setLoading(true);
     setError("");
     codeRef.current = null;
@@ -314,7 +323,14 @@ export function MetaWhatsAppConnect() {
         response_type: "code",
         override_default_response_type: true,
         extras: {
-          setup: {},
+          setup: {
+            business: {
+              phone: {
+                code: Number(countryCallingCode),
+                number: normalizedBusinessPhone,
+              },
+            },
+          },
           featureType: "whatsapp_business_app_onboarding",
         },
       },
