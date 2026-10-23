@@ -1,6 +1,6 @@
 import "server-only";
 
-import { openai } from "@/lib/openai";
+import { getOpenAIClient } from "@/lib/openai";
 import {
   buildSalesAgentSystemPrompt,
   type SalesAgentKnowledge,
@@ -28,7 +28,7 @@ const MAX_TOOL_ROUNDS = 5;
 export async function runSalesAgent(
   options: SalesAgentRunOptions,
 ): Promise<SalesAgentRunResult> {
-  let response = await openai.responses.create({
+  let response = await getOpenAIClient().responses.create({
     model: "gpt-5.6-terra",
     reasoning: {
       effort: "low",
@@ -70,7 +70,7 @@ export async function runSalesAgent(
       })),
     );
 
-    response = await openai.responses.create({
+    response = await getOpenAIClient().responses.create({
       model: "gpt-5.6-terra",
       reasoning: {
         effort: "low",
