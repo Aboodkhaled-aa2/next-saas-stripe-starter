@@ -9,12 +9,18 @@ import {
 import { DashboardHeader } from "@/components/dashboard/header";
 import { MetaWhatsAppConnect } from "@/components/dashboard/meta-whatsapp-connect";
 import { WhatsAppDisconnectButton } from "@/components/dashboard/whatsapp-disconnect-button";
+import { WhatsAppConnectionNotesModal } from "@/components/dashboard/whatsapp-connection-notes-modal";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-export default async function WhatsAppIntegrationPage() {
+export default async function WhatsAppIntegrationPage({
+  searchParams,
+}: {
+  searchParams?: { notes?: string | string[] };
+}) {
+  const showConnectionNotes = searchParams?.notes === "1";
   const user = await getCurrentUser();
 
   const connection = user?.id
@@ -30,6 +36,7 @@ export default async function WhatsAppIntegrationPage() {
 
   return (
     <div className="space-y-6">
+      <WhatsAppConnectionNotesModal initialOpen={showConnectionNotes} />
       <DashboardHeader
         heading="WhatsApp"
         text="Connect your business WhatsApp to Smart Cleaning Desk and manage customer conversations with AI."
