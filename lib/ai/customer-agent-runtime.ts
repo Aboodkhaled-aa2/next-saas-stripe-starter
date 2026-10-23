@@ -1,6 +1,6 @@
 import "server-only";
 
-import { openai } from "@/lib/openai";
+import { getOpenAIClient } from "@/lib/openai";
 import { prisma } from "@/lib/db";
 import {
   buildCustomerAgentSystemPrompt,
@@ -1237,7 +1237,7 @@ export async function runCustomerAgent(
   const bookIfAvailable =
     bookingAccessEnabled && shouldBookIfAvailable(options.message);
 
-  let response = await openai.responses.create({
+  let response = await getOpenAIClient().responses.create({
     model: "gpt-5.6-sol",
     reasoning: {
       effort: "low",
@@ -1299,7 +1299,7 @@ export async function runCustomerAgent(
       });
     }
 
-    response = await openai.responses.create({
+    response = await getOpenAIClient().responses.create({
       model: "gpt-5.6-sol",
       reasoning: {
         effort: "low",
