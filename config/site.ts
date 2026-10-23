@@ -1,7 +1,36 @@
 import { SidebarNavItem, SiteConfig } from "types";
 import { env } from "@/env.mjs";
 
-const site_url = env.NEXT_PUBLIC_APP_URL;
+const DEFAULT_SITE_URL = "https://www.smartcleaningdesk.com";
+
+function resolveSiteUrl(value?: string): string {
+  const rawValue = value?.trim();
+
+  if (!rawValue) {
+    return DEFAULT_SITE_URL;
+  }
+
+  const candidate = /^[a-z][a-z\d+.-]*:\/\//i.test(rawValue)
+    ? rawValue
+    : `https://${rawValue}`;
+
+  try {
+    const parsed = new URL(candidate);
+
+    if (
+      (parsed.protocol !== "https:" && parsed.protocol !== "http:") ||
+      !parsed.hostname
+    ) {
+      return DEFAULT_SITE_URL;
+    }
+
+    return parsed.toString().replace(/\/+$/, "");
+  } catch {
+    return DEFAULT_SITE_URL;
+  }
+}
+
+const site_url = resolveSiteUrl(env.NEXT_PUBLIC_APP_URL);
 
 export const siteConfig: SiteConfig = {
   name: "Smart Cleaning Desk",
@@ -39,7 +68,6 @@ export const footerLinks: SidebarNavItem[] = [
     title: "Docs",
     items: [
       { title: "Introduction", href: "#" },
-      { title: "Installation", href: "#" },
       { title: "Components", href: "#" },
       { title: "Code Blocks", href: "#" },
     ],
