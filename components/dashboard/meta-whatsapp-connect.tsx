@@ -340,7 +340,7 @@ export function MetaWhatsAppConnect({
               ...(initialBusinessEmail.trim() ? { email: initialBusinessEmail.trim() } : {}),
               ...(initialWebsiteUrl.trim() ? { website: initialWebsiteUrl.trim() } : {}),
               phone: {
-                code: countryDigits,
+                code: Number.parseInt(countryDigits, 10),
                 number: phoneDigits,
               },
             },
