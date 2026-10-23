@@ -15,12 +15,7 @@ import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-export default async function WhatsAppIntegrationPage({
-  searchParams,
-}: {
-  searchParams?: { notes?: string | string[] };
-}) {
-  const showConnectionNotes = searchParams?.notes === "1";
+export default async function WhatsAppIntegrationPage() {
   const user = await getCurrentUser();
 
   const connection = user?.id
@@ -36,7 +31,7 @@ export default async function WhatsAppIntegrationPage({
 
   return (
     <div className="space-y-6">
-      <WhatsAppConnectionNotesModal initialOpen={showConnectionNotes} />
+      <WhatsAppConnectionNotesModal initialOpen={true} />
       <DashboardHeader
         heading="WhatsApp"
         text="Connect your business WhatsApp to Smart Cleaning Desk and manage customer conversations with AI."
