@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2, MessageCircle } from "lucide-react";
+import { Loader2, MessageCircle, Phone } from "lucide-react";
 
 type FacebookLoginResponse = {
   status?: string;
@@ -31,6 +31,8 @@ export function MetaWhatsAppConnect() {
   const [error, setError] = useState("");
   const [configId, setConfigId] = useState<string | null>(null);
   const [appId, setAppId] = useState<string | null>(null);
+  const [countryCallingCode, setCountryCallingCode] = useState("1");
+  const [businessPhone, setBusinessPhone] = useState("");
 
   const stateRef = useRef<string | null>(null);
   const codeRef = useRef<string | null>(null);
@@ -290,6 +292,13 @@ export function MetaWhatsAppConnect() {
       return;
     }
 
+    const normalizedBusinessPhone = businessPhone.replace(/\D/g, "");
+
+    if (normalizedBusinessPhone.length < 6 || normalizedBusinessPhone.length > 15) {
+      setError("Enter a valid WhatsApp Business number using the selected country code.");
+      return;
+    }
+
     setLoading(true);
     setError("");
     codeRef.current = null;
@@ -314,7 +323,14 @@ export function MetaWhatsAppConnect() {
         response_type: "code",
         override_default_response_type: true,
         extras: {
-          setup: {},
+          setup: {
+            business: {
+              phone: {
+                code: Number(countryCallingCode),
+                number: normalizedBusinessPhone,
+              },
+            },
+          },
           featureType: "whatsapp_business_app_onboarding",
         },
       },
@@ -322,18 +338,78 @@ export function MetaWhatsAppConnect() {
   };
 
   return (
-    <button
-      type="button"
-      onClick={connect}
-      disabled={loading || !sdkReady || !setupReady}
-      className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      {loading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <MessageCircle className="h-4 w-4" />
+    <div className="w-full space-y-3 sm:max-w-md">
+      <div className="space-y-2">
+        <label htmlFor="whatsapp-country-code" className="block text-sm font-medium text-slate-300">
+          Country calling code
+        </label>
+        <div className="flex gap-2">
+          <select
+            id="whatsapp-country-code"
+            value={countryCallingCode}
+            onChange={(event) => setCountryCallingCode(event.target.value)}
+            disabled={loading}
+            className="h-11 w-36 shrink-0 rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white outline-none focus:border-emerald-500"
+          >
+            <option value="1">United States / Canada (+1)</option>
+            <option value="44">United Kingdom (+44)</option>
+            <option value="962">Jordan (+962)</option>
+            <option value="971">United Arab Emirates (+971)</option>
+            <option value="966">Saudi Arabia (+966)</option>
+            <option value="20">Egypt (+20)</option>
+            <option value="61">Australia (+61)</option>
+            <option value="91">India (+91)</option>
+            <option value="49">Germany (+49)</option>
+            <option value="33">France (+33)</option>
+            <option value="34">Spain (+34)</option>
+            <option value="39">Italy (+39)</option>
+          </select>
+          <div className="min-w-0 flex-1">
+            <label htmlFor="whatsapp-business-phone" className="sr-only">
+              WhatsApp Business phone number
+            </label>
+            <div className="relative">
+              <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              <input
+                id="whatsapp-business-phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel-national"
+                value={businessPhone}
+                onChange={(event) => setBusinessPhone(event.target.value)}
+                disabled={loading}
+                placeholder="Business phone number"
+                className="h-11 w-full rounded-lg border border-slate-700 bg-slate-900 pl-9 pr-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-500"
+                aria-describedby="whatsapp-prefill-help"
+              />
+            </div>
+          </div>
+        </div>
+        <p id="whatsapp-prefill-help" className="text-xs leading-5 text-slate-500">
+          Enter the existing number used in WhatsApp Business, without the country code. We will prefill it in Meta where supported.
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={connect}
+        disabled={loading || !sdkReady || !setupReady}
+        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {loading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <MessageCircle className="h-4 w-4" />
+        )}
+        {loading ? "Connecting..." : "Connect WhatsApp"}
+      </button>
+      {error && (
+        <p role="alert" className="text-sm text-rose-400">
+          {error}
+        </p>
       )}
-      {loading ? "Connecting..." : "Connect WhatsApp"}
-    </button>
+      <p className="text-xs leading-5 text-slate-500">
+        Meta still controls required sign-in, permissions, and business confirmation screens.
+      </p>
+    </div>
   );
 }
