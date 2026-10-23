@@ -1,4 +1,5 @@
-import { CheckCircle2, MessageCircle, ShieldCheck } from "lucide-react";
+import { CheckCircle2, MessageCircle } from "lucide-react";
+
 import { DashboardHeader } from "@/components/dashboard/header";
 import { MetaWhatsAppConnect } from "@/components/dashboard/meta-whatsapp-connect";
 import { WhatsAppDisconnectButton } from "@/components/dashboard/whatsapp-disconnect-button";
@@ -21,71 +22,60 @@ export default async function WhatsAppIntegrationPage() {
     : null;
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-3xl space-y-6">
       <DashboardHeader
-        heading="WhatsApp"
-        text="Connect your business WhatsApp in a few steps."
+        heading="Connect WhatsApp"
+        text="Connect the WhatsApp Business number your customers already use."
       />
 
-      <section className="mx-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/80 shadow-xl">
-        <div className="flex items-start gap-4 border-b border-slate-800 p-5 sm:p-7">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
-            <MessageCircle className="h-6 w-6" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-semibold text-white">
-              WhatsApp Business
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-slate-400">
-              Connect the WhatsApp Business account your company already uses.
-              If your number is eligible, Meta can offer a flow that keeps it
-              available in the WhatsApp Business app while connecting it to
-              Smart Cleaning Desk.
-            </p>
-          </div>
-        </div>
-
+      <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/70 shadow-xl">
         <div className="space-y-4 p-5 sm:p-7">
           {connection ? (
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 items-start gap-3">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
-                <div className="min-w-0">
-                  <p className="font-medium text-emerald-300">
-                    WhatsApp connected
+            <>
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-300">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-base font-semibold text-white">
+                    WhatsApp is connected
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-400">
+                    {connection.phoneNumber || connection.externalAccountName || "Your WhatsApp Business account"}
                   </p>
-                  <p className="mt-1 break-words text-sm text-slate-400">
-                    {connection.phoneNumber || connection.externalAccountName || "Your WhatsApp Business account is connected."}
+                </div>
+                <WhatsAppDisconnectButton />
+              </div>
+              <div className="border-t border-slate-800 pt-4 text-xs text-slate-500">
+                WhatsApp Business Account ID: {connection.whatsappBusinessId || "Connected"}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-300">
+                  <MessageCircle className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-base font-semibold text-white">
+                    Use your existing WhatsApp Business number
+                  </h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-400">
+                    Enter your current business number below. We will prefill it in Meta where supported, then securely ask Meta to authorize the connection.
                   </p>
                 </div>
               </div>
-              <WhatsAppDisconnectButton />
-            </div>
-          ) : (
-            <>
-              <div className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
-                <p className="text-sm leading-6 text-slate-400">
-                  Meta will open its secure authorization window so you can
-                  sign in and approve access to your business account. Smart
-                  Cleaning Desk never asks for your Meta password.
-                </p>
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+
+              <div className="border-t border-slate-800 pt-5">
                 <MetaWhatsAppConnect />
-                <p className="text-xs leading-5 text-slate-500">
-                  You will return here after completing Meta's required steps.
-                </p>
               </div>
+
+              <p className="text-xs leading-5 text-slate-500">
+                Meta may still require sign-in, permission approval, and business confirmation. Those hosted Meta screens cannot be removed by Smart Cleaning Desk.
+              </p>
             </>
           )}
         </div>
-
-        {connection?.whatsappBusinessId && (
-          <div className="border-t border-slate-800 px-5 py-3 text-xs text-slate-500 sm:px-7">
-            WhatsApp Business ID: {connection.whatsappBusinessId}
-          </div>
-        )}
       </section>
     </div>
   );
