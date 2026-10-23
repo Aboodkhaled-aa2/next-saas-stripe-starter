@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Building2,
@@ -16,13 +15,9 @@ export function WhatsAppConnectionNotesModal({
 }: {
   initialOpen: boolean;
 }) {
-  const router = useRouter();
   const [open, setOpen] = useState(initialOpen);
 
-  const closeNotes = useCallback(() => {
-    setOpen(false);
-    router.replace("/dashboard/integrations/whatsapp", { scroll: false });
-  }, [router]);
+  const closeNotes = () => setOpen(false);
 
   useEffect(() => {
     setOpen(initialOpen);
@@ -37,7 +32,7 @@ export function WhatsAppConnectionNotesModal({
 
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open, closeNotes]);
+  }, [open]);
 
   if (!open) return null;
 
