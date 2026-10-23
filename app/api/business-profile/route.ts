@@ -58,6 +58,7 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     const {
+      businessType,
       businessName,
       businessPhone,
       businessEmail,
@@ -75,6 +76,27 @@ export async function POST(request: Request) {
       humanHandoffInstructions,
       additionalNotes,
     } = body;
+
+    const allowedBusinessTypes = [
+      "RESIDENTIAL",
+      "COMMERCIAL",
+      "HOTEL",
+      "CAR_WASH",
+      "INDUSTRIAL",
+      "SPECIALTY",
+      "OTHER",
+    ];
+
+    if (
+      businessType != null &&
+      (typeof businessType !== "string" ||
+        !allowedBusinessTypes.includes(businessType))
+    ) {
+      return NextResponse.json(
+        { error: "Invalid business type." },
+        { status: 400 },
+      );
+    }
 
     if (
       !businessName?.trim() ||
@@ -131,6 +153,7 @@ export async function POST(request: Request) {
       },
       create: {
         userId: user.id,
+        businessType: businessType || null,
         businessName: businessName.trim(),
         businessPhone: businessPhone.trim(),
         businessEmail: businessEmail.trim().toLowerCase(),
@@ -151,6 +174,7 @@ export async function POST(request: Request) {
         onboardingCompleted: true,
       },
       update: {
+        businessType: businessType || null,
         businessName: businessName.trim(),
         businessPhone: businessPhone.trim(),
         businessEmail: businessEmail.trim().toLowerCase(),
