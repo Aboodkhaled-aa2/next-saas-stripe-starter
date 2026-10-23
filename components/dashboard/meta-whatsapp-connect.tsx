@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Loader2, MessageCircle } from "lucide-react";
 
 type FacebookLoginResponse = {
@@ -18,17 +18,29 @@ type FacebookSdk = {
   ) => void;
 };
 
+type MetaWhatsAppConnectProps = {
+  initialBusinessName?: string;
+  initialBusinessEmail?: string;
+  initialWebsiteUrl?: string;
+};
+
 type WhatsAppSessionInfo = {
   phone_number_id?: string;
   waba_id?: string;
   business_id?: string;
 };
 
-export function MetaWhatsAppConnect() {
+export function MetaWhatsAppConnect({
+  initialBusinessName = "",
+  initialBusinessEmail = "",
+  initialWebsiteUrl = "",
+}: MetaWhatsAppConnectProps) {
   const [sdkReady, setSdkReady] = useState(false);
   const [setupReady, setSetupReady] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [countryCallingCode, setCountryCallingCode] = useState("+1");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [configId, setConfigId] = useState<string | null>(null);
   const [appId, setAppId] = useState<string | null>(null);
 
@@ -275,7 +287,15 @@ export function MetaWhatsAppConnect() {
     }
   };
 
-  const connect = () => {
+  const connect = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const phoneDigits = phoneNumber.replace(/\D/g, "");
+    const countryDigits = countryCallingCode.replace(/\D/g, "");
+
+    if (!countryDigits || phoneDigits.length < 6 || phoneDigits.length > 15) {
+      setError("Enter your existing WhatsApp Business number, including the correct country code.");
+      return;
+    }
     const fb = (window as Window & { FB?: FacebookSdk }).FB;
     const state = stateRef.current;
     const activeConfigId = configId;
@@ -314,7 +334,17 @@ export function MetaWhatsAppConnect() {
         response_type: "code",
         override_default_response_type: true,
         extras: {
-          setup: {},
+          setup: {
+            business: {
+              ...(initialBusinessName.trim() ? { name: initialBusinessName.trim() } : {}),
+              ...(initialBusinessEmail.trim() ? { email: initialBusinessEmail.trim() } : {}),
+              ...(initialWebsiteUrl.trim() ? { website: initialWebsiteUrl.trim() } : {}),
+              phone: {
+                code: countryDigits,
+                number: phoneDigits,
+              },
+            },
+          },
           featureType: "whatsapp_business_app_onboarding",
         },
       },
@@ -322,18 +352,54 @@ export function MetaWhatsAppConnect() {
   };
 
   return (
-    <button
-      type="button"
-      onClick={connect}
-      disabled={loading || !sdkReady || !setupReady}
-      className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      {loading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <MessageCircle className="h-4 w-4" />
-      )}
-      {loading ? "Connecting..." : "Connect WhatsApp"}
-    </button>
+    <form onSubmit={connect} className="w-full space-y-3 sm:max-w-md">
+      <div>
+        <label htmlFor="whatsapp-country-code" className="mb-1.5 block text-sm font-medium text-slate-200">Country code</label>
+        <select
+          id="whatsapp-country-code"
+          value={countryCallingCode}
+          onChange={(event) => setCountryCallingCode(event.target.value)}
+          disabled={loading}
+          className="h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white outline-none focus:border-emerald-500"
+        >
+          <option value="+1">United States / Canada (+1)</option>
+          <option value="+962">Jordan (+962)</option>
+          <option value="+44">United Kingdom (+44)</option>
+          <option value="+61">Australia (+61)</option>
+          <option value="+971">United Arab Emirates (+971)</option>
+          <option value="+966">Saudi Arabia (+966)</option>
+        </select>
+      </div>
+      <div>
+        <label htmlFor="whatsapp-phone-number" className="mb-1.5 block text-sm font-medium text-slate-200">Existing WhatsApp Business number</label>
+        <input
+          id="whatsapp-phone-number"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel-national"
+          value={phoneNumber}
+          onChange={(event) => setPhoneNumber(event.target.value)}
+          placeholder="e.g. 2015550123"
+          required
+          disabled={loading}
+          className="h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-emerald-500"
+        />
+        <p className="mt-1.5 text-xs leading-5 text-slate-400">Enter the number currently used in the WhatsApp Business app, without the country code. We'll prefill it in Meta's signup where supported.</p>
+      </div>
+      {error && <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
+      <button
+        type="submit"
+        disabled={loading || !sdkReady || !setupReady}
+        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {loading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <MessageCircle className="h-4 w-4" />
+        )}
+        {loading ? "Connecting..." : "Continue securely with Meta"}
+      </button>
+      <p className="text-xs leading-5 text-slate-500">Meta still handles account permissions and may ask for confirmation in WhatsApp Business. This page cannot bypass Meta's required approval steps.</p>
+    </form>
   );
 }
