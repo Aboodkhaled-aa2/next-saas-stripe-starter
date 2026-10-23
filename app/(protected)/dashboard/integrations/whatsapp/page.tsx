@@ -20,11 +20,22 @@ export default async function WhatsAppIntegrationPage() {
       })
     : null;
 
+  const businessProfile = user?.id
+    ? await prisma.businessProfile.findUnique({
+        where: { userId: user.id },
+        select: {
+          businessName: true,
+          businessEmail: true,
+          websiteUrl: true,
+        },
+      })
+    : null;
+
   return (
     <div className="space-y-6">
       <DashboardHeader
         heading="WhatsApp"
-        text="Connect your business WhatsApp in a few steps."
+        text="Enter your existing WhatsApp Business number first, then continue through Meta's secure connection flow."
       />
 
       <section className="mx-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/80 shadow-xl">
@@ -37,10 +48,10 @@ export default async function WhatsAppIntegrationPage() {
               WhatsApp Business
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-400">
-              Connect the WhatsApp Business account your company already uses.
-              If your number is eligible, Meta can offer a flow that keeps it
-              available in the WhatsApp Business app while connecting it to
-              Smart Cleaning Desk.
+              Start with the number your company already uses in WhatsApp Business.
+              Meta will confirm eligibility and may ask you to approve the
+              connection on your phone. Required Meta consent and business
+              verification screens cannot be skipped by Smart Cleaning Desk.
             </p>
           </div>
         </div>
@@ -72,7 +83,11 @@ export default async function WhatsAppIntegrationPage() {
                 </p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <MetaWhatsAppConnect />
+                <MetaWhatsAppConnect
+                  initialBusinessName={businessProfile?.businessName ?? ""}
+                  initialBusinessEmail={businessProfile?.businessEmail ?? ""}
+                  initialWebsiteUrl={businessProfile?.websiteUrl ?? ""}
+                />
                 <p className="text-xs leading-5 text-slate-500">
                   You will return here after completing Meta's required steps.
                 </p>
