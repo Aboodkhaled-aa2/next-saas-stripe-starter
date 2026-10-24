@@ -175,6 +175,10 @@ export default async function DashboardPage() {
       )
     : 0;
 
+  if (trialExpired) {
+    redirect(`/pricing?trial=expired&plan=${(billingUser?.plan ?? "STARTER").toLowerCase()}`);
+  }
+
   const paidActive = Boolean(billingUser?.stripeSubscriptionId);
 
   if (billingUser?.stripeSubscriptionId) {
