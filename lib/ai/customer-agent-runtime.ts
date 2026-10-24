@@ -1217,6 +1217,7 @@ export async function runCustomerAgent(
     businessPhone: businessProfile.businessPhone,
     businessEmail: businessProfile.businessEmail,
     websiteUrl: businessProfile.websiteUrl,
+    businessType: businessProfile.businessType,
     services: businessProfile.services,
     serviceAreas: businessProfile.serviceAreas,
     pricing: businessProfile.pricing,
