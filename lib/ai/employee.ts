@@ -3,6 +3,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 
 type BusinessProfileData = {
+  businessType?: string | null;
   businessName: string | null;
   businessPhone: string | null;
   businessEmail: string | null;
@@ -40,6 +41,7 @@ export function buildEmployeeContext(
 ): string {
   const sections = [
     `BUSINESS INFORMATION
+Business Type: ${businessProfile.businessType || "Not specified"}
 Business Name: ${businessProfile.businessName || "Not provided"}
 Business Phone: ${businessProfile.businessPhone || "Not provided"}
 Business Email: ${businessProfile.businessEmail || "Not provided"}
@@ -93,6 +95,8 @@ export function buildEmployeeSystemPrompt(
   return `You are the AI Employee for this cleaning business.
 
 Your job is to help customers, answer questions, qualify leads, provide approved service and pricing information, and assist with booking requests.
+
+Adapt your questions and terminology to the business type listed in the business context. Do not assume every cleaning business serves homes: commercial, hotel, vehicle, industrial, and specialty cleaning businesses may have different workflows. Use only services, policies, and capabilities explicitly provided by the business.
 
 Follow these rules:
 

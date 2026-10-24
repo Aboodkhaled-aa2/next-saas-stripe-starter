@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 type FormData = {
+  businessType: string;
   businessName: string;
   businessPhone: string;
   businessEmail: string;
@@ -40,6 +41,7 @@ type FormData = {
 };
 
 const initialFormData: FormData = {
+  businessType: "RESIDENTIAL",
   businessName: "",
   businessPhone: "",
   businessEmail: "",
@@ -99,15 +101,68 @@ const steps = [
   },
 ];
 
-const serviceOptions = [
-  "Standard Cleaning",
-  "Deep Cleaning",
-  "Move In / Move Out",
-  "Office Cleaning",
-  "Recurring Cleaning",
-  "Post Construction Cleaning",
-  "Airbnb Cleaning",
-  "Other",
+const serviceCategories = [
+  {
+    title: "Residential cleaning",
+    services: [
+      "Standard Home Cleaning",
+      "Deep Cleaning",
+      "Recurring Residential Cleaning",
+      "Move In / Move Out Cleaning",
+      "Apartment Cleaning",
+      "Vacation Rental / Airbnb Cleaning",
+    ],
+  },
+  {
+    title: "Commercial and workplaces",
+    services: [
+      "Office Cleaning",
+      "Commercial Building Cleaning",
+      "Janitorial Services",
+      "Retail Store Cleaning",
+      "Restaurant and Kitchen Cleaning",
+      "School and University Cleaning",
+      "Healthcare Facility Cleaning",
+      "Gym and Fitness Center Cleaning",
+      "Event Venue Cleaning",
+    ],
+  },
+  {
+    title: "Hotels and hospitality",
+    services: [
+      "Hotel Room Cleaning",
+      "Hotel Common Area Cleaning",
+      "Short-Term Rental Turnover",
+      "Hotel Laundry and Linen Service",
+    ],
+  },
+  {
+    title: "Vehicles and fleets",
+    services: [
+      "Car Wash",
+      "Mobile Car Detailing",
+      "Fleet Vehicle Cleaning",
+      "Commercial Vehicle Cleaning",
+    ],
+  },
+  {
+    title: "Specialty cleaning",
+    services: [
+      "Carpet Cleaning",
+      "Upholstery Cleaning",
+      "Window Cleaning",
+      "Pressure Washing",
+      "Floor Care",
+      "Post-Construction Cleaning",
+      "Water Damage Cleanup",
+      "Industrial Facility Cleaning",
+      "Warehouse Cleaning",
+    ],
+  },
+  {
+    title: "Other",
+    services: ["Other"],
+  },
 ];
 
 const paymentOptions = [
@@ -400,6 +455,28 @@ export default function OnboardingPage() {
             <div className="p-6 sm:p-8">
               {currentStep === 0 && (
                 <div className="space-y-5">
+                  <div>
+                    <Label text="Business type" required />
+                    <p className="mt-2 text-xs leading-5 text-slate-500">
+                      Choose the closest match. You can offer multiple services across your business.
+                    </p>
+                    <select
+                      value={formData.businessType}
+                      onChange={(event) =>
+                        updateField("businessType", event.target.value)
+                      }
+                      className="mt-3 h-11 w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 text-sm text-white outline-none transition-colors focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
+                    >
+                      <option value="RESIDENTIAL">Residential cleaning</option>
+                      <option value="COMMERCIAL">Commercial and office cleaning</option>
+                      <option value="HOTEL">Hotels and hospitality</option>
+                      <option value="CAR_WASH">Car wash and auto detailing</option>
+                      <option value="INDUSTRIAL">Industrial and warehouse cleaning</option>
+                      <option value="SPECIALTY">Specialty cleaning (carpets, windows, floors, etc.)</option>
+                      <option value="OTHER">Other cleaning services</option>
+                    </select>
+                  </div>
+
                   <Field
                     label="Business name"
                     placeholder="ABC Cleaning Services"
@@ -454,23 +531,32 @@ export default function OnboardingPage() {
                       required
                     />
 
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      {serviceOptions.map((service) => {
-                        const selected =
-                          formData.services.includes(service);
+                    <div className="mt-4 space-y-6">
+                      {serviceCategories.map((category) => (
+                        <div key={category.title}>
+                          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                            {category.title}
+                          </h3>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {category.services.map((service) => {
+                              const selected =
+                                formData.services.includes(service);
 
-                        return (
-                          <SelectableButton
-                            key={service}
-                            selected={selected}
-                            onClick={() =>
-                              toggleArrayValue("services", service)
-                            }
-                          >
-                            {service}
-                          </SelectableButton>
-                        );
-                      })}
+                              return (
+                                <SelectableButton
+                                  key={service}
+                                  selected={selected}
+                                  onClick={() =>
+                                    toggleArrayValue("services", service)
+                                  }
+                                >
+                                  {service}
+                                </SelectableButton>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
@@ -485,7 +571,7 @@ export default function OnboardingPage() {
                       onChange={(event) =>
                         updateField("pricing", event.target.value)
                       }
-                      placeholder="Example: Standard cleaning starts at $120 for homes up to 1,500 sq ft. Deep cleaning starts at $200."
+                      placeholder="Example: Office cleaning starts at $250 per visit; hotel room turnover is $45 per room; vehicle detailing starts at $120."
                       rows={5}
                       className="mt-3 w-full resize-none rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
                     />
@@ -514,7 +600,7 @@ export default function OnboardingPage() {
                           event.target.value,
                         )
                       }
-                      placeholder="Example: Austin, Round Rock, Cedar Park, and nearby areas within 25 miles."
+                      placeholder="Example: Austin metro area; commercial sites within 30 miles; hotel and fleet contracts by agreement."
                       rows={4}
                       className="mt-3 w-full resize-none rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
                     />
