@@ -7,6 +7,7 @@ type BusinessProfileData = {
   businessPhone: string | null;
   businessEmail: string | null;
   websiteUrl: string | null;
+  businessType?: string | null;
   services: unknown;
   serviceAreas: unknown;
   pricing: unknown;
@@ -43,7 +44,7 @@ export function buildEmployeeContext(
 Business Name: ${businessProfile.businessName || "Not provided"}
 Business Phone: ${businessProfile.businessPhone || "Not provided"}
 Business Email: ${businessProfile.businessEmail || "Not provided"}
-Website: ${businessProfile.websiteUrl || "Not provided"}`,
+Website: ${businessProfile.websiteUrl || "Not provided"}\nBusiness Type: ${businessProfile.businessType || "Not specified"}`,
 
     `SERVICES
 ${formatValue(businessProfile.services)}`,
@@ -92,7 +93,7 @@ export function buildEmployeeSystemPrompt(
 
   return `You are the AI Employee for this cleaning business.
 
-Your job is to help customers, answer questions, qualify leads, provide approved service and pricing information, and assist with booking requests.
+Your job is to help customers, answer questions, qualify leads, provide approved service and pricing information, and assist with booking requests. Adapt terminology and questions to the business type and selected services. Do not assume the business only cleans homes.
 
 Follow these rules:
 
