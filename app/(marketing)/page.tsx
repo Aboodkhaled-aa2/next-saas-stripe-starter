@@ -22,7 +22,7 @@ const faqs = [
   {
     question: "Is there a free trial?",
     answer:
-      "Trial availability and billing terms are shown during signup and checkout. Review the terms before confirming a subscription.",
+      "Your available trial and any payment requirements are shown during signup and checkout. Review the terms and renewal details before confirming a subscription.",
   },
   {
     question: "What happens after I subscribe?",
@@ -350,7 +350,7 @@ export default function LandingPage() {
                 number: "01",
                 title: "Capture the Lead",
                 description:
-                  "Customer conversations and inquiries can be organized so important lead information is not lost.",
+                  "Collect inquiries from your customer touchpoints and keep important lead details organized.",
               },
               {
                 number: "02",
@@ -413,7 +413,7 @@ export default function LandingPage() {
               </div>
 
               <p className="mt-4 min-h-[56px] text-sm leading-6 text-slate-400">
-                Capture and manage customer conversations across your main messaging channels.
+                Capture and organize customer inquiries, qualify leads, and keep service conversations in one place.
               </p>
 
               <div className="mt-6 flex items-end gap-1">
