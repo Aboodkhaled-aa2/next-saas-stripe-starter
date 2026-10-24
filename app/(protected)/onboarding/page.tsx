@@ -22,6 +22,7 @@ type FormData = {
   businessPhone: string;
   businessEmail: string;
   websiteUrl: string;
+  businessType: string;
   services: string[];
   serviceAreas: string;
   pricing: string;
@@ -44,6 +45,7 @@ const initialFormData: FormData = {
   businessPhone: "",
   businessEmail: "",
   websiteUrl: "",
+  businessType: "RESIDENTIAL",
   services: [],
   serviceAreas: "",
   pricing: "",
@@ -103,10 +105,30 @@ const serviceOptions = [
   "Standard Cleaning",
   "Deep Cleaning",
   "Move In / Move Out",
-  "Office Cleaning",
   "Recurring Cleaning",
-  "Post Construction Cleaning",
-  "Airbnb Cleaning",
+  "Airbnb / Short-Term Rental Turnover",
+  "Office Cleaning",
+  "Retail / Store Cleaning",
+  "Restaurant / Kitchen Cleaning",
+  "School / University Cleaning",
+  "Healthcare Facility Cleaning",
+  "Gym / Fitness Center Cleaning",
+  "Event Venue Cleaning",
+  "Hotel Room Cleaning",
+  "Hotel Common-Area Cleaning",
+  "Laundry / Linen Service",
+  "Car Wash",
+  "Mobile Auto Detailing",
+  "Fleet / Commercial Vehicle Cleaning",
+  "Carpet Cleaning",
+  "Upholstery Cleaning",
+  "Window Cleaning",
+  "Pressure Washing",
+  "Floor Care / Polishing",
+  "Post-Construction Cleaning",
+  "Water Damage Cleanup",
+  "Factory / Industrial Facility Cleaning",
+  "Warehouse Cleaning",
   "Other",
 ];
 
@@ -400,6 +422,22 @@ export default function OnboardingPage() {
             <div className="p-6 sm:p-8">
               {currentStep === 0 && (
                 <div className="space-y-5">
+                  <div className="mb-5">
+                    <Label text="Business type" required />
+                    <select
+                      value={formData.businessType}
+                      onChange={(event) => updateField("businessType", event.target.value)}
+                      className="mt-3 h-11 w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 text-sm text-white outline-none focus:border-blue-500/50"
+                    >
+                      <option value="RESIDENTIAL">Residential cleaning</option>
+                      <option value="COMMERCIAL">Commercial cleaning</option>
+                      <option value="HOTEL">Hotels and hospitality</option>
+                      <option value="CAR_WASH">Vehicle cleaning</option>
+                      <option value="INDUSTRIAL">Industrial and warehouses</option>
+                      <option value="SPECIALTY">Specialty cleaning</option>
+                      <option value="OTHER">Other cleaning business</option>
+                    </select>
+                  </div>
                   <Field
                     label="Business name"
                     placeholder="ABC Cleaning Services"
