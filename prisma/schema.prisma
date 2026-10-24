@@ -307,6 +307,7 @@ model BusinessProfile {
   businessPhone String?
   businessEmail String?
   websiteUrl    String?
+  businessType  String? @map("business_type")
 
   services      Json?
   serviceAreas  Json?
