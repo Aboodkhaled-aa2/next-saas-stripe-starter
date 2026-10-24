@@ -101,36 +101,43 @@ const steps = [
   },
 ];
 
-const serviceOptions = [
-  "Standard Cleaning",
-  "Deep Cleaning",
-  "Move In / Move Out",
-  "Recurring Cleaning",
-  "Airbnb / Short-Term Rental Turnover",
-  "Office Cleaning",
-  "Retail / Store Cleaning",
-  "Restaurant / Kitchen Cleaning",
-  "School / University Cleaning",
-  "Healthcare Facility Cleaning",
-  "Gym / Fitness Center Cleaning",
-  "Event Venue Cleaning",
-  "Hotel Room Cleaning",
-  "Hotel Common-Area Cleaning",
-  "Laundry / Linen Service",
-  "Car Wash",
-  "Mobile Auto Detailing",
-  "Fleet / Commercial Vehicle Cleaning",
-  "Carpet Cleaning",
-  "Upholstery Cleaning",
-  "Window Cleaning",
-  "Pressure Washing",
-  "Floor Care / Polishing",
-  "Post-Construction Cleaning",
-  "Water Damage Cleanup",
-  "Factory / Industrial Facility Cleaning",
-  "Warehouse Cleaning",
-  "Other",
-];
+const serviceOptionsByType: Record<string, string[]> = {
+  RESIDENTIAL: [
+    "Standard Cleaning", "Deep Cleaning", "Move In / Move Out",
+    "Recurring Cleaning", "Airbnb / Short-Term Rental Turnover",
+    "Carpet Cleaning", "Upholstery Cleaning", "Window Cleaning",
+  ],
+  COMMERCIAL: [
+    "Office Cleaning", "Retail / Store Cleaning", "Restaurant / Kitchen Cleaning",
+    "School / University Cleaning", "Healthcare Facility Cleaning",
+    "Gym / Fitness Center Cleaning", "Event Venue Cleaning",
+    "Window Cleaning", "Floor Care / Polishing", "Pressure Washing",
+  ],
+  HOTEL: [
+    "Hotel Room Cleaning", "Hotel Common-Area Cleaning", "Laundry / Linen Service",
+    "Deep Cleaning", "Carpet Cleaning", "Window Cleaning",
+  ],
+  CAR_WASH: [
+    "Exterior Car Wash", "Interior Car Cleaning", "Full-Service Car Wash",
+    "Mobile Auto Detailing", "Interior Deep Cleaning", "Paint Polishing",
+    "Ceramic Coating", "Fleet / Commercial Vehicle Cleaning",
+  ],
+  INDUSTRIAL: [
+    "Factory / Industrial Facility Cleaning", "Warehouse Cleaning",
+    "Floor Scrubbing", "Machine / Equipment Area Cleaning",
+    "Loading Dock Cleaning", "High-Level Dusting", "Pressure Washing",
+  ],
+  SPECIALTY: [
+    "Carpet Cleaning", "Upholstery Cleaning", "Window Cleaning",
+    "Pressure Washing", "Floor Care / Polishing", "Post-Construction Cleaning",
+    "Water Damage Cleanup", "Biohazard Cleanup", "Duct Cleaning", "Other",
+  ],
+  OTHER: [
+    "Standard Cleaning", "Deep Cleaning", "Office Cleaning",
+    "Hotel Cleaning", "Car Wash", "Mobile Auto Detailing",
+    "Factory / Industrial Facility Cleaning", "Warehouse Cleaning", "Other",
+  ],
+};
 
 const paymentOptions = [
   "Cash",
@@ -155,6 +162,8 @@ export default function OnboardingPage() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const availableServiceOptions = serviceOptionsByType[formData.businessType] ?? serviceOptionsByType.OTHER;
 
   const step = steps[currentStep];
   const StepIcon = step.icon;
@@ -426,7 +435,15 @@ export default function OnboardingPage() {
                     <Label text="Business type" required />
                     <select
                       value={formData.businessType}
-                      onChange={(event) => updateField("businessType", event.target.value)}
+                      onChange={(event) => {
+                        const businessType = event.target.value;
+                        setFormData((current) => ({
+                          ...current,
+                          businessType,
+                          services: [],
+                        }));
+                        setError("");
+                      }}
                       className="mt-3 h-11 w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 text-sm text-white outline-none focus:border-blue-500/50"
                     >
                       <option value="RESIDENTIAL">Residential cleaning</option>
@@ -493,7 +510,7 @@ export default function OnboardingPage() {
                     />
 
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      {serviceOptions.map((service) => {
+                      {availableServiceOptions.map((service) => {
                         const selected =
                           formData.services.includes(service);
 
