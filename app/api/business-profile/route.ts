@@ -62,6 +62,7 @@ export async function POST(request: Request) {
       businessPhone,
       businessEmail,
       websiteUrl,
+      businessType,
       services,
       serviceAreas,
       pricing,
@@ -125,6 +126,11 @@ export async function POST(request: Request) {
       );
     }
 
+    const allowedBusinessTypes = ["RESIDENTIAL", "COMMERCIAL", "HOTEL", "CAR_WASH", "INDUSTRIAL", "SPECIALTY", "OTHER"];
+    if (businessType && !allowedBusinessTypes.includes(businessType)) {
+      return NextResponse.json({ error: "Invalid business type." }, { status: 400 });
+    }
+
     const businessProfile = await prisma.businessProfile.upsert({
       where: {
         userId: user.id,
@@ -135,6 +141,7 @@ export async function POST(request: Request) {
         businessPhone: businessPhone.trim(),
         businessEmail: businessEmail.trim().toLowerCase(),
         websiteUrl: websiteUrl?.trim() || null,
+        businessType: businessType || null,
         services,
         serviceAreas: serviceAreas.trim(),
         pricing: pricing.trim(),
