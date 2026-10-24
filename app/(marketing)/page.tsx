@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   ArrowRight,
+  MessageCircle,
   Calendar,
   Check,
   ChevronDown,
@@ -37,11 +38,6 @@ const faqs = [
     question: "Can I upgrade my plan?",
     answer:
       "Yes. You can move to a higher plan when your business needs more automation, voice minutes, calling features, or advanced AI capabilities.",
-  },
-  {
-    question: "Which channels can Smart Cleaning Desk handle?",
-    answer:
-      "The platform is designed to help cleaning businesses manage customer conversations across WhatsApp, Instagram, and Facebook, depending on the connected services and account configuration.",
   },
   {
     question: "Is Smart Cleaning Desk built for cleaning companies?",
