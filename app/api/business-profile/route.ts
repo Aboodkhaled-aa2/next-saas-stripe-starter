@@ -162,6 +162,7 @@ export async function POST(request: Request) {
         businessPhone: businessPhone.trim(),
         businessEmail: businessEmail.trim().toLowerCase(),
         websiteUrl: websiteUrl?.trim() || null,
+        businessType: businessType || null,
         services,
         serviceAreas: serviceAreas.trim(),
         pricing: pricing.trim(),
