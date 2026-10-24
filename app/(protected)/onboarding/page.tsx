@@ -101,31 +101,68 @@ const steps = [
   },
 ];
 
-const serviceOptions = [
-  "Standard Home Cleaning",
-  "Deep Cleaning",
-  "Recurring Residential Cleaning",
-  "Move In / Move Out Cleaning",
-  "Apartment Cleaning",
-  "Vacation Rental / Airbnb Cleaning",
-  "Office Cleaning",
-  "Commercial Building Cleaning",
-  "Janitorial Services",
-  "Hotel Room Cleaning",
-  "Hotel Common Area Cleaning",
-  "Short-Term Rental Turnover",
-  "Car Wash",
-  "Mobile Car Detailing",
-  "Fleet Vehicle Cleaning",
-  "Carpet Cleaning",
-  "Upholstery Cleaning",
-  "Window Cleaning",
-  "Pressure Washing",
-  "Post-Construction Cleaning",
-  "Industrial Facility Cleaning",
-  "Warehouse Cleaning",
-  "Floor Care",
-  "Other",
+const serviceCategories = [
+  {
+    title: "Residential cleaning",
+    services: [
+      "Standard Home Cleaning",
+      "Deep Cleaning",
+      "Recurring Residential Cleaning",
+      "Move In / Move Out Cleaning",
+      "Apartment Cleaning",
+      "Vacation Rental / Airbnb Cleaning",
+    ],
+  },
+  {
+    title: "Commercial and workplaces",
+    services: [
+      "Office Cleaning",
+      "Commercial Building Cleaning",
+      "Janitorial Services",
+      "Retail Store Cleaning",
+      "Restaurant and Kitchen Cleaning",
+      "School and University Cleaning",
+      "Healthcare Facility Cleaning",
+      "Gym and Fitness Center Cleaning",
+      "Event Venue Cleaning",
+    ],
+  },
+  {
+    title: "Hotels and hospitality",
+    services: [
+      "Hotel Room Cleaning",
+      "Hotel Common Area Cleaning",
+      "Short-Term Rental Turnover",
+      "Hotel Laundry and Linen Service",
+    ],
+  },
+  {
+    title: "Vehicles and fleets",
+    services: [
+      "Car Wash",
+      "Mobile Car Detailing",
+      "Fleet Vehicle Cleaning",
+      "Commercial Vehicle Cleaning",
+    ],
+  },
+  {
+    title: "Specialty cleaning",
+    services: [
+      "Carpet Cleaning",
+      "Upholstery Cleaning",
+      "Window Cleaning",
+      "Pressure Washing",
+      "Floor Care",
+      "Post-Construction Cleaning",
+      "Water Damage Cleanup",
+      "Industrial Facility Cleaning",
+      "Warehouse Cleaning",
+    ],
+  },
+  {
+    title: "Other",
+    services: ["Other"],
+  },
 ];
 
 const paymentOptions = [
@@ -494,23 +531,32 @@ export default function OnboardingPage() {
                       required
                     />
 
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      {serviceOptions.map((service) => {
-                        const selected =
-                          formData.services.includes(service);
+                    <div className="mt-4 space-y-6">
+                      {serviceCategories.map((category) => (
+                        <div key={category.title}>
+                          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                            {category.title}
+                          </h3>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {category.services.map((service) => {
+                              const selected =
+                                formData.services.includes(service);
 
-                        return (
-                          <SelectableButton
-                            key={service}
-                            selected={selected}
-                            onClick={() =>
-                              toggleArrayValue("services", service)
-                            }
-                          >
-                            {service}
-                          </SelectableButton>
-                        );
-                      })}
+                              return (
+                                <SelectableButton
+                                  key={service}
+                                  selected={selected}
+                                  onClick={() =>
+                                    toggleArrayValue("services", service)
+                                  }
+                                >
+                                  {service}
+                                </SelectableButton>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
