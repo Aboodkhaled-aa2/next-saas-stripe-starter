@@ -571,7 +571,7 @@ export default function OnboardingPage() {
                       onChange={(event) =>
                         updateField("pricing", event.target.value)
                       }
-                      placeholder="Example: Standard cleaning starts at $120 for homes up to 1,500 sq ft. Deep cleaning starts at $200."
+                      placeholder="Example: Office cleaning starts at $250 per visit; hotel room turnover is $45 per room; vehicle detailing starts at $120."
                       rows={5}
                       className="mt-3 w-full resize-none rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
                     />
@@ -600,7 +600,7 @@ export default function OnboardingPage() {
                           event.target.value,
                         )
                       }
-                      placeholder="Example: Austin, Round Rock, Cedar Park, and nearby areas within 25 miles."
+                      placeholder="Example: Austin metro area; commercial sites within 30 miles; hotel and fleet contracts by agreement."
                       rows={4}
                       className="mt-3 w-full resize-none rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
                     />
