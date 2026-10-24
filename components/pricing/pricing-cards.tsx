@@ -166,6 +166,17 @@ export function PricingCards({
   return (
     <MaxWidthWrapper>
       <section className="flex flex-col items-center py-10 text-center">
+        {searchParams.get("trial") === "expired" && (
+          <div
+            role="alert"
+            className="mb-8 w-full max-w-3xl rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-left"
+          >
+            <p className="font-semibold text-amber-200">Your 7-day free trial has ended</p>
+            <p className="mt-1 text-sm leading-6 text-slate-300">
+              Choose a plan below and complete checkout to continue using your AI employee. You will not be charged until you confirm payment in Stripe Checkout.
+            </p>
+          </div>
+        )}
         <HeaderSection
           label="Pricing"
           title="Choose your AI employee"
