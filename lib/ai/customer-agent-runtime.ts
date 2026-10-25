@@ -118,11 +118,12 @@ async function resolveConfiguredDuration(
   // Keep legacy residential rules working.
   const bedroomRulePattern =
     /(\\d+)\\s*(?:-|–|to)\\s*(\\d+)\\s*bedrooms?\\s*=\\s*(\\d+(?:\\.\\d+)?)\\s*hours?/gi;
-  for (const match of rules.matchAll(bedroomRulePattern)) {
-    const min = Number(match[1]);
-    const max = Number(match[2]);
+  let bedroomRuleMatch: RegExpExecArray | null;
+  while ((bedroomRuleMatch = bedroomRulePattern.exec(rules)) !== null) {
+    const min = Number(bedroomRuleMatch[1]);
+    const max = Number(bedroomRuleMatch[2]);
     if (bedrooms !== null && bedrooms >= min && bedrooms <= max) {
-      durationHours = Number(match[3]);
+      durationHours = Number(bedroomRuleMatch[3]);
       break;
     }
   }
@@ -150,12 +151,13 @@ async function resolveConfiguredDuration(
     if (sizeValue !== null && Number.isFinite(sizeValue)) {
       const genericRangePattern =
         /(\\d+(?:\\.\\d+)?)\\s*(?:-|–|to)\\s*(\\d+(?:\\.\\d+)?)\\s*([a-z][a-z0-9 /_-]*?)\\s*=\\s*(\\d+(?:\\.\\d+)?)\\s*hours?/gi;
-      for (const match of rules.matchAll(genericRangePattern)) {
-        const min = Number(match[1]);
-        const max = Number(match[2]);
-        const ruleUnit = match[3].trim().toLowerCase().replace(/s$/, "");
+      let genericRangeMatch: RegExpExecArray | null;
+      while ((genericRangeMatch = genericRangePattern.exec(rules)) !== null) {
+        const min = Number(genericRangeMatch[1]);
+        const max = Number(genericRangeMatch[2]);
+        const ruleUnit = genericRangeMatch[3].trim().toLowerCase().replace(/s$/, "");
         if (ruleUnit === sizeUnit && sizeValue >= min && sizeValue <= max) {
-          durationHours = Number(match[4]);
+          durationHours = Number(genericRangeMatch[4]);
           break;
         }
       }
@@ -163,11 +165,12 @@ async function resolveConfiguredDuration(
       if (durationHours === null) {
         const genericPlusPattern =
           /(\\d+(?:\\.\\d+)?)\\s*\\+\\s*([a-z][a-z0-9 /_-]*?)\\s*=\\s*(\\d+(?:\\.\\d+)?)\\s*hours?/gi;
-        for (const match of rules.matchAll(genericPlusPattern)) {
-          const min = Number(match[1]);
-          const ruleUnit = match[2].trim().toLowerCase().replace(/s$/, "");
+        let genericPlusMatch: RegExpExecArray | null;
+        while ((genericPlusMatch = genericPlusPattern.exec(rules)) !== null) {
+          const min = Number(genericPlusMatch[1]);
+          const ruleUnit = genericPlusMatch[2].trim().toLowerCase().replace(/s$/, "");
           if (ruleUnit === sizeUnit && sizeValue >= min) {
-            durationHours = Number(match[3]);
+            durationHours = Number(genericPlusMatch[3]);
             break;
           }
         }
