@@ -139,13 +139,13 @@ async function resolveConfiguredDuration(
   // Generic rules support units such as cars, rooms, units, floors, offices,
   // square feet/metres, and other company-defined job-size labels.
   if (durationHours === null && sizeText) {
-    const sizeMatch = sizeText.match(/(\\d+(?:\\.\\d+)?)/);
+    const sizeMatch = sizeText.match(/(\\d[\\d,]*(?:\\.\\d+)?)/);
     const sizeUnit = sizeText
       .replace(/\\d+(?:\\.\\d+)?/g, "")
       .trim()
       .toLowerCase()
       .replace(/s$/, "");
-    const sizeValue = sizeMatch ? Number(sizeMatch[1]) : null;
+    const sizeValue = sizeMatch ? Number(sizeMatch[1].replace(/,/g, "")) : null;
 
     if (sizeValue !== null && Number.isFinite(sizeValue)) {
       const genericRangePattern =
