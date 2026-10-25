@@ -357,11 +357,22 @@ export async function POST(req: Request) {
         return new Response("Unknown subscription price", { status: 400 });
       }
 
+      const subscribedPlan = pricingData.find(
+        (item) =>
+          item.stripeIds.monthly === priceId ||
+          item.stripeIds.yearly === priceId,
+      );
+
+      if (!subscribedPlan) {
+        return new Response("Unknown subscription plan", { status: 400 });
+      }
+
       await prisma.user.update({
         where: {
           id: userId,
         },
         data: {
+          plan: subscribedPlan.title.toUpperCase() as "STARTER" | "BUSINESS" | "PRO",
           stripeSubscriptionId: subscription.id,
           stripeCustomerId: subscription.customer as string,
           stripePriceId: priceId,
@@ -526,16 +537,28 @@ export async function POST(req: Request) {
       });
 
       if (user) {
+        const updatedPriceId = subscription.items.data[0]?.price.id ?? null;
+        const updatedPlan = updatedPriceId
+          ? pricingData.find(
+              (item) =>
+                item.stripeIds.monthly === updatedPriceId ||
+                item.stripeIds.yearly === updatedPriceId,
+            )
+          : undefined;
+        const subscriptionIsActive =
+          subscription.status === "active" ||
+          subscription.status === "trialing";
+
         await prisma.user.update({
           where: {
             id: user.id,
           },
           data: {
+            ...(subscriptionIsActive && updatedPlan
+              ? { plan: updatedPlan.title.toUpperCase() as "STARTER" | "BUSINESS" | "PRO" }
+              : {}),
             stripePriceId:
-              subscription.status === "active" ||
-              subscription.status === "trialing"
-                ? subscription.items.data[0]?.price.id ?? null
-                : null,
+              subscriptionIsActive && updatedPlan ? updatedPriceId : null,
             stripeCurrentPeriodEnd: new Date(
               subscription.current_period_end * 1000,
             ),
