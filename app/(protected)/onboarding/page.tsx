@@ -687,13 +687,13 @@ export default function OnboardingPage() {
                               event.target.value,
                             )
                           }
-                          placeholder="Example: 1-2 bedrooms = 2 hours. 3-4 bedrooms = 3 hours. 5+ bedrooms = 4 hours. Add 30 minutes for every 2 additional bathrooms."
+                          placeholder="Examples: 1-2 bedrooms = 2 hours; 3-4 bedrooms = 3 hours. Or: 1-5 cars = 1 hours; 6-10 cars = 2 hours. Or: 1000-2000 sq ft = 2 hours."
                           rows={5}
                           className="mt-3 w-full resize-none rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
                         />
 
                         <p className="mt-2 text-xs leading-5 text-slate-600">
-                          The AI must follow these rules and should not invent a duration.
+                          Use rules that match your business, such as bedrooms for homes, cars for detailing, rooms for hotels, or square footage for offices and warehouses. The AI will not invent a duration.
                         </p>
                       </div>
                     )}
