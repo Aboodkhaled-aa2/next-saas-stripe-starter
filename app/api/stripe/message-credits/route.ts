@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
-    if (!user.stripeSubscriptionId || !user.trialEndsAt || user.trialEndsAt > new Date()) {
+    if (!user.stripeSubscriptionId) {
       return NextResponse.json(
         { error: "Choose a paid subscription before purchasing extra message credits." },
         { status: 403 },
