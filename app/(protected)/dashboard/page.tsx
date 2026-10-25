@@ -735,7 +735,33 @@ export default async function DashboardPage() {
               {usedMessagingConversations >= messagingLimit &&
                 (billingUser?.extraMessageCredits ?? 0) <= 0 && (
                   <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
-                    Your messaging limit has been reached. Purchase extra message credits to keep AI replies active.
+                    <p>
+                      {trialActive || trialExpired
+                        ? "Your trial messaging allowance has been used. Choose a paid plan to continue using AI replies."
+                        : "Your messaging limit has been reached. Purchase extra message credits to keep AI replies active."}
+                    </p>
+                    {trialActive || trialExpired ? (
+                      <Link
+                        href={`/pricing?plan=${billingUser?.plan?.toLowerCase() ?? "starter"}`}
+                        className="mt-3 inline-flex rounded-lg bg-red-500 px-3 py-2 text-xs font-semibold text-white hover:bg-red-400"
+                      >
+                        Choose Plan
+                      </Link>
+                    ) : paidActive ? (
+                      <Link
+                        href="/dashboard/billing/messages"
+                        className="mt-3 inline-flex rounded-lg bg-red-500 px-3 py-2 text-xs font-semibold text-white hover:bg-red-400"
+                      >
+                        Buy Extra Messages
+                      </Link>
+                    ) : (
+                      <Link
+                        href="/pricing"
+                        className="mt-3 inline-flex rounded-lg bg-red-500 px-3 py-2 text-xs font-semibold text-white hover:bg-red-400"
+                      >
+                        Choose Plan
+                      </Link>
+                    )}
                   </div>
                 )}
 
