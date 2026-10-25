@@ -175,7 +175,7 @@ export default async function DashboardPage() {
       )
     : 0;
 
-  const paidActive = Boolean(billingUser?.stripeSubscriptionId);
+  let paidActive = false;
 
   if (billingUser?.stripeSubscriptionId) {
     try {
@@ -183,8 +183,21 @@ export default async function DashboardPage() {
         billingUser.stripeSubscriptionId,
       );
 
-      currentPeriodStart = new Date(subscription.current_period_start * 1000);
-      currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+      const periodStartTimestamp = subscription.current_period_start;
+      const periodEndTimestamp = subscription.current_period_end;
+      const periodStart = new Date(periodStartTimestamp * 1000);
+      const periodEnd = new Date(periodEndTimestamp * 1000);
+
+      paidActive =
+        ["active", "trialing"].includes(subscription.status) &&
+        Number.isFinite(periodStart.getTime()) &&
+        Number.isFinite(periodEnd.getTime()) &&
+        periodEnd.getTime() > Date.now();
+
+      if (paidActive) {
+        currentPeriodStart = periodStart;
+        currentPeriodEnd = periodEnd;
+      }
     } catch (error) {
       console.error(
         "Failed to retrieve Stripe subscription for voice usage:",
