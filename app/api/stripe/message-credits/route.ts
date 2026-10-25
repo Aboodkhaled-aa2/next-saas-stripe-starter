@@ -53,11 +53,35 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { id: true, email: true },
+      select: { id: true, email: true, stripeSubscriptionId: true, trialEndsAt: true },
     });
 
     if (!user) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
+    }
+
+    if (!user.stripeSubscriptionId || !user.trialEndsAt || user.trialEndsAt > new Date()) {
+      return NextResponse.json(
+        { error: "Choose a paid subscription before purchasing extra message credits." },
+        { status: 403 },
+      );
+    }
+
+    let subscription;
+    try {
+      subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+    } catch {
+      return NextResponse.json(
+        { error: "An active paid subscription is required before purchasing extra message credits." },
+        { status: 403 },
+      );
+    }
+
+    if (!["active", "trialing"].includes(subscription.status)) {
+      return NextResponse.json(
+        { error: "An active paid subscription is required before purchasing extra message credits." },
+        { status: 403 },
+      );
     }
 
     const baseUrl = env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
