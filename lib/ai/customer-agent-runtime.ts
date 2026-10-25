@@ -267,21 +267,21 @@ const customerAgentTools = [
     type: "function" as const,
     name: "get_booking_duration_rules",
     description:
-      "Read the cleaning company's configured appointment duration settings. Always use this before choosing durationMinutes for a new booking. Never invent a duration. If the company uses fixed duration, use the returned fixed duration exactly. If the company uses company-defined rules, follow only the returned explicit rules and collect any missing property details needed to apply them.",
+      "Read the cleaning company's configured appointment duration settings. Always use this before choosing durationMinutes for a new booking. Never invent a duration. If the company uses fixed duration, use the returned fixed duration exactly. If the company uses company-defined rules, follow only the returned explicit rules and collect any missing job-size details and units needed to apply them. Rules may use bedroom ranges for residential jobs or generic quantity ranges such as '1-5 cars = 1 hours' or '1000-2000 sq ft = 2 hours'.",
     parameters: {
       type: "object",
       properties: {
         bedrooms: {
           type: ["number", "null"],
-          description: "Number of bedrooms in the property.",
+          description: "Number of bedrooms, only when relevant to a residential/property-cleaning job.",
         },
         bathrooms: {
           type: ["number", "null"],
-          description: "Number of bathrooms in the property.",
+          description: "Number of bathrooms, only when relevant to a residential/property-cleaning job.",
         },
         propertySize: {
           type: ["string", "null"],
-          description: "Approximate property size if relevant to the company's rules.",
+          description: "Relevant job size or quantity, including a unit such as 4 cars, 12 rooms, 3 floors, or 2,000 sq ft; for residential jobs this may be property size.",
         },
       },
       required: ["bedrooms", "bathrooms", "propertySize"],
