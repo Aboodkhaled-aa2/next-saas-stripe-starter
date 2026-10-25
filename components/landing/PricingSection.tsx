@@ -44,7 +44,7 @@ export default function PricingSection() {
             </div>
 
             <div className="pt-8">
-              <Link href="/sign-in" className="w-full block text-center bg-zinc-800 hover:bg-zinc-700 font-semibold py-3 rounded-xl transition-all text-sm">
+              <Link href="/signup?plan=starter" className="w-full block text-center bg-zinc-800 hover:bg-zinc-700 font-semibold py-3 rounded-xl transition-all text-sm">
                 Start Free Trial
               </Link>
             </div>
@@ -78,7 +78,7 @@ export default function PricingSection() {
             </div>
 
             <div className="pt-8">
-              <Link href="/sign-in" className="w-full block text-center bg-emerald-500 hover:bg-emerald-400 text-black font-bold py-3 rounded-xl transition-all text-sm shadow-lg shadow-emerald-500/20">
+              <Link href="/signup?plan=business" className="w-full block text-center bg-emerald-500 hover:bg-emerald-400 text-black font-bold py-3 rounded-xl transition-all text-sm shadow-lg shadow-emerald-500/20">
                 Start Free Trial
               </Link>
             </div>
@@ -98,7 +98,7 @@ export default function PricingSection() {
 
               <div className="space-y-3 text-sm border-t border-white/10 pt-6">
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-cyan-400" /><span>Everything in Business</span></div>
-                <div className="flex items-center gap-3 font-medium text-white"><Check className="w-4 h-4 text-cyan-400" /><span>Dedicated Phone Number</span></div>
+                <div className="flex items-center gap-3 font-medium text-white"><Check className="w-4 h-4 text-cyan-400" /><span>Dedicated Phone Number Available as an Add-on</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-cyan-400" /><span>AI Voice — 500 min/month</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-cyan-400" /><span>Advanced Lead Management</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-cyan-400" /><span>Advanced Automations</span></div>
@@ -108,7 +108,7 @@ export default function PricingSection() {
             </div>
 
             <div className="pt-8">
-              <Link href="/sign-in" className="w-full block text-center bg-zinc-800 hover:bg-zinc-700 font-semibold py-3 rounded-xl transition-all text-sm">
+              <Link href="/signup?plan=pro" className="w-full block text-center bg-zinc-800 hover:bg-zinc-700 font-semibold py-3 rounded-xl transition-all text-sm">
                 Start Free Trial
               </Link>
             </div>
