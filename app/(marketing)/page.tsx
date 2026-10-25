@@ -64,7 +64,7 @@ const businessFeatures = [
 
 const proFeatures = [
   "Everything in Business",
-  "Dedicated Business Phone Number",
+  "Dedicated Business Phone Number Available as an Add-on",
   "500 Voice Minutes / Month",
   "Advanced Call Handling",
   "Custom Booking & AI Rules",
@@ -505,7 +505,7 @@ export default function LandingPage() {
               </div>
 
               <p className="mt-4 min-h-[56px] text-sm leading-6 text-slate-400">
-                Advanced calling, custom booking rules, deeper AI knowledge, and a dedicated business number.
+                Advanced calling, custom booking rules, deeper AI knowledge, and an optional dedicated business number.
               </p>
 
               <div className="mt-6 flex items-end gap-1">
