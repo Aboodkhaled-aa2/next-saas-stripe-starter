@@ -303,30 +303,7 @@ export default async function DashboardPage() {
     },
   });
 
-  const messagingUsageRows = await prisma.message.findMany({
-    where: {
-      direction: "OUTBOUND",
-      ...(currentPeriodStart && currentPeriodEnd
-        ? {
-            createdAt: {
-              gte: currentPeriodStart,
-              lt: currentPeriodEnd,
-            },
-          }
-        : {
-            id: "__NO_CURRENT_BILLING_PERIOD__",
-          }),
-      conversation: {
-        userId: user?.id ?? "",
-      },
-    },
-    distinct: ["conversationId"],
-    select: {
-      conversationId: true,
-    },
-  });
-
-  const usedMessagingConversations = messagingUsageRows.length;
+  const usedMessagingConversations = messagingMessageCount;
   const remainingMessagingConversations = Math.max(
     messagingLimit - usedMessagingConversations,
     0,
