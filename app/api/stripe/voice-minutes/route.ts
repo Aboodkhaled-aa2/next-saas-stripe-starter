@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!user.stripeSubscriptionId || !user.trialEndsAt || user.trialEndsAt > new Date()) {
+    if (!user.stripeSubscriptionId) {
       return NextResponse.json(
         { error: "Choose a paid subscription before purchasing extra voice minutes." },
         { status: 403 },
