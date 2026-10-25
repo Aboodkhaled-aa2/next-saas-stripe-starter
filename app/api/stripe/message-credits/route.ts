@@ -77,7 +77,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!["active", "trialing"].includes(subscription.status)) {
+    if (subscription.status !== "active") {
       return NextResponse.json(
         { error: "An active paid subscription is required before purchasing extra message credits." },
         { status: 403 },
