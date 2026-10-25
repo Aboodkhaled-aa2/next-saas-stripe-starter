@@ -8,7 +8,7 @@ import { Icons } from "@/components/shared/icons";
 
 export const metadata: Metadata = {
   title: "Create an account",
-  description: "Sign up to get started with CleanAgent.ai",
+  description: "Create your Smart Cleaning Desk account to start your free trial.",
 };
 
 export default function RegisterPage() {
