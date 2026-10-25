@@ -111,48 +111,76 @@ async function resolveConfiguredDuration(
 
   const bedrooms = details.bedrooms ?? null;
   const bathrooms = details.bathrooms ?? null;
-
-  const bedroomRules: RegExpExecArray[] = [];
-  const bedroomRulePattern =
-    /(\d+)\s*(?:-|–|to)\s*(\d+)\s*bedrooms?\s*=\s*(\d+(?:\.\d+)?)\s*hours?/gi;
-  let bedroomRuleMatch: RegExpExecArray | null;
-
-  while ((bedroomRuleMatch = bedroomRulePattern.exec(rules)) !== null) {
-    bedroomRules.push(bedroomRuleMatch);
-  }
+  const sizeText = details.propertySize?.trim() ?? "";
 
   let durationHours: number | null = null;
 
-  for (const match of bedroomRules) {
+  // Keep legacy residential rules working.
+  const bedroomRulePattern =
+    /(\\d+)\\s*(?:-|–|to)\\s*(\\d+)\\s*bedrooms?\\s*=\\s*(\\d+(?:\\.\\d+)?)\\s*hours?/gi;
+  for (const match of rules.matchAll(bedroomRulePattern)) {
     const min = Number(match[1]);
     const max = Number(match[2]);
-    const hours = Number(match[3]);
-
     if (bedrooms !== null && bedrooms >= min && bedrooms <= max) {
-      durationHours = hours;
+      durationHours = Number(match[3]);
       break;
     }
   }
 
-  const plusMatch = rules.match(
-    /(\d+)\s*\+\s*bedrooms?\s*=\s*(\d+(?:\.\d+)?)\s*hours?/i,
-  );
+  if (durationHours === null) {
+    const bedroomPlus = rules.match(
+      /(\\d+)\\s*\\+\\s*bedrooms?\\s*=\\s*(\\d+(?:\\.\\d+)?)\\s*hours?/i,
+    );
+    if (bedroomPlus && bedrooms !== null && bedrooms >= Number(bedroomPlus[1])) {
+      durationHours = Number(bedroomPlus[2]);
+    }
+  }
 
-  if (
-    durationHours === null &&
-    plusMatch &&
-    bedrooms !== null &&
-    bedrooms >= Number(plusMatch[1])
-  ) {
-    durationHours = Number(plusMatch[2]);
+  // Generic rules support units such as cars, rooms, units, floors, offices,
+  // square feet/metres, and other company-defined job-size labels.
+  if (durationHours === null && sizeText) {
+    const sizeMatch = sizeText.match(/(\\d+(?:\\.\\d+)?)/);
+    const sizeUnit = sizeText
+      .replace(/\\d+(?:\\.\\d+)?/g, "")
+      .trim()
+      .toLowerCase()
+      .replace(/s$/, "");
+    const sizeValue = sizeMatch ? Number(sizeMatch[1]) : null;
+
+    if (sizeValue !== null && Number.isFinite(sizeValue)) {
+      const genericRangePattern =
+        /(\\d+(?:\\.\\d+)?)\\s*(?:-|–|to)\\s*(\\d+(?:\\.\\d+)?)\\s*([a-z][a-z0-9 /_-]*?)\\s*=\\s*(\\d+(?:\\.\\d+)?)\\s*hours?/gi;
+      for (const match of rules.matchAll(genericRangePattern)) {
+        const min = Number(match[1]);
+        const max = Number(match[2]);
+        const ruleUnit = match[3].trim().toLowerCase().replace(/s$/, "");
+        if (ruleUnit === sizeUnit && sizeValue >= min && sizeValue <= max) {
+          durationHours = Number(match[4]);
+          break;
+        }
+      }
+
+      if (durationHours === null) {
+        const genericPlusPattern =
+          /(\\d+(?:\\.\\d+)?)\\s*\\+\\s*([a-z][a-z0-9 /_-]*?)\\s*=\\s*(\\d+(?:\\.\\d+)?)\\s*hours?/gi;
+        for (const match of rules.matchAll(genericPlusPattern)) {
+          const min = Number(match[1]);
+          const ruleUnit = match[2].trim().toLowerCase().replace(/s$/, "");
+          if (ruleUnit === sizeUnit && sizeValue >= min) {
+            durationHours = Number(match[3]);
+            break;
+          }
+        }
+      }
+    }
   }
 
   if (durationHours === null) {
     return {
       success: false,
-      needsMoreDetails: bedrooms === null,
+      needsMoreDetails: bedrooms === null && !sizeText,
       error:
-        "The company-defined rules do not produce a duration from the supplied property details. Do not invent a duration.",
+        "The configured duration rules did not match the supplied job size. Provide the relevant quantity and unit (for example, 4 cars or 2,000 sq ft), or configure a fixed duration. Do not invent a duration.",
     };
   }
 
