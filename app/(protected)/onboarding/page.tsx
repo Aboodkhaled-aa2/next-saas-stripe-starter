@@ -22,6 +22,7 @@ type FormData = {
   businessPhone: string;
   businessEmail: string;
   websiteUrl: string;
+  businessType: string;
   services: string[];
   serviceAreas: string;
   pricing: string;
@@ -44,6 +45,7 @@ const initialFormData: FormData = {
   businessPhone: "",
   businessEmail: "",
   websiteUrl: "",
+  businessType: "RESIDENTIAL",
   services: [],
   serviceAreas: "",
   pricing: "",
@@ -99,16 +101,43 @@ const steps = [
   },
 ];
 
-const serviceOptions = [
-  "Standard Cleaning",
-  "Deep Cleaning",
-  "Move In / Move Out",
-  "Office Cleaning",
-  "Recurring Cleaning",
-  "Post Construction Cleaning",
-  "Airbnb Cleaning",
-  "Other",
-];
+const serviceOptionsByType: Record<string, string[]> = {
+  RESIDENTIAL: [
+    "Standard Cleaning", "Deep Cleaning", "Move In / Move Out",
+    "Recurring Cleaning", "Airbnb / Short-Term Rental Turnover",
+    "Carpet Cleaning", "Upholstery Cleaning", "Window Cleaning",
+  ],
+  COMMERCIAL: [
+    "Office Cleaning", "Retail / Store Cleaning", "Restaurant / Kitchen Cleaning",
+    "School / University Cleaning", "Healthcare Facility Cleaning",
+    "Gym / Fitness Center Cleaning", "Event Venue Cleaning",
+    "Window Cleaning", "Floor Care / Polishing", "Pressure Washing",
+  ],
+  HOTEL: [
+    "Hotel Room Cleaning", "Hotel Common-Area Cleaning", "Laundry / Linen Service",
+    "Deep Cleaning", "Carpet Cleaning", "Window Cleaning",
+  ],
+  CAR_WASH: [
+    "Exterior Car Wash", "Interior Car Cleaning", "Full-Service Car Wash",
+    "Mobile Auto Detailing", "Interior Deep Cleaning", "Paint Polishing",
+    "Ceramic Coating", "Fleet / Commercial Vehicle Cleaning",
+  ],
+  INDUSTRIAL: [
+    "Factory / Industrial Facility Cleaning", "Warehouse Cleaning",
+    "Floor Scrubbing", "Machine / Equipment Area Cleaning",
+    "Loading Dock Cleaning", "High-Level Dusting", "Pressure Washing",
+  ],
+  SPECIALTY: [
+    "Carpet Cleaning", "Upholstery Cleaning", "Window Cleaning",
+    "Pressure Washing", "Floor Care / Polishing", "Post-Construction Cleaning",
+    "Water Damage Cleanup", "Biohazard Cleanup", "Duct Cleaning", "Other",
+  ],
+  OTHER: [
+    "Standard Cleaning", "Deep Cleaning", "Office Cleaning",
+    "Hotel Cleaning", "Car Wash", "Mobile Auto Detailing",
+    "Factory / Industrial Facility Cleaning", "Warehouse Cleaning", "Other",
+  ],
+};
 
 const paymentOptions = [
   "Cash",
@@ -133,6 +162,8 @@ export default function OnboardingPage() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const availableServiceOptions = serviceOptionsByType[formData.businessType] ?? serviceOptionsByType.OTHER;
 
   const step = steps[currentStep];
   const StepIcon = step.icon;
@@ -400,6 +431,30 @@ export default function OnboardingPage() {
             <div className="p-6 sm:p-8">
               {currentStep === 0 && (
                 <div className="space-y-5">
+                  <div className="mb-5">
+                    <Label text="Business type" required />
+                    <select
+                      value={formData.businessType}
+                      onChange={(event) => {
+                        const businessType = event.target.value;
+                        setFormData((current) => ({
+                          ...current,
+                          businessType,
+                          services: [],
+                        }));
+                        setError("");
+                      }}
+                      className="mt-3 h-11 w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 text-sm text-white outline-none focus:border-blue-500/50"
+                    >
+                      <option value="RESIDENTIAL">Residential cleaning</option>
+                      <option value="COMMERCIAL">Commercial cleaning</option>
+                      <option value="HOTEL">Hotels and hospitality</option>
+                      <option value="CAR_WASH">Vehicle cleaning</option>
+                      <option value="INDUSTRIAL">Industrial and warehouses</option>
+                      <option value="SPECIALTY">Specialty cleaning</option>
+                      <option value="OTHER">Other cleaning business</option>
+                    </select>
+                  </div>
                   <Field
                     label="Business name"
                     placeholder="ABC Cleaning Services"
@@ -455,7 +510,7 @@ export default function OnboardingPage() {
                     />
 
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      {serviceOptions.map((service) => {
+                      {availableServiceOptions.map((service) => {
                         const selected =
                           formData.services.includes(service);
 
@@ -632,13 +687,13 @@ export default function OnboardingPage() {
                               event.target.value,
                             )
                           }
-                          placeholder="Example: 1-2 bedrooms = 2 hours. 3-4 bedrooms = 3 hours. 5+ bedrooms = 4 hours. Add 30 minutes for every 2 additional bathrooms."
+                          placeholder="Examples: 1-2 bedrooms = 2 hours; 3-4 bedrooms = 3 hours. Or: 1-5 cars = 1 hours; 6-10 cars = 2 hours. Or: 1000-2000 sq ft = 2 hours."
                           rows={5}
                           className="mt-3 w-full resize-none rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
                         />
 
                         <p className="mt-2 text-xs leading-5 text-slate-600">
-                          The AI must follow these rules and should not invent a duration.
+                          Use rules that match your business, such as bedrooms for homes, cars for detailing, rooms for hotels, or square footage for offices and warehouses. The AI will not invent a duration.
                         </p>
                       </div>
                     )}

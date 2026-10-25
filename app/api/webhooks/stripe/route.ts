@@ -28,6 +28,21 @@ const messagePackages = {
   "10000": { messages: 10000, amountCents: 7000 },
 } as const;
 
+function getValidPeriodEnd(subscription: Stripe.Subscription): Date | undefined {
+  const timestamp = subscription.current_period_end;
+
+  if (!Number.isFinite(timestamp) || timestamp <= 0) {
+    console.error("Stripe subscription has an invalid current_period_end", {
+      subscriptionId: subscription.id,
+      currentPeriodEnd: timestamp,
+    });
+    return undefined;
+  }
+
+  const date = new Date(timestamp * 1000);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
 export async function POST(req: Request) {
   const body = await req.text();
   const signature = headers().get("Stripe-Signature");
@@ -357,17 +372,28 @@ export async function POST(req: Request) {
         return new Response("Unknown subscription price", { status: 400 });
       }
 
+      const subscribedPlan = pricingData.find(
+        (item) =>
+          item.stripeIds.monthly === priceId ||
+          item.stripeIds.yearly === priceId,
+      );
+
+      if (!subscribedPlan) {
+        return new Response("Unknown subscription plan", { status: 400 });
+      }
+
       await prisma.user.update({
         where: {
           id: userId,
         },
         data: {
+          plan: subscribedPlan.title.toUpperCase() as "STARTER" | "BUSINESS" | "PRO",
           stripeSubscriptionId: subscription.id,
           stripeCustomerId: subscription.customer as string,
           stripePriceId: priceId,
-          stripeCurrentPeriodEnd: new Date(
-            subscription.current_period_end * 1000,
-          ),
+          ...(getValidPeriodEnd(subscription)
+  ? { stripeCurrentPeriodEnd: getValidPeriodEnd(subscription) }
+  : {}),
         },
       });
     }
@@ -391,9 +417,9 @@ export async function POST(req: Request) {
             )
               ? subscription.items.data[0]?.price.id
               : null,
-            stripeCurrentPeriodEnd: new Date(
-              subscription.current_period_end * 1000,
-            ),
+            ...(getValidPeriodEnd(subscription)
+  ? { stripeCurrentPeriodEnd: getValidPeriodEnd(subscription) }
+  : {}),
           },
         });
 
@@ -526,19 +552,31 @@ export async function POST(req: Request) {
       });
 
       if (user) {
+        const updatedPriceId = subscription.items.data[0]?.price.id ?? null;
+        const updatedPlan = updatedPriceId
+          ? pricingData.find(
+              (item) =>
+                item.stripeIds.monthly === updatedPriceId ||
+                item.stripeIds.yearly === updatedPriceId,
+            )
+          : undefined;
+        const subscriptionIsActive =
+          subscription.status === "active" ||
+          subscription.status === "trialing";
+
         await prisma.user.update({
           where: {
             id: user.id,
           },
           data: {
+            ...(subscriptionIsActive && updatedPlan
+              ? { plan: updatedPlan.title.toUpperCase() as "STARTER" | "BUSINESS" | "PRO" }
+              : {}),
             stripePriceId:
-              subscription.status === "active" ||
-              subscription.status === "trialing"
-                ? subscription.items.data[0]?.price.id ?? null
-                : null,
-            stripeCurrentPeriodEnd: new Date(
-              subscription.current_period_end * 1000,
-            ),
+              subscriptionIsActive && updatedPlan ? updatedPriceId : null,
+            ...(getValidPeriodEnd(subscription)
+  ? { stripeCurrentPeriodEnd: getValidPeriodEnd(subscription) }
+  : {}),
           },
         });
       }

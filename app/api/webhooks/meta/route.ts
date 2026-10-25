@@ -205,17 +205,13 @@ async function canUseMessaging(userId: string) {
       user.plan === "PRO" ? 200 : user.plan === "BUSINESS" ? 100 : 50;
     const startedAt = user?.trialStartedAt ?? now;
 
-    const conversations = await prisma.message.findMany({
+    const used = await prisma.message.count({
       where: {
         direction: "OUTBOUND",
         createdAt: { gte: startedAt, lt: user.trialEndsAt },
         conversation: { userId },
       },
-      distinct: ["conversationId"],
-      select: { conversationId: true },
     });
-
-    const used = conversations.length;
 
     return {
       allowed: used < limit,
@@ -233,30 +229,42 @@ async function canUseMessaging(userId: string) {
   const paidLimit =
     user.plan === "PRO" ? 5000 : user.plan === "BUSINESS" ? 2000 : 500;
 
-  let periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  let periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  let periodStart: Date;
+  let periodEnd: Date;
 
   try {
     const subscription = await stripe.subscriptions.retrieve(
       user.stripeSubscriptionId,
     );
+
+    if (subscription.status !== "active" && subscription.status !== "trialing") {
+      return {
+        allowed: false,
+        remaining: 0,
+        usesExtraCredit: false,
+        reason: "Your subscription is not active. Update your billing to continue.",
+      };
+    }
+
     periodStart = new Date(subscription.current_period_start * 1000);
     periodEnd = new Date(subscription.current_period_end * 1000);
   } catch (error) {
     console.error("Failed to retrieve Stripe period for messaging usage:", error);
+    return {
+      allowed: false,
+      remaining: 0,
+      usesExtraCredit: false,
+      reason: "Unable to verify your subscription. Please try again later.",
+    };
   }
 
-  const conversations = await prisma.message.findMany({
+  const used = await prisma.message.count({
     where: {
       direction: "OUTBOUND",
       createdAt: { gte: periodStart, lt: periodEnd },
       conversation: { userId },
     },
-    distinct: ["conversationId"],
-    select: { conversationId: true },
   });
-
-  const used = conversations.length;
   const hasExtraMessageCredits = user.extraMessageCredits > 0;
   const usesExtraCredit = used >= paidLimit && hasExtraMessageCredits;
 

@@ -111,48 +111,79 @@ async function resolveConfiguredDuration(
 
   const bedrooms = details.bedrooms ?? null;
   const bathrooms = details.bathrooms ?? null;
-
-  const bedroomRules: RegExpExecArray[] = [];
-  const bedroomRulePattern =
-    /(\d+)\s*(?:-|–|to)\s*(\d+)\s*bedrooms?\s*=\s*(\d+(?:\.\d+)?)\s*hours?/gi;
-  let bedroomRuleMatch: RegExpExecArray | null;
-
-  while ((bedroomRuleMatch = bedroomRulePattern.exec(rules)) !== null) {
-    bedroomRules.push(bedroomRuleMatch);
-  }
+  const sizeText = details.propertySize?.trim() ?? "";
 
   let durationHours: number | null = null;
 
-  for (const match of bedroomRules) {
-    const min = Number(match[1]);
-    const max = Number(match[2]);
-    const hours = Number(match[3]);
-
+  // Keep legacy residential rules working.
+  const bedroomRulePattern =
+    /(\\d+)\\s*(?:-|–|to)\\s*(\\d+)\\s*bedrooms?\\s*=\\s*(\\d+(?:\\.\\d+)?)\\s*hours?/gi;
+  let bedroomRuleMatch: RegExpExecArray | null;
+  while ((bedroomRuleMatch = bedroomRulePattern.exec(rules)) !== null) {
+    const min = Number(bedroomRuleMatch[1]);
+    const max = Number(bedroomRuleMatch[2]);
     if (bedrooms !== null && bedrooms >= min && bedrooms <= max) {
-      durationHours = hours;
+      durationHours = Number(bedroomRuleMatch[3]);
       break;
     }
   }
 
-  const plusMatch = rules.match(
-    /(\d+)\s*\+\s*bedrooms?\s*=\s*(\d+(?:\.\d+)?)\s*hours?/i,
-  );
+  if (durationHours === null) {
+    const bedroomPlus = rules.match(
+      /(\\d+)\\s*\\+\\s*bedrooms?\\s*=\\s*(\\d+(?:\\.\\d+)?)\\s*hours?/i,
+    );
+    if (bedroomPlus && bedrooms !== null && bedrooms >= Number(bedroomPlus[1])) {
+      durationHours = Number(bedroomPlus[2]);
+    }
+  }
 
-  if (
-    durationHours === null &&
-    plusMatch &&
-    bedrooms !== null &&
-    bedrooms >= Number(plusMatch[1])
-  ) {
-    durationHours = Number(plusMatch[2]);
+  // Generic rules support units such as cars, rooms, units, floors, offices,
+  // square feet/metres, and other company-defined job-size labels.
+  if (durationHours === null && sizeText) {
+    const sizeMatch = sizeText.match(/(\\d[\\d,]*(?:\\.\\d+)?)/);
+    const sizeUnit = sizeText
+      .replace(/\\d+(?:\\.\\d+)?/g, "")
+      .trim()
+      .toLowerCase()
+      .replace(/s$/, "");
+    const sizeValue = sizeMatch ? Number(sizeMatch[1].replace(/,/g, "")) : null;
+
+    if (sizeValue !== null && Number.isFinite(sizeValue)) {
+      const genericRangePattern =
+        /(\\d+(?:\\.\\d+)?)\\s*(?:-|–|to)\\s*(\\d+(?:\\.\\d+)?)\\s*([a-z][a-z0-9 /_-]*?)\\s*=\\s*(\\d+(?:\\.\\d+)?)\\s*hours?/gi;
+      let genericRangeMatch: RegExpExecArray | null;
+      while ((genericRangeMatch = genericRangePattern.exec(rules)) !== null) {
+        const min = Number(genericRangeMatch[1]);
+        const max = Number(genericRangeMatch[2]);
+        const ruleUnit = genericRangeMatch[3].trim().toLowerCase().replace(/s$/, "");
+        if (ruleUnit === sizeUnit && sizeValue >= min && sizeValue <= max) {
+          durationHours = Number(genericRangeMatch[4]);
+          break;
+        }
+      }
+
+      if (durationHours === null) {
+        const genericPlusPattern =
+          /(\\d+(?:\\.\\d+)?)\\s*\\+\\s*([a-z][a-z0-9 /_-]*?)\\s*=\\s*(\\d+(?:\\.\\d+)?)\\s*hours?/gi;
+        let genericPlusMatch: RegExpExecArray | null;
+        while ((genericPlusMatch = genericPlusPattern.exec(rules)) !== null) {
+          const min = Number(genericPlusMatch[1]);
+          const ruleUnit = genericPlusMatch[2].trim().toLowerCase().replace(/s$/, "");
+          if (ruleUnit === sizeUnit && sizeValue >= min) {
+            durationHours = Number(genericPlusMatch[3]);
+            break;
+          }
+        }
+      }
+    }
   }
 
   if (durationHours === null) {
     return {
       success: false,
-      needsMoreDetails: bedrooms === null,
+      needsMoreDetails: bedrooms === null && !sizeText,
       error:
-        "The company-defined rules do not produce a duration from the supplied property details. Do not invent a duration.",
+        "The configured duration rules did not match the supplied job size. Provide the relevant quantity and unit (for example, 4 cars or 2,000 sq ft), or configure a fixed duration. Do not invent a duration.",
     };
   }
 
@@ -239,21 +270,21 @@ const customerAgentTools = [
     type: "function" as const,
     name: "get_booking_duration_rules",
     description:
-      "Read the cleaning company's configured appointment duration settings. Always use this before choosing durationMinutes for a new booking. Never invent a duration. If the company uses fixed duration, use the returned fixed duration exactly. If the company uses company-defined rules, follow only the returned explicit rules and collect any missing property details needed to apply them.",
+      "Read the cleaning company's configured appointment duration settings. Always use this before choosing durationMinutes for a new booking. Never invent a duration. If the company uses fixed duration, use the returned fixed duration exactly. If the company uses company-defined rules, follow only the returned explicit rules and collect any missing job-size details and units needed to apply them. Rules may use bedroom ranges for residential jobs or generic quantity ranges such as '1-5 cars = 1 hours' or '1000-2000 sq ft = 2 hours'.",
     parameters: {
       type: "object",
       properties: {
         bedrooms: {
           type: ["number", "null"],
-          description: "Number of bedrooms in the property.",
+          description: "Number of bedrooms, only when relevant to a residential/property-cleaning job.",
         },
         bathrooms: {
           type: ["number", "null"],
-          description: "Number of bathrooms in the property.",
+          description: "Number of bathrooms, only when relevant to a residential/property-cleaning job.",
         },
         propertySize: {
           type: ["string", "null"],
-          description: "Approximate property size if relevant to the company's rules.",
+          description: "Relevant job size or quantity, including a unit such as 4 cars, 12 rooms, 3 floors, or 2,000 sq ft; for residential jobs this may be property size.",
         },
       },
       required: ["bedrooms", "bathrooms", "propertySize"],
@@ -1217,6 +1248,7 @@ export async function runCustomerAgent(
     businessPhone: businessProfile.businessPhone,
     businessEmail: businessProfile.businessEmail,
     websiteUrl: businessProfile.websiteUrl,
+    businessType: businessProfile.businessType,
     services: businessProfile.services,
     serviceAreas: businessProfile.serviceAreas,
     pricing: businessProfile.pricing,

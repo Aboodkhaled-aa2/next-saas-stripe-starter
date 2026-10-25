@@ -3,14 +3,12 @@
 import Link from "next/link";
 import {
   ArrowRight,
+  MessageCircle,
   Calendar,
   Check,
   ChevronDown,
   Clock,
-  Facebook,
   Headphones,
-  Instagram,
-  MessageCircle,
   Phone,
   ShieldCheck,
   Sparkles,
@@ -24,7 +22,7 @@ const faqs = [
   {
     question: "Is there a free trial?",
     answer:
-      "Yes. Every plan includes a 3-day free trial. Your subscription begins billing after the trial period ends.",
+      "Your available trial and any payment requirements are shown during signup and checkout. Review the terms and renewal details before confirming a subscription.",
   },
   {
     question: "What happens after I subscribe?",
@@ -40,11 +38,6 @@ const faqs = [
     question: "Can I upgrade my plan?",
     answer:
       "Yes. You can move to a higher plan when your business needs more automation, voice minutes, calling features, or advanced AI capabilities.",
-  },
-  {
-    question: "Which channels can Smart Cleaning Desk handle?",
-    answer:
-      "The platform is designed to help cleaning businesses manage customer conversations across WhatsApp, Instagram, and Facebook, depending on the connected services and account configuration.",
   },
   {
     question: "Is Smart Cleaning Desk built for cleaning companies?",
@@ -71,7 +64,7 @@ const businessFeatures = [
 
 const proFeatures = [
   "Everything in Business",
-  "Dedicated Business Phone Number",
+  "Dedicated Business Phone Number Available as an Add-on",
   "500 Voice Minutes / Month",
   "Advanced Call Handling",
   "Custom Booking & AI Rules",
@@ -189,13 +182,13 @@ export default function LandingPage() {
           <div className="mx-auto max-w-4xl text-center">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-500/35 bg-blue-500/10 px-4 py-2 text-sm font-semibold text-blue-300">
               <Sparkles className="h-4 w-4" />
-              24/7 AI Customer Service for Your Cleaning Business
+              24/7 AI Support for Every Type of Cleaning Business
             </div>
 
             <h1 className="text-4xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">
-              Your Cleaning Business,
+              Every Cleaning Business,
               <span className="block text-blue-400">
-                Powered by AI. 24/7.
+                One AI Employee. 24/7.
               </span>
             </h1>
 
@@ -237,11 +230,11 @@ export default function LandingPage() {
               </div>
               <div className="grid gap-3 pt-4 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
                 <div className="rounded-2xl bg-blue-600 px-4 py-3 text-sm text-white">
-                  I need a deep cleaning for a 3-bedroom home this Saturday.
+                  We need office cleaning for our facility next week.
                 </div>
                 <ArrowRight className="hidden h-5 w-5 text-slate-600 sm:block" />
                 <div className="rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-slate-200">
-                  AI collects the details, checks your rules, and moves the customer toward booking.
+                  AI adapts to your services, collects the right details, and follows your business rules.
                 </div>
               </div>
             </div>
@@ -254,7 +247,7 @@ export default function LandingPage() {
 
               <div className="flex items-center gap-2">
                 <Zap className="h-4 w-4 text-blue-400" />
-                Built for cleaning businesses
+                For every cleaning sector
               </div>
 
               <div className="flex items-center gap-2">
@@ -266,35 +259,13 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Channels */}
-      <section className="border-y border-slate-800/80 bg-slate-900/40">
-        <div className="mx-auto max-w-7xl px-5 py-10 sm:px-6 lg:px-8">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="flex items-center justify-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-sm">
-              <Instagram className="h-6 w-6 text-pink-400" />
-              <span className="font-semibold text-slate-200">Instagram</span>
-            </div>
-
-            <div className="flex items-center justify-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-sm">
-              <Facebook className="h-6 w-6 text-blue-400" />
-              <span className="font-semibold text-slate-200">Facebook</span>
-            </div>
-
-            <div className="flex items-center justify-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-sm">
-              <MessageCircle className="h-6 w-6 text-emerald-400" />
-              <span className="font-semibold text-slate-200">WhatsApp</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Features */}
       <section id="features" className="bg-slate-950 py-24">
         <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
           <SectionTitle
             eyebrow="Everything in One Place"
-            title="Run customer communication smarter"
-            description="Let AI handle customer conversations, qualify leads, answer calls, collect job details, follow up, and move customers toward booked appointments."
+            title="Built around your type of cleaning business"
+            description="Whether you clean homes, offices, hotels, vehicles, factories, or warehouses, configure your AI employee around your actual services, prices, service areas, and business rules."
           />
 
           <div className="mt-16 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -303,7 +274,7 @@ export default function LandingPage() {
                 icon: MessageCircle,
                 title: "AI Customer Messaging",
                 description:
-                  "Help manage customer questions and conversations across connected messaging channels.",
+                  "Answer questions about the services and policies configured for your cleaning business.",
               },
               {
                 icon: Phone,
@@ -321,7 +292,7 @@ export default function LandingPage() {
                 icon: Calendar,
                 title: "Appointment Booking",
                 description:
-                  "Collect the details needed for a cleaning, check availability, and move qualified customers toward the right appointment.",
+                  "Collect the details needed for your service type and guide customers toward the next booking step based on your rules.",
               },
               {
                 icon: Clock,
@@ -379,7 +350,7 @@ export default function LandingPage() {
                 number: "01",
                 title: "Capture the Lead",
                 description:
-                  "Customer conversations and inquiries can be organized so important lead information is not lost.",
+                  "Collect inquiries from your customer touchpoints and keep important lead details organized.",
               },
               {
                 number: "02",
@@ -442,7 +413,7 @@ export default function LandingPage() {
               </div>
 
               <p className="mt-4 min-h-[56px] text-sm leading-6 text-slate-400">
-                Capture and manage customer conversations across your main messaging channels.
+                Capture and organize customer inquiries, qualify leads, and keep service conversations in one place.
               </p>
 
               <div className="mt-6 flex items-end gap-1">
@@ -534,7 +505,7 @@ export default function LandingPage() {
               </div>
 
               <p className="mt-4 min-h-[56px] text-sm leading-6 text-slate-400">
-                Advanced calling, custom booking rules, deeper AI knowledge, and a dedicated business number.
+                Advanced calling, custom booking rules, deeper AI knowledge, and an optional dedicated business number.
               </p>
 
               <div className="mt-6 flex items-end gap-1">

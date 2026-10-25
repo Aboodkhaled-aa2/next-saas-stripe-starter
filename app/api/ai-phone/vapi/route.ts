@@ -404,7 +404,7 @@ async function hasVoiceMinutesAvailable(userId: string, plan: string | null | un
   }
 
   const includedVoiceMinutes =
-    plan === "PRO" ? 500 : plan === "BUSINESS" ? 200 : 0;
+    plan === "PRO" ? 500 : plan === "BUSINESS" ? 100 : 0;
 
   if (includedVoiceMinutes <= 0) {
     return {
@@ -613,7 +613,7 @@ export async function POST(request: Request) {
         Boolean(user?.trialEndsAt && user.trialEndsAt.getTime() > Date.now());
 
       const includedVoiceMinutes =
-        user?.plan === "PRO" ? 500 : user?.plan === "BUSINESS" ? 200 : 0;
+        user?.plan === "PRO" ? 500 : user?.plan === "BUSINESS" ? 100 : 0;
       const trialVoiceMinutes =
         user?.plan === "PRO" ? 30 : user?.plan === "BUSINESS" ? 15 : 0;
 

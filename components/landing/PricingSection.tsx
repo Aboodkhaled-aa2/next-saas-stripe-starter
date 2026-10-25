@@ -34,6 +34,7 @@ export default function PricingSection() {
               <div className="space-y-3 text-sm border-t border-white/10 pt-6">
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>AI Messaging</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>Facebook & Instagram</span></div>
+                <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>WhatsApp Business</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>Lead Capture</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>Customer Inbox</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>Basic Automation</span></div>

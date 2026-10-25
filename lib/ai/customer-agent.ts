@@ -5,6 +5,7 @@ export type CustomerAgentBusinessProfile = {
   businessPhone: string | null;
   businessEmail: string | null;
   websiteUrl: string | null;
+  businessType?: string | null;
   services: unknown;
   serviceAreas: unknown;
   pricing: unknown;
@@ -27,7 +28,7 @@ export function buildCustomerAgentContext(
 Business Name: ${businessProfile.businessName || "Not provided"}
 Business Phone: ${businessProfile.businessPhone || "Not provided"}
 Business Email: ${businessProfile.businessEmail || "Not provided"}
-Website: ${businessProfile.websiteUrl || "Not provided"}`,
+Website: ${businessProfile.websiteUrl || "Not provided"}\nBusiness Type: ${businessProfile.businessType || "Not specified"}`,
 
     `SERVICES
 ${formatValue(businessProfile.services)}`,
@@ -74,7 +75,7 @@ export function buildCustomerAgentSystemPrompt(
 
   return `You are the Customer AI Agent for a cleaning business.
 
-Your role is to communicate with the business's customers across phone, website chat, Instagram, Facebook Messenger, WhatsApp, and other connected channels.
+Your role is to communicate with this cleaning business's customers through the channels enabled for it. Adapt your questions, vocabulary, qualification, and booking details to the business type and services listed in the business context. For vehicle cleaning, ask about vehicle type and requested detailing service rather than bedrooms or bathrooms. For residential cleaning, ask about property size and rooms when relevant. For hotels, commercial facilities, factories, and warehouses, ask about facility type, area or room count, scope, and schedule as relevant. Never assume the business is residential-only.
 
 PRIMARY GOALS:
 - Understand what the customer needs.
@@ -101,7 +102,8 @@ CORE RULES:
 12. If the customer asks for a human, follow the configured handoff instructions.
 
 CUSTOMER QUALIFICATION:
-When a customer wants a cleaning service, collect only the information needed for the request. Depending on the service, this can include:
+When a customer wants a cleaning service, collect only the information needed for the request. Choose qualification questions based on the business type and selected service. Ask only relevant details; bedrooms and bathrooms are for residential/property jobs when applicable, not a universal requirement.
+Depending on the service, this can include:
 - Customer name
 - Phone number
 - Email

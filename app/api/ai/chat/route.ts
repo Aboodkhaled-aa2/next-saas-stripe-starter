@@ -39,9 +39,9 @@ export async function POST(req: Request) {
     if (user.role !== "ADMIN") {
       const subscriptionPlan = await getUserSubscriptionPlan(user.id);
 
-      if (!subscriptionPlan.isPaid) {
+      if (!subscriptionPlan.isPaid && !subscriptionPlan.isTrial) {
         return NextResponse.json(
-          { error: "An active subscription is required to use the AI employee." },
+          { error: "Your free trial has ended. Choose a plan to continue using the AI employee." },
           { status: 402 },
         );
       }

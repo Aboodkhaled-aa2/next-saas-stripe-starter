@@ -232,7 +232,7 @@ export default async function DashboardPage() {
         : paidActive
           ? user?.plan === "PRO"
             ? 500
-            : 200
+            : 100
           : 0;
 
   const usedVoiceSeconds = voicePlanEnabled
@@ -299,30 +299,7 @@ export default async function DashboardPage() {
     },
   });
 
-  const messagingUsageRows = await prisma.message.findMany({
-    where: {
-      direction: "OUTBOUND",
-      ...(currentPeriodStart && currentPeriodEnd
-        ? {
-            createdAt: {
-              gte: currentPeriodStart,
-              lt: currentPeriodEnd,
-            },
-          }
-        : {
-            id: "__NO_CURRENT_BILLING_PERIOD__",
-          }),
-      conversation: {
-        userId: user?.id ?? "",
-      },
-    },
-    distinct: ["conversationId"],
-    select: {
-      conversationId: true,
-    },
-  });
-
-  const usedMessagingConversations = messagingUsageRows.length;
+  const usedMessagingConversations = messagingMessageCount;
   const remainingMessagingConversations = Math.max(
     messagingLimit - usedMessagingConversations,
     0,
@@ -709,7 +686,7 @@ export default async function DashboardPage() {
               Messaging Usage
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Track unique customer conversations for the current period.
+              Track outbound AI messages for the current billing period.
             </p>
           </div>
 
@@ -725,13 +702,13 @@ export default async function DashboardPage() {
                   </p>
                 </div>
                 <p className="text-sm font-semibold text-slate-400">
-                  / {messagingLimit.toLocaleString()}
+                  / {messagingLimit.toLocaleString()} messages
                 </p>
               </div>
 
               <div className="mt-4">
                 <div className="flex items-center justify-between text-xs text-slate-500">
-                  <span>{remainingMessagingConversations.toLocaleString()} remaining</span>
+                  <span>{remainingMessagingConversations.toLocaleString()} messages remaining</span>
                   <span>{messagingUsagePercent.toFixed(0)}%</span>
                 </div>
                 <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-800">
@@ -758,7 +735,33 @@ export default async function DashboardPage() {
               {usedMessagingConversations >= messagingLimit &&
                 (billingUser?.extraMessageCredits ?? 0) <= 0 && (
                   <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
-                    Your messaging limit has been reached. Purchase extra message credits to keep AI replies active.
+                    <p>
+                      {trialActive || trialExpired
+                        ? "Your trial messaging allowance has been used. Choose a paid plan to continue using AI replies."
+                        : "Your messaging limit has been reached. Purchase extra message credits to keep AI replies active."}
+                    </p>
+                    {trialActive || trialExpired ? (
+                      <Link
+                        href={`/pricing?plan=${billingUser?.plan?.toLowerCase() ?? "starter"}`}
+                        className="mt-3 inline-flex rounded-lg bg-red-500 px-3 py-2 text-xs font-semibold text-white hover:bg-red-400"
+                      >
+                        Choose Plan
+                      </Link>
+                    ) : paidActive ? (
+                      <Link
+                        href="/dashboard/billing/messages"
+                        className="mt-3 inline-flex rounded-lg bg-red-500 px-3 py-2 text-xs font-semibold text-white hover:bg-red-400"
+                      >
+                        Buy Extra Messages
+                      </Link>
+                    ) : (
+                      <Link
+                        href="/pricing"
+                        className="mt-3 inline-flex rounded-lg bg-red-500 px-3 py-2 text-xs font-semibold text-white hover:bg-red-400"
+                      >
+                        Choose Plan
+                      </Link>
+                    )}
                   </div>
                 )}
 
