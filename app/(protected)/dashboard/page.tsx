@@ -175,10 +175,6 @@ export default async function DashboardPage() {
       )
     : 0;
 
-  if (trialExpired) {
-    redirect(`/pricing?trial=expired&plan=${(billingUser?.plan ?? "STARTER").toLowerCase()}`);
-  }
-
   const paidActive = Boolean(billingUser?.stripeSubscriptionId);
 
   if (billingUser?.stripeSubscriptionId) {
@@ -690,7 +686,7 @@ export default async function DashboardPage() {
               Messaging Usage
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Track unique customer conversations for the current period.
+              Track outbound AI messages for the current billing period.
             </p>
           </div>
 
@@ -706,13 +702,13 @@ export default async function DashboardPage() {
                   </p>
                 </div>
                 <p className="text-sm font-semibold text-slate-400">
-                  / {messagingLimit.toLocaleString()}
+                  / {messagingLimit.toLocaleString()} messages
                 </p>
               </div>
 
               <div className="mt-4">
                 <div className="flex items-center justify-between text-xs text-slate-500">
-                  <span>{remainingMessagingConversations.toLocaleString()} remaining</span>
+                  <span>{remainingMessagingConversations.toLocaleString()} messages remaining</span>
                   <span>{messagingUsagePercent.toFixed(0)}%</span>
                 </div>
                 <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-800">
