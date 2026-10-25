@@ -236,7 +236,7 @@ export default async function DashboardPage() {
         : paidActive
           ? user?.plan === "PRO"
             ? 500
-            : 200
+            : 100
           : 0;
 
   const usedVoiceSeconds = voicePlanEnabled
