@@ -12,7 +12,7 @@ const pricingFaqData = [
     id: "item-1",
     question: "Is there a free trial?",
     answer:
-      "Yes. Every plan includes a 3-day free trial. Your subscription begins billing after the trial period ends.",
+      "The current trial lasts 7 days. When it ends, choose a plan to continue. You are not automatically charged just because the trial expires; review the plan and checkout details before paying.",
   },
   {
     id: "item-2",
