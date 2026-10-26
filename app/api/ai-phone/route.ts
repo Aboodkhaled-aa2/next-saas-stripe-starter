@@ -21,9 +21,37 @@ export async function GET() {
       },
     });
 
+    const savedAIPhoneSettings = businessProfile?.aiPhoneSettings ?? null;
+    const assignedPhoneNumber = await prisma.phoneNumber.findFirst({
+      where: {
+        userId: user.id,
+        status: "ACTIVE",
+        phoneNumber: { not: "+12012770096" },
+      },
+      orderBy: { purchasedAt: "desc" },
+      select: { phoneNumber: true },
+    });
+
+    const aiPhoneSettings = savedAIPhoneSettings
+      ? {
+          ...savedAIPhoneSettings,
+          phoneNumber:
+            savedAIPhoneSettings.phoneNumber ??
+            assignedPhoneNumber?.phoneNumber ??
+            null,
+        }
+      : assignedPhoneNumber
+        ? {
+            phoneNumber: assignedPhoneNumber.phoneNumber,
+            assistantName: null,
+            status: "NOT_CONFIGURED",
+            enabled: false,
+          }
+        : null;
+
     return NextResponse.json({
       success: true,
-      aiPhoneSettings: businessProfile?.aiPhoneSettings ?? null,
+      aiPhoneSettings,
       businessProfile: businessProfile
         ? {
             businessName: businessProfile.businessName,
