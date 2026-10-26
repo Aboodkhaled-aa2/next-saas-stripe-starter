@@ -70,8 +70,9 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    const phoneNumber =
+    const requestedPhoneNumber =
       typeof body.phoneNumber === "string" ? body.phoneNumber.trim() : "";
+
     const assistantName =
       typeof body.assistantName === "string"
         ? body.assistantName.trim()
@@ -89,14 +90,44 @@ export async function POST(request: Request) {
         ? body.handoffInstructions.trim()
         : "";
 
-    if (!phoneNumber || !assistantName) {
+    const ownedPhoneNumber = requestedPhoneNumber
+      ? await prisma.phoneNumber.findFirst({
+          where: {
+            userId: user.id,
+            phoneNumber: requestedPhoneNumber,
+            status: "ACTIVE",
+          },
+          select: { phoneNumber: true },
+        })
+      : await prisma.phoneNumber.findFirst({
+          where: {
+            userId: user.id,
+            status: "ACTIVE",
+          },
+          orderBy: { purchasedAt: "desc" },
+          select: { phoneNumber: true },
+        });
+
+    if (!ownedPhoneNumber?.phoneNumber) {
       return NextResponse.json(
-        { error: "Phone number and AI receptionist name are required." },
+        {
+          error:
+            "No active reception number is assigned to your account yet.",
+        },
+        { status: 409 },
+      );
+    }
+
+    const phoneNumber = ownedPhoneNumber.phoneNumber;
+
+    if (!assistantName) {
+      return NextResponse.json(
+        { error: "AI receptionist name is required." },
         { status: 400 },
       );
     }
 
-    if (phoneNumber.length > 40 || assistantName.length > 80) {
+    if (assistantName.length > 80) {
       return NextResponse.json(
         { error: "One or more fields are too long." },
         { status: 400 },
