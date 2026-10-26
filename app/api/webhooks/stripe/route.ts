@@ -28,6 +28,126 @@ const messagePackages = {
   "10000": { messages: 10000, amountCents: 7000 },
 } as const;
 
+const TEST_PHONE_NUMBER = "+12012770096";
+
+async function provisionReceptionNumber(userId: string, subscriptionId: string) {
+  const existingNumber = await prisma.phoneNumber.findFirst({
+    where: {
+      userId,
+      status: "ACTIVE",
+      phoneNumber: { not: TEST_PHONE_NUMBER },
+    },
+    select: { id: true, phoneNumber: true },
+  });
+
+  if (existingNumber) {
+    return existingNumber;
+  }
+
+  if (
+    !env.SIGNALWIRE_SPACE_URL ||
+    !env.SIGNALWIRE_PROJECT_ID ||
+    !env.SIGNALWIRE_API_TOKEN
+  ) {
+    throw new Error("SignalWire is not configured for automatic phone provisioning");
+  }
+
+  const baseUrl = env.SIGNALWIRE_SPACE_URL.replace(/\/$/, "");
+  const authorization =
+    "Basic " +
+    Buffer.from(
+      `${env.SIGNALWIRE_PROJECT_ID}:${env.SIGNALWIRE_API_TOKEN}`,
+    ).toString("base64");
+
+  const searchResponse = await fetch(
+    `${baseUrl}/api/relay/rest/phone_numbers/search?number_type=local&max_results=20`,
+    {
+      headers: {
+        Accept: "application/json",
+        Authorization: authorization,
+      },
+      cache: "no-store",
+    },
+  );
+  const searchPayload = await searchResponse.json().catch(() => null);
+
+  if (!searchResponse.ok) {
+    console.error("SignalWire automatic number search failed", searchResponse.status, searchPayload);
+    throw new Error("Unable to search for an automatic reception number");
+  }
+
+  const candidates = Array.isArray(searchPayload?.data) ? searchPayload.data : [];
+  let selectedNumber: any = null;
+
+  for (const candidate of candidates) {
+    const number = typeof candidate?.number === "string" ? candidate.number : "";
+    if (!number || number === TEST_PHONE_NUMBER || !candidate?.capabilities?.voice) {
+      continue;
+    }
+
+    const alreadyAssigned = await prisma.phoneNumber.findUnique({
+      where: { phoneNumber: number },
+      select: { id: true },
+    });
+
+    if (!alreadyAssigned) {
+      selectedNumber = candidate;
+      break;
+    }
+  }
+
+  if (!selectedNumber?.number) {
+    throw new Error("SignalWire returned no available voice-capable US phone numbers");
+  }
+
+  const purchaseResponse = await fetch(
+    `${baseUrl}/api/relay/rest/phone_numbers`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: authorization,
+      },
+      body: JSON.stringify({ number: selectedNumber.number }),
+    },
+  );
+  const purchasePayload = await purchaseResponse.json().catch(() => null);
+
+  if (!purchaseResponse.ok) {
+    console.error("SignalWire automatic phone purchase failed", purchaseResponse.status, purchasePayload);
+    throw new Error("Automatic reception number purchase failed");
+  }
+
+  if (
+    !purchasePayload?.id ||
+    purchasePayload.number !== selectedNumber.number
+  ) {
+    console.error("SignalWire returned an invalid automatic phone number payload");
+    throw new Error("Invalid SignalWire phone number response");
+  }
+
+  return prisma.phoneNumber.create({
+    data: {
+      userId,
+      provider: "SIGNALWIRE",
+      providerId: purchasePayload.id,
+      phoneNumber: purchasePayload.number,
+      countryCode: purchasePayload.country_code ?? "US",
+      region: purchasePayload.region ?? selectedNumber.region ?? null,
+      city: purchasePayload.city ?? selectedNumber.city ?? null,
+      status: "ACTIVE",
+      monthlyPriceCents: 0,
+      stripeSubscriptionId: subscriptionId,
+      metadata: {
+        capabilities: purchasePayload.capabilities ?? selectedNumber.capabilities ?? [],
+        numberType: purchasePayload.number_type ?? selectedNumber.number_type ?? null,
+        assignedAutomatically: true,
+      },
+    },
+  });
+}
+
 export async function POST(req: Request) {
   const body = await req.text();
   const signature = headers().get("Stripe-Signature");
@@ -370,6 +490,11 @@ export async function POST(req: Request) {
           ),
         },
       });
+
+      const selectedPlan = session.metadata?.plan?.toUpperCase();
+      if (selectedPlan === "BUSINESS" || selectedPlan === "PRO") {
+        await provisionReceptionNumber(userId, subscription.id);
+      }
     }
 
     if (event.type === "invoice.payment_succeeded") {
