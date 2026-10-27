@@ -13,7 +13,7 @@ export const siteConfig: SiteConfig = {
     twitter: "https://twitter.com/miickasmt",
     github: "https://github.com/mickasmt/next-saas-stripe-starter",
   },
-  mailSupport: "support@smartcleaningdesk.com",
+  mailSupport: "supportsmartcleaningdesk@gmail.com",
 };
 
 export const footerLinks: SidebarNavItem[] = [
