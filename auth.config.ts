@@ -30,39 +30,64 @@ export default {
           label: "Password",
           type: "password",
         },
+        verificationCode: {
+          label: "Email verification code",
+          type: "text",
+        },
       },
 
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.email) {
           return null;
         }
 
         const email = String(credentials.email).toLowerCase().trim();
-        const password = String(credentials.password);
+        const verificationCode = String(credentials.verificationCode || "").trim();
 
         const user = await prisma.user.findUnique({
-          where: {
-            email,
-          },
+          where: { email },
         });
 
         if (!user || !user.passwordHash) {
           return null;
         }
 
-        if (!user.emailVerified) {
-          throw new Error("EMAIL_NOT_VERIFIED");
-        }
+        // A short-lived, single-use verification code can establish the first session.
+        if (verificationCode) {
+          if (!/^\\d{6}$/.test(verificationCode) || !user.emailVerified) {
+            return null;
+          }
 
-        const bcrypt = await import("bcryptjs");
+          const now = new Date();
+          const consumedToken = await prisma.verificationToken.deleteMany({
+            where: {
+              identifier: email,
+              token: verificationCode,
+              expires: { gte: now },
+            },
+          });
 
-        const isValidPassword = await bcrypt.compare(
-          password,
-          user.passwordHash
-        );
+          if (consumedToken.count !== 1) {
+            return null;
+          }
+        } else {
+          if (!credentials.password) {
+            return null;
+          }
 
-        if (!isValidPassword) {
-          return null;
+          if (!user.emailVerified) {
+            throw new Error("EMAIL_NOT_VERIFIED");
+          }
+
+          const bcrypt = await import("bcryptjs");
+          const isValidPassword = await bcrypt.compare(
+            String(credentials.password),
+            user.passwordHash
+          );
+
+          if (!isValidPassword) {
+            return null;
+          }
         }
 
         return {
