@@ -203,35 +203,6 @@ async function canUseMessaging(userId: string) {
     };
   }
 
-  const limit =
-      user.plan === "PRO" ? 200 : user.plan === "BUSINESS" ? 100 : 50;
-    const startedAt = user?.trialStartedAt ?? now;
-
-    const conversations = await prisma.message.findMany({
-      where: {
-        direction: "OUTBOUND",
-        createdAt: { gte: startedAt, lt: user.trialEndsAt },
-        conversation: { userId },
-      },
-      distinct: ["conversationId"],
-      select: { conversationId: true },
-    });
-
-    const used = conversations.length;
-
-    return {
-      allowed: used < limit,
-      remaining: Math.max(limit - used, 0),
-      used,
-      limit,
-      usesExtraCredit: false,
-      reason:
-        used >= limit
-          ? "Trial messaging limit reached. Choose a plan to continue."
-          : null,
-    };
-  }
-
   const paidLimit =
     user.plan === "PRO" ? 5000 : user.plan === "BUSINESS" ? 2000 : 500;
 
