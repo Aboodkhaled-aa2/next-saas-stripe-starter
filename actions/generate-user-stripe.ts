@@ -70,12 +70,16 @@ export async function generateUserStripe(
         customer_email: user.email,
         line_items: [{ price: priceId, quantity: 1 }],
         subscription_data: {
-          trial_period_days: TRIAL_PERIOD_DAYS,
-          trial_settings: {
-            end_behavior: {
-              missing_payment_method: "pause",
-            },
-          },
+          ...(!subscriptionPlan.trialStartedAt && !subscriptionPlan.trialEndsAt
+            ? {
+                trial_period_days: TRIAL_PERIOD_DAYS,
+                trial_settings: {
+                  end_behavior: {
+                    missing_payment_method: "pause" as const,
+                  },
+                },
+              }
+            : {}),
           metadata: { userId: user.id, plan: selectedPlan },
         },
         metadata: { userId: user.id, plan: selectedPlan },
