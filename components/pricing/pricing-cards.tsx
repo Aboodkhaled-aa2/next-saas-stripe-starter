@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useEffect, useRef } from "react";
+import { useContext } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
@@ -9,7 +9,6 @@ import { UserSubscriptionPlan } from "@/types";
 import { cn } from "@/lib/utils";
 
 import { BillingFormButton } from "@/components/forms/billing-form-button";
-import { generateUserStripe } from "@/actions/generate-user-stripe";
 import { ModalContext } from "@/components/modals/providers";
 import { HeaderSection } from "@/components/shared/header-section";
 import { Icons } from "@/components/shared/icons";
@@ -25,36 +24,7 @@ export function PricingCards({
   subscriptionPlan,
 }: PricingCardsProps) {
   const { setShowSignInModal } = useContext(ModalContext);
-  const searchParams = useSearchParams();
-  const checkoutStarted = useRef(false);
 
-  useEffect(() => {
-    if (!userId || !subscriptionPlan || checkoutStarted.current) return;
-
-    const planParam = searchParams.get("plan")?.toLowerCase();
-    if (!planParam) return;
-
-    const selectedOffer = pricingData.find(
-      (offer) => offer.title.toLowerCase() === planParam,
-    );
-
-    if (!selectedOffer) return;
-
-    if (subscriptionPlan.isTrial) {
-      // The plan was selected during signup and is already saved on the account.
-      // Never make a trial customer select a different plan from the pricing page.
-      window.location.href = "/dashboard";
-      return;
-    }
-
-    if (!selectedOffer?.stripeIds.monthly) return;
-
-    checkoutStarted.current = true;
-
-    generateUserStripe(selectedOffer.stripeIds.monthly).catch(() => {
-      checkoutStarted.current = false;
-    });
-  }, [searchParams, subscriptionPlan, userId]);
 
   const PricingCard = ({
     offer,

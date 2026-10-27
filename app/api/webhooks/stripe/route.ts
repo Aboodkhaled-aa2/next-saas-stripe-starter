@@ -5,7 +5,9 @@ import { env } from "@/env.mjs";
 import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { pricingData } from "@/config/subscriptions";
-import { sendPaymentConfirmation } from "@/lib/email";
+import { resend, sendPaymentConfirmation } from "@/lib/email";
+import { siteConfig } from "@/config/site";
+import { absoluteUrl } from "@/lib/utils";
 
 const allowedStripePriceIds = new Set(
   pricingData
@@ -28,6 +30,299 @@ const messagePackages = {
   "10000": { messages: 10000, amountCents: 7000 },
 } as const;
 
+const TEST_PHONE_NUMBER = "+12012770096";
+
+async function provisionReceptionNumber(userId: string, subscriptionId: string) {
+  const existingNumber = await prisma.phoneNumber.findFirst({
+    where: {
+      userId,
+      status: { not: "RELEASED" },
+      phoneNumber: { not: TEST_PHONE_NUMBER },
+    },
+    select: { id: true, phoneNumber: true, status: true },
+  });
+
+  if (
+    existingNumber?.status === "ACTIVE" &&
+    existingNumber.phoneNumber !== TEST_PHONE_NUMBER
+  ) {
+    const saved = await prisma.phoneNumber.findUnique({
+      where: { id: existingNumber.id },
+      select: { metadata: true },
+    });
+    const metadata = saved?.metadata as Record<string, unknown> | null;
+    if (metadata?.routingConfigured === true && typeof metadata?.vapiPhoneNumberId === "string") {
+      return existingNumber;
+    }
+    throw new Error(
+      "A reception number already exists but routing is not verified; manual recovery is required to avoid buying a duplicate number",
+    );
+  }
+
+  if (
+    !env.SIGNALWIRE_SPACE_URL ||
+    !env.SIGNALWIRE_PROJECT_ID ||
+    !env.SIGNALWIRE_API_TOKEN
+  ) {
+    throw new Error("SignalWire is not configured for automatic phone provisioning");
+  }
+
+  if (!env.VAPI_PRIVATE_API_KEY) {
+    throw new Error("Vapi private API key is required before purchasing a reception number");
+  }
+
+  const baseUrl = env.SIGNALWIRE_SPACE_URL.replace(/\/$/, "");
+  const vapiBaseUrl = (env.VAPI_API_BASE_URL ?? "https://api.vapi.ai").replace(/\/$/, "");
+  const signalWireAuthorization =
+    "Basic " +
+    Buffer.from(
+      `${env.SIGNALWIRE_PROJECT_ID}:${env.SIGNALWIRE_API_TOKEN}`,
+    ).toString("base64");
+  const vapiHeaders = {
+    Authorization: `Bearer ${env.VAPI_PRIVATE_API_KEY}`,
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+
+  // Resolve required routing resources before purchasing a billable number.
+  const [credentialsResponse, resourcesResponse] = await Promise.all([
+    fetch(`${vapiBaseUrl}/credential`, {
+      headers: vapiHeaders,
+      cache: "no-store",
+    }),
+    fetch(`${baseUrl}/api/fabric/resources?page_number=0&page_size=100`, {
+      headers: { Accept: "application/json", Authorization: signalWireAuthorization },
+      cache: "no-store",
+    }),
+  ]);
+
+  const credentialsPayload = await credentialsResponse.json().catch(() => null);
+  const resourcesPayload = await resourcesResponse.json().catch(() => null);
+
+  if (!credentialsResponse.ok) {
+    console.error("Vapi credential lookup failed", credentialsResponse.status, credentialsPayload);
+    throw new Error("Unable to verify the Vapi SIP trunk credential");
+  }
+  if (!resourcesResponse.ok) {
+    console.error("SignalWire resource lookup failed", resourcesResponse.status, resourcesPayload);
+    throw new Error("Unable to verify the SignalWire inbound resource");
+  }
+
+  const credentials = Array.isArray(credentialsPayload)
+    ? credentialsPayload
+    : Array.isArray(credentialsPayload?.data)
+      ? credentialsPayload.data
+      : [];
+  const matchingCredentials = credentials.filter(
+    (item: any) =>
+      item?.provider === "byo-sip-trunk" &&
+      item?.name === "SignalWire Inbound Trunk" &&
+      typeof item?.id === "string",
+  );
+
+  if (matchingCredentials.length !== 1) {
+    throw new Error(
+      "Expected exactly one Vapi credential named SignalWire Inbound Trunk",
+    );
+  }
+
+  const resources = Array.isArray(resourcesPayload?.data) ? resourcesPayload.data : [];
+  const matchingResources = resources.filter(
+    (item: any) =>
+      item?.type === "swml_script" &&
+      (item?.display_name === "Smart Cleaning Desk Inbound" ||
+        item?.name === "Smart Cleaning Desk Inbound"),
+  );
+
+  if (matchingResources.length !== 1 || typeof matchingResources[0]?.id !== "string") {
+    throw new Error(
+      "Expected exactly one SignalWire SWML resource named Smart Cleaning Desk Inbound",
+    );
+  }
+
+  const signalWireResourceId = matchingResources[0].id;
+  const vapiCredentialId = matchingCredentials[0].id;
+
+  const searchResponse = await fetch(
+    `${baseUrl}/api/relay/rest/phone_numbers/search?number_type=local&max_results=20`,
+    {
+      headers: {
+        Accept: "application/json",
+        Authorization: signalWireAuthorization,
+      },
+      cache: "no-store",
+    },
+  );
+  const searchPayload = await searchResponse.json().catch(() => null);
+
+  if (!searchResponse.ok) {
+    console.error("SignalWire automatic number search failed", searchResponse.status, searchPayload);
+    throw new Error("Unable to search for an automatic reception number");
+  }
+
+  const candidates = Array.isArray(searchPayload?.data) ? searchPayload.data : [];
+  let selectedNumber: any = null;
+
+  for (const candidate of candidates) {
+    const number = typeof candidate?.number === "string" ? candidate.number : "";
+    if (!number || number === TEST_PHONE_NUMBER || !candidate?.capabilities?.voice) {
+      continue;
+    }
+
+    const alreadyAssigned = await prisma.phoneNumber.findUnique({
+      where: { phoneNumber: number },
+      select: { id: true },
+    });
+
+    if (!alreadyAssigned) {
+      selectedNumber = candidate;
+      break;
+    }
+  }
+
+  if (!selectedNumber?.number) {
+    throw new Error("SignalWire returned no available voice-capable US phone numbers");
+  }
+
+  const purchaseResponse = await fetch(`${baseUrl}/api/relay/rest/phone_numbers`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      Authorization: signalWireAuthorization,
+    },
+    body: JSON.stringify({ number: selectedNumber.number }),
+  });
+  const purchasePayload = await purchaseResponse.json().catch(() => null);
+
+  if (!purchaseResponse.ok) {
+    console.error("SignalWire automatic phone purchase failed", purchaseResponse.status, purchasePayload);
+    throw new Error("Automatic reception number purchase failed");
+  }
+
+  if (!purchasePayload?.id || purchasePayload.number !== selectedNumber.number) {
+    console.error("SignalWire returned an invalid automatic phone number payload");
+    throw new Error("Invalid SignalWire phone number response");
+  }
+
+  let vapiPhoneNumberId: string | null = null;
+  let signalWireRouteAssigned = false;
+
+  try {
+    const vapiResponse = await fetch(`${vapiBaseUrl}/phone-number`, {
+      method: "POST",
+      headers: vapiHeaders,
+      body: JSON.stringify({
+        provider: "byo-phone-number",
+        credentialId: vapiCredentialId,
+        number: purchasePayload.number,
+        name: `Smart Cleaning Desk ${purchasePayload.number}`,
+        server: {
+          url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
+        },
+        numberE164CheckEnabled: true,
+      }),
+    });
+    const vapiPayload = await vapiResponse.json().catch(() => null);
+
+    if (!vapiResponse.ok || typeof vapiPayload?.id !== "string") {
+      console.error("Vapi phone number registration failed", vapiResponse.status, vapiPayload);
+      throw new Error("Unable to register the reception number in Vapi");
+    }
+    vapiPhoneNumberId = vapiPayload.id;
+
+    const routeResponse = await fetch(`${baseUrl}/api/fabric/phone_number_addresses`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: signalWireAuthorization,
+      },
+      body: JSON.stringify({
+        resource_id: signalWireResourceId,
+        handler_type: "calling",
+        number: purchasePayload.number,
+      }),
+    });
+    const routePayload = await routeResponse.json().catch(() => null);
+
+    if (!routeResponse.ok) {
+      console.error("SignalWire inbound route assignment failed", routeResponse.status, routePayload);
+      throw new Error("Unable to assign the SignalWire inbound resource to the reception number");
+    }
+    signalWireRouteAssigned = true;
+
+    const createdNumber = await prisma.phoneNumber.create({
+      data: {
+        userId,
+        provider: "SIGNALWIRE",
+        providerId: purchasePayload.id,
+        phoneNumber: purchasePayload.number,
+        countryCode: purchasePayload.country_code ?? "US",
+        region: purchasePayload.region ?? selectedNumber.region ?? null,
+        city: purchasePayload.city ?? selectedNumber.city ?? null,
+        status: "ACTIVE",
+        monthlyPriceCents: 0,
+        stripeSubscriptionId: subscriptionId,
+        metadata: {
+          capabilities: purchasePayload.capabilities ?? selectedNumber.capabilities ?? [],
+          numberType: purchasePayload.number_type ?? selectedNumber.number_type ?? null,
+          assignedAutomatically: true,
+          vapiPhoneNumberId,
+          signalWireResourceId,
+          routingConfigured: true,
+        },
+      },
+    });
+
+    return createdNumber;
+  } catch (error) {
+    // Compensate for partial provisioning so failed setup does not leave a paid orphaned number.
+    if (vapiPhoneNumberId) {
+      const deleteVapiResponse = await fetch(
+        `${vapiBaseUrl}/phone-number/${encodeURIComponent(vapiPhoneNumberId)}`,
+        { method: "DELETE", headers: vapiHeaders },
+      ).catch(() => null);
+      if (deleteVapiResponse && !deleteVapiResponse.ok && deleteVapiResponse.status !== 404) {
+        console.error("Vapi cleanup after provisioning failure failed", deleteVapiResponse.status);
+      }
+    }
+
+    if (signalWireRouteAssigned) {
+      const addressesResponse = await fetch(
+        `${baseUrl}/api/fabric/phone_number_addresses?number=${encodeURIComponent(purchasePayload.number)}&handler_type=calling`,
+        { headers: { Accept: "application/json", Authorization: signalWireAuthorization }, cache: "no-store" },
+      ).catch(() => null);
+      const addressesPayload = addressesResponse
+        ? await addressesResponse.json().catch(() => null)
+        : null;
+      const address = Array.isArray(addressesPayload?.data)
+        ? addressesPayload.data.find((item: any) => item?.phone_number === purchasePayload.number)
+        : null;
+      if (address?.id) {
+        await fetch(`${baseUrl}/api/fabric/phone_number_addresses/${encodeURIComponent(address.id)}`, {
+          method: "DELETE",
+          headers: { Accept: "application/json", Authorization: signalWireAuthorization },
+        }).catch(() => null);
+      }
+    }
+
+    const releaseResponse = await fetch(
+      `${baseUrl}/api/relay/rest/phone_numbers/${encodeURIComponent(purchasePayload.id)}`,
+      {
+        method: "DELETE",
+        headers: { Accept: "application/json", Authorization: signalWireAuthorization },
+        cache: "no-store",
+      },
+    ).catch(() => null);
+
+    if (releaseResponse && !releaseResponse.ok && releaseResponse.status !== 404) {
+      console.error("SignalWire cleanup after provisioning failure failed", releaseResponse.status);
+    }
+
+    throw error;
+  }
+}
 export async function POST(req: Request) {
   const body = await req.text();
   const signature = headers().get("Stripe-Signature");
@@ -370,6 +665,25 @@ export async function POST(req: Request) {
           ),
         },
       });
+
+      const selectedPlan =
+        session.metadata?.plan?.toUpperCase() ??
+        pricingData
+          .find(
+            (plan) =>
+              plan.stripeIds.monthly === priceId ||
+              plan.stripeIds.yearly === priceId,
+          )
+          ?.title.toUpperCase();
+
+      // Only provision a paid subscription here. Trial/no-payment sessions
+      // must not trigger a billable phone-number purchase.
+      if (
+        session.payment_status === "paid" &&
+        (selectedPlan === "BUSINESS" || selectedPlan === "PRO")
+      ) {
+        await provisionReceptionNumber(userId, subscription.id);
+      }
     }
 
     if (event.type === "invoice.payment_succeeded") {
@@ -396,6 +710,26 @@ export async function POST(req: Request) {
             ),
           },
         });
+
+        const priceId = subscription.items.data[0]?.price.id;
+        const plan = pricingData.find(
+          (item) =>
+            item.stripeIds.monthly === priceId ||
+            item.stripeIds.yearly === priceId,
+        );
+
+        // First successful invoice also handles subscriptions whose Checkout
+        // session did not complete with an immediately paid status.
+        if (plan?.title === "Business" || plan?.title === "Pro") {
+          const subscriber = await prisma.user.findFirst({
+            where: { stripeSubscriptionId: subscription.id },
+            select: { id: true },
+          });
+
+          if (subscriber?.id) {
+            await provisionReceptionNumber(subscriber.id, subscription.id);
+          }
+        }
 
         const user = await prisma.user.findFirst({
           where: {
@@ -510,6 +844,47 @@ export async function POST(req: Request) {
         });
 
         return new Response(null, { status: 200 });
+      }
+    }
+
+    if (event.type === "customer.subscription.trial_will_end") {
+      const subscription = event.data.object as Stripe.Subscription;
+      const customerId =
+        typeof subscription.customer === "string"
+          ? subscription.customer
+          : subscription.customer.id;
+
+      const user = await prisma.user.findFirst({
+        where: { stripeSubscriptionId: subscription.id },
+        select: { email: true, name: true },
+      });
+
+      if (user?.email) {
+        const portal = await stripe.billingPortal.sessions.create({
+          customer: customerId,
+          return_url: absoluteUrl("/pricing"),
+        });
+
+        const { error } = await resend.emails.send({
+          from: env.EMAIL_FROM,
+          to: user.email,
+          subject: `Your free trial ends soon — ${siteConfig.name}`,
+          text: [
+            `Hi ${user.name || "there"},`,
+            "",
+            "Your 7-day free trial ends soon. Add a payment method to keep using your selected plan.",
+            "You will not be charged during the free trial. If you do not add a payment method, the subscription will pause and no subscription payment will be collected.",
+            "",
+            `Add a payment method: ${portal.url}`,
+            "",
+            `— ${siteConfig.name}`,
+          ].join("\n"),
+        });
+
+        if (error) {
+          console.error("Trial ending email failed:", error);
+          return new Response("Trial reminder email failed", { status: 500 });
+        }
       }
     }
 

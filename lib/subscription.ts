@@ -96,7 +96,7 @@ export async function getUserSubscriptionPlan(
     ) || plan;
 
   return {
-    ...(isTrial ? trialPlan : plan),
+    ...(isPaid ? plan : user.trialEndsAt ? trialPlan : isTrial ? trialPlan : plan),
     ...user,
     stripeCurrentPeriodEnd: currentPeriodEnd,
     isPaid,

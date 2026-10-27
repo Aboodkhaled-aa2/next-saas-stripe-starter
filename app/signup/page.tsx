@@ -149,9 +149,7 @@ function SignupForm() {
 
     try {
       await signIn("google", {
-        callbackUrl: selectedPlan
-          ? `/pricing?plan=${selectedPlan}`
-          : "/dashboard",
+        callbackUrl: "/dashboard",
       });
     } catch {
       setErrorMsg("Unable to continue with Google.");

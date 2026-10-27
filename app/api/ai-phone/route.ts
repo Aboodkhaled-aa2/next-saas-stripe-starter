@@ -21,9 +21,37 @@ export async function GET() {
       },
     });
 
+    const savedAIPhoneSettings = businessProfile?.aiPhoneSettings ?? null;
+    const assignedPhoneNumber = await prisma.phoneNumber.findFirst({
+      where: {
+        userId: user.id,
+        status: "ACTIVE",
+        phoneNumber: { not: "+12012770096" },
+      },
+      orderBy: { purchasedAt: "desc" },
+      select: { phoneNumber: true },
+    });
+
+    const aiPhoneSettings = savedAIPhoneSettings
+      ? {
+          ...savedAIPhoneSettings,
+          phoneNumber:
+            savedAIPhoneSettings.phoneNumber ??
+            assignedPhoneNumber?.phoneNumber ??
+            null,
+        }
+      : assignedPhoneNumber
+        ? {
+            phoneNumber: assignedPhoneNumber.phoneNumber,
+            assistantName: null,
+            status: "NOT_CONFIGURED",
+            enabled: false,
+          }
+        : null;
+
     return NextResponse.json({
       success: true,
-      aiPhoneSettings: businessProfile?.aiPhoneSettings ?? null,
+      aiPhoneSettings,
       businessProfile: businessProfile
         ? {
             businessName: businessProfile.businessName,
@@ -89,6 +117,40 @@ export async function POST(request: Request) {
       typeof body.handoffInstructions === "string"
         ? body.handoffInstructions.trim()
         : "";
+    const allowedCallHandlingModes = [
+      "ALL_CALLS",
+      "BUSY_OR_NO_ANSWER",
+      "AFTER_HOURS",
+    ] as const;
+    const requestedCallHandlingMode =
+      typeof body.callHandlingMode === "string"
+        ? body.callHandlingMode.trim()
+        : "ALL_CALLS";
+    if (
+      !allowedCallHandlingModes.includes(
+        requestedCallHandlingMode as (typeof allowedCallHandlingModes)[number],
+      )
+    ) {
+      return NextResponse.json(
+        { error: "Invalid call handling mode." },
+        { status: 400 },
+      );
+    }
+    const businessPhoneNumber =
+      typeof body.businessPhoneNumber === "string"
+        ? body.businessPhoneNumber.trim() || null
+        : null;
+    const ringTimeoutSeconds =
+      typeof body.ringTimeoutSeconds === "number" &&
+      Number.isInteger(body.ringTimeoutSeconds)
+        ? body.ringTimeoutSeconds
+        : 20;
+    if (ringTimeoutSeconds < 10 || ringTimeoutSeconds > 60) {
+      return NextResponse.json(
+        { error: "Ring timeout must be between 10 and 60 seconds." },
+        { status: 400 },
+      );
+    }
 
     const ownedPhoneNumber = requestedPhoneNumber
       ? await prisma.phoneNumber.findFirst({
@@ -103,6 +165,7 @@ export async function POST(request: Request) {
           where: {
             userId: user.id,
             status: "ACTIVE",
+            phoneNumber: { not: "+12012770096" },
           },
           orderBy: { purchasedAt: "desc" },
           select: { phoneNumber: true },
@@ -164,6 +227,9 @@ export async function POST(request: Request) {
         phoneNumber,
         assistantName,
         greeting: greeting || null,
+        callHandlingMode: requestedCallHandlingMode,
+        businessPhoneNumber,
+        ringTimeoutSeconds,
         enabled: false,
       },
       update: {
@@ -172,6 +238,9 @@ export async function POST(request: Request) {
         phoneNumber,
         assistantName,
         greeting: greeting || null,
+        callHandlingMode: requestedCallHandlingMode,
+        businessPhoneNumber,
+        ringTimeoutSeconds,
         enabled: false,
       },
     });

@@ -3,7 +3,6 @@ import { clsx, type ClassValue } from "clsx";
 import ms from "ms";
 import { twMerge } from "tailwind-merge";
 
-import { env } from "@/env.mjs";
 import { siteConfig } from "@/config/site";
 
 export function cn(...inputs: ClassValue[]) {
@@ -14,7 +13,7 @@ export function constructMetadata({
   title = siteConfig.name,
   description = siteConfig.description,
   image = siteConfig.ogImage,
-  icons = "/favicon.ico",
+  icons = "/icon.svg",
   noIndex = false,
 }: {
   title?: string;
@@ -80,7 +79,7 @@ export function formatDate(input: string | number): string {
 }
 
 export function absoluteUrl(path: string) {
-  return `${env.NEXT_PUBLIC_APP_URL}${path}`;
+  return new URL(path, siteConfig.url).toString();
 }
 
 // Utils from precedent.dev
