@@ -54,7 +54,7 @@ export default {
 
         // A short-lived, single-use verification code can establish the first session.
         if (verificationCode) {
-          if (!/^\\d{6}$/.test(verificationCode) || !user.emailVerified) {
+          if (!/^\d{6}$/.test(verificationCode) || !user.emailVerified) {
             return null;
           }
 
