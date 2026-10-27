@@ -73,7 +73,7 @@ export async function generateUserStripe(
           trial_period_days: TRIAL_PERIOD_DAYS,
           trial_settings: {
             end_behavior: {
-              missing_payment_method: "cancel",
+              missing_payment_method: "pause",
             },
           },
           metadata: { userId: user.id, plan: selectedPlan },
