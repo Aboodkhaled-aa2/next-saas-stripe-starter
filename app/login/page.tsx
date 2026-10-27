@@ -21,7 +21,9 @@ function LoginForm() {
 
   const callbackUrl = (() => {
     if (!rawCallbackUrl) {
-      return "/dashboard";
+      return searchParams.get("trial") === "expired"
+        ? "/pricing?trial=expired"
+        : "/dashboard";
     }
 
     try {
