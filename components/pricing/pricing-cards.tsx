@@ -73,6 +73,18 @@ export function PricingCards({
                 ? "Free Trial Active"
                 : `Trial: ${subscriptionPlan.title}`}
             </div>
+          ) : userId && subscriptionPlan && !subscriptionPlan.isPaid ? (
+            subscriptionPlan.title === offer.title ? (
+              <BillingFormButton
+                year={false}
+                offer={offer}
+                subscriptionPlan={subscriptionPlan}
+              />
+            ) : (
+              <div className="w-full rounded-xl border border-slate-700 px-4 py-3 text-center text-sm text-slate-400">
+                Saved plan: {subscriptionPlan.title}
+              </div>
+            )
           ) : userId && subscriptionPlan ? (
             <BillingFormButton
               year={false}
