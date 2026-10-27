@@ -191,17 +191,19 @@ async function canUseMessaging(userId: string) {
 
   const now = new Date();
 
+  // A trial grants dashboard access only. Messaging automation requires payment.
   if (!user.stripeSubscriptionId) {
-    if (!user.trialEndsAt || user.trialEndsAt <= now) {
-      return {
-        allowed: false,
-        remaining: 0,
-        usesExtraCredit: false,
-        reason: "Your free trial has ended. Choose a plan to continue.",
-      };
-    }
+    return {
+      allowed: false,
+      remaining: 0,
+      usesExtraCredit: false,
+      reason: user.trialEndsAt && user.trialEndsAt > now
+        ? "Messaging automation is available after you subscribe."
+        : "Your free trial has ended. Choose a plan to continue.",
+    };
+  }
 
-    const limit =
+  const limit =
       user.plan === "PRO" ? 200 : user.plan === "BUSINESS" ? 100 : 50;
     const startedAt = user?.trialStartedAt ?? now;
 
