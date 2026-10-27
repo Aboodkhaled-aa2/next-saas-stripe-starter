@@ -53,7 +53,11 @@ export async function generateUserStripe(
     const selectedPlan = selectedOffer.title.toUpperCase() as "STARTER" | "BUSINESS" | "PRO";
     const subscriptionPlan = await getUserSubscriptionPlan(user.id);
 
-    if (subscriptionPlan.isPaid && subscriptionPlan.stripeCustomerId) {
+    // A user whose local 7-day trial is still active must never be sent to Checkout.
+    // Trial access is granted by the app; billing starts only after the trial expires.
+    if (!subscriptionPlan.isPaid && subscriptionPlan.isTrial) {
+      redirectUrl = absoluteUrl("/dashboard");
+    } else if (subscriptionPlan.isPaid && subscriptionPlan.stripeCustomerId) {
       const stripeSession = await stripe.billingPortal.sessions.create({
         customer: subscriptionPlan.stripeCustomerId,
         return_url: billingUrl,
