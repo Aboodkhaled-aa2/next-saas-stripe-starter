@@ -7,6 +7,9 @@ import { FormEvent, useEffect, useState } from "react";
 export default function AIPhoneSetupPage() {
   const [speakingStyle, setSpeakingStyle] = useState("Professional and friendly");
   const [handoffInstructions, setHandoffInstructions] = useState("");
+  const [callHandlingMode, setCallHandlingMode] = useState("ALL_CALLS");
+  const [businessPhoneNumber, setBusinessPhoneNumber] = useState("");
+  const [ringTimeoutSeconds, setRingTimeoutSeconds] = useState("20");
   const [businessProfile, setBusinessProfile] = useState<{
     businessName?: string | null;
     services?: unknown;
@@ -46,6 +49,9 @@ export default function AIPhoneSetupPage() {
           setValue("assistantName", settings.assistantName);
           setValue("greeting", settings.greeting);
           setValue("provider", settings.provider);
+          setCallHandlingMode(settings.callHandlingMode || "ALL_CALLS");
+          setBusinessPhoneNumber(settings.businessPhoneNumber || "");
+          setRingTimeoutSeconds(String(settings.ringTimeoutSeconds ?? 20));
         }
 
         if (!cancelled && data.businessProfile) {
@@ -88,8 +94,10 @@ export default function AIPhoneSetupPage() {
           greeting: formData.get("greeting"),
           provider: formData.get("provider"),
           speakingStyle: speakingStyle || formData.get("speakingStyle"),
-          handoffInstructions:
-            handoffInstructions || formData.get("handoffInstructions"),
+          handoffInstructions,
+          callHandlingMode,
+          businessPhoneNumber,
+          ringTimeoutSeconds: Number(ringTimeoutSeconds),
         }),
       });
 
@@ -237,6 +245,62 @@ export default function AIPhoneSetupPage() {
 
         <section className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-xl sm:p-8">
           <div className="mb-6">
+        <section className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-xl sm:p-8">
+          <div className="mb-6">
+            <h2 className="font-semibold text-white">Incoming call routing</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Choose when the AI receptionist should answer. These settings are saved to your account.
+            </p>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <SelectField
+              label="When should AI answer?"
+              name="callHandlingMode"
+              value={callHandlingMode}
+              onChange={setCallHandlingMode}
+              options={["ALL_CALLS", "BUSY_OR_NO_ANSWER", "AFTER_HOURS"]}
+              optionLabels={["All incoming calls", "When busy or no answer", "Outside business hours"]}
+            />
+            <div>
+              <label htmlFor="businessPhoneNumber" className="text-sm font-medium text-slate-300">
+                Your business phone for transfers
+              </label>
+              <input
+                id="businessPhoneNumber"
+                name="businessPhoneNumber"
+                type="tel"
+                value={businessPhoneNumber}
+                onChange={(event) => setBusinessPhoneNumber(event.target.value)}
+                placeholder="+1 555 123 4567"
+                className="mt-2 h-11 w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-violet-500"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Used when a caller needs a human. Leave blank if you do not want to set a transfer number yet.
+              </p>
+            </div>
+            <div>
+              <label htmlFor="ringTimeoutSeconds" className="text-sm font-medium text-slate-300">
+                Ring time before AI fallback
+              </label>
+              <select
+                id="ringTimeoutSeconds"
+                name="ringTimeoutSeconds"
+                value={ringTimeoutSeconds}
+                onChange={(event) => setRingTimeoutSeconds(event.target.value)}
+                className="mt-2 h-11 w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 text-sm text-white outline-none focus:border-violet-500"
+              >
+                {[10, 15, 20, 25, 30, 45, 60].map((seconds) => (
+                  <option key={seconds} value={seconds}>{seconds} seconds</option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-slate-500">
+                Applies to busy/no-answer routing when call forwarding is configured.
+              </p>
+            </div>
+          </div>
+        </section>
+
             <h2 className="font-semibold text-white">Call behavior</h2>
             <p className="mt-1 text-sm text-slate-500">
               The AI will follow your existing business rules and handoff instructions.
@@ -319,12 +383,14 @@ function SelectField({
   value,
   onChange,
   options,
+  optionLabels,
 }: {
   label: string;
   name: string;
   value?: string;
   onChange?: (value: string) => void;
   options: string[];
+  optionLabels?: string[];
 }) {
   return (
     <div>
@@ -339,8 +405,8 @@ function SelectField({
         onChange={onChange ? (event) => onChange(event.target.value) : undefined}
         className="mt-2 h-11 w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 text-sm text-white outline-none focus:border-violet-500"
       >
-        {options.map((option) => (
-          <option key={option}>{option}</option>
+        {options.map((option, index) => (
+          <option key={option} value={option}>{optionLabels?.[index] ?? option}</option>
         ))}
       </select>
     </div>
