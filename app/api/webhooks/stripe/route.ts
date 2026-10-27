@@ -501,7 +501,12 @@ export async function POST(req: Request) {
           )
           ?.title.toUpperCase();
 
-      if (selectedPlan === "BUSINESS" || selectedPlan === "PRO") {
+      // Only provision a paid subscription here. Trial/no-payment sessions
+      // must not trigger a billable phone-number purchase.
+      if (
+        session.payment_status === "paid" &&
+        (selectedPlan === "BUSINESS" || selectedPlan === "PRO")
+      ) {
         await provisionReceptionNumber(userId, subscription.id);
       }
     }
@@ -530,6 +535,26 @@ export async function POST(req: Request) {
             ),
           },
         });
+
+        const priceId = subscription.items.data[0]?.price.id;
+        const plan = pricingData.find(
+          (item) =>
+            item.stripeIds.monthly === priceId ||
+            item.stripeIds.yearly === priceId,
+        );
+
+        // First successful invoice also handles subscriptions whose Checkout
+        // session did not complete with an immediately paid status.
+        if (plan?.title === "Business" || plan?.title === "Pro") {
+          const subscriber = await prisma.user.findFirst({
+            where: { stripeSubscriptionId: subscription.id },
+            select: { id: true },
+          });
+
+          if (subscriber?.id) {
+            await provisionReceptionNumber(subscriber.id, subscription.id);
+          }
+        }
 
         const user = await prisma.user.findFirst({
           where: {
