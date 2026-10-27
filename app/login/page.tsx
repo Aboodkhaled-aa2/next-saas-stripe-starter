@@ -12,8 +12,6 @@ import {
   Chrome,
 } from "lucide-react";
 
-import { pricingData } from "@/config/subscriptions";
-import { generateUserStripe } from "@/actions/generate-user-stripe";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -37,12 +35,6 @@ function LoginForm() {
       return "/dashboard";
     }
   })();
-  const planParam = searchParams.get("plan")?.toLowerCase();
-
-  const selectedPlan =
-    pricingData.find((plan) => plan.title.toLowerCase() === planParam) ||
-    null;
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -74,20 +66,7 @@ function LoginForm() {
         return;
       }
 
-      if (selectedPlan) {
-        const priceId = selectedPlan.stripeIds.monthly;
-
-        if (!priceId) {
-          setErrorMsg("This plan is not available for checkout yet.");
-          setLoading(false);
-          return;
-        }
-
-        await generateUserStripe(priceId);
-        return;
-      }
-
-      window.location.href = callbackUrl;
+      window.location.href = "/dashboard";
     } catch {
       setErrorMsg("Something went wrong. Please try again.");
       setLoading(false);
@@ -100,9 +79,7 @@ function LoginForm() {
 
     try {
       await signIn("google", {
-        callbackUrl: selectedPlan
-          ? `/pricing?plan=${selectedPlan.title.toLowerCase()}`
-          : callbackUrl,
+        callbackUrl: "/dashboard",
       });
     } catch {
       setErrorMsg("Unable to continue with Google.");
