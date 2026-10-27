@@ -24,6 +24,12 @@ export function BillingFormButton({
 
   const stripeSessionAction = () => {
     setError("");
+
+    if (!priceId) {
+      setError("This plan is not configured for the selected billing period. Please choose another option.");
+      return;
+    }
+
     startTransition(async () => {
       try {
         const result = await generateUserStripe(priceId);
