@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 
 import { pricingData } from "@/config/subscriptions";
-import { generateUserStripe } from "@/actions/generate-user-stripe";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -74,20 +73,8 @@ function LoginForm() {
         return;
       }
 
-      if (selectedPlan) {
-        const priceId = selectedPlan.stripeIds.monthly;
-
-        if (!priceId) {
-          setErrorMsg("This plan is not available for checkout yet.");
-          setLoading(false);
-          return;
-        }
-
-        await generateUserStripe(priceId);
-        return;
-      }
-
-      window.location.href = callbackUrl;
+      // A selected plan is saved during signup. Logging in must never start checkout.
+      window.location.href = selectedPlan ? "/dashboard" : callbackUrl;
     } catch {
       setErrorMsg("Something went wrong. Please try again.");
       setLoading(false);
