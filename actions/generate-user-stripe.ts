@@ -57,6 +57,10 @@ export async function generateUserStripe(
 
     const subscriptionPlan = await getUserSubscriptionPlan(user.id);
 
+    if (!subscriptionPlan.isPaid && subscriptionPlan.isTrial) {
+      throw new Error("Your free trial is active. Checkout is available after it ends.");
+    }
+
     if (subscriptionPlan.isPaid && subscriptionPlan.stripeCustomerId) {
       const stripeSession = await stripe.billingPortal.sessions.create({
         customer: subscriptionPlan.stripeCustomerId,
