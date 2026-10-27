@@ -14,11 +14,12 @@ export async function getUserSubscriptionPlan(
     throw new Error("Missing parameters");
   }
 
-  const user = await prisma.user.findFirst({
+  let user = await prisma.user.findFirst({
     where: {
       id: userId,
     },
     select: {
+      id: true,
       email: true,
       stripeSubscriptionId: true,
       stripeCurrentPeriodEnd: true,
@@ -32,6 +33,31 @@ export async function getUserSubscriptionPlan(
 
   if (!user) {
     throw new Error("User not found");
+  }
+
+  // Normalize legacy accounts once. Never restart a trial on subsequent logins.
+  if (!user.stripeSubscriptionId && (!user.trialStartedAt || !user.trialEndsAt)) {
+    const startedAt = user.trialStartedAt ?? new Date();
+    const endsAt = user.trialEndsAt ?? new Date(startedAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+    user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        trialStartedAt: startedAt,
+        trialEndsAt: endsAt,
+        plan: user.plan ?? "STARTER",
+      },
+      select: {
+        id: true,
+        email: true,
+        stripeSubscriptionId: true,
+        stripeCurrentPeriodEnd: true,
+        stripeCustomerId: true,
+        stripePriceId: true,
+        plan: true,
+        trialStartedAt: true,
+        trialEndsAt: true,
+      },
+    });
   }
 
   if (user.email?.toLowerCase() === META_REVIEW_EMAIL) {
