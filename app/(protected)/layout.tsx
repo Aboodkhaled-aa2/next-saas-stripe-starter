@@ -55,7 +55,10 @@ export default async function Dashboard({
 
     const subscriptionPlan = await getUserSubscriptionPlan(user.id);
 
-    if (!subscriptionPlan.isPaid) {
+    if (!subscriptionPlan.isPaid && !subscriptionPlan.isTrial) {
+      if (subscriptionPlan.trialEndsAt && new Date(subscriptionPlan.trialEndsAt).getTime() <= Date.now()) {
+        redirect("/trial-expired");
+      }
       redirect("/pricing");
     }
 
