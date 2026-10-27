@@ -116,13 +116,13 @@ export async function getUserSubscriptionPlan(
     }
   }
 
-  const trialPlan =
+  const savedPlan =
     pricingData.find(
       (item) => item.title.toUpperCase() === user.plan,
     ) || plan;
 
   return {
-    ...(isTrial ? trialPlan : plan),
+    ...(isTrial || !isPaid ? savedPlan : plan),
     ...user,
     stripeCurrentPeriodEnd: currentPeriodEnd,
     isPaid,
