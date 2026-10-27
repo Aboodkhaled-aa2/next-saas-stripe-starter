@@ -1,12 +1,12 @@
 import { SidebarNavItem, SiteConfig } from "types";
 import { env } from "@/env.mjs";
 
-const site_url = env.NEXT_PUBLIC_APP_URL;
+const rawSiteUrl = env.NEXT_PUBLIC_APP_URL;
+const site_url = rawSiteUrl?.startsWith("http") ? rawSiteUrl.replace(/\/+$/, "") : "https://www.smartcleaningdesk.com";
 
 export const siteConfig: SiteConfig = {
   name: "Smart Cleaning Desk",
-  description:
-    "Smart Cleaning Desk helps cleaning businesses manage customer messages, leads, and daily operations effortlessly.",
+  description: "Smart Cleaning Desk helps cleaning businesses manage customer messages, leads, and daily operations effortlessly.",
   url: site_url,
   ogImage: `${site_url}/_static/og.jpg`,
   links: {
@@ -17,31 +17,7 @@ export const siteConfig: SiteConfig = {
 };
 
 export const footerLinks: SidebarNavItem[] = [
-  {
-    title: "Company",
-    items: [
-      { title: "About", href: "#" },
-      { title: "Enterprise", href: "#" },
-      { title: "Terms", href: "/terms" },
-      { title: "Privacy", href: "/privacy" },
-    ],
-  },
-  {
-    title: "Product",
-    items: [
-      { title: "Security", href: "#" },
-      { title: "Customization", href: "#" },
-      { title: "Customers", href: "#" },
-      { title: "Changelog", href: "#" },
-    ],
-  },
-  {
-    title: "Docs",
-    items: [
-      { title: "Introduction", href: "#" },
-      { title: "Installation", href: "#" },
-      { title: "Components", href: "#" },
-      { title: "Code Blocks", href: "#" },
-    ],
-  },
+  { title: "Company", items: [{ title: "About", href: "#" }, { title: "Enterprise", href: "#" }, { title: "Terms", href: "/terms" }, { title: "Privacy", href: "/privacy" }] },
+  { title: "Product", items: [{ title: "Security", href: "#" }, { title: "Customization", href: "#" }, { title: "Customers", href: "#" }, { title: "Changelog", href: "#" }] },
+  { title: "Docs", items: [{ title: "Introduction", href: "#" }, { title: "Installation", href: "#" }, { title: "Output", href: "#" }, { title: "Code Blocks", href: "#" }] },
 ];
