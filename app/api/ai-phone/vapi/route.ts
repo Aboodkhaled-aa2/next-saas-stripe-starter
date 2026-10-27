@@ -521,8 +521,30 @@ export async function POST(request: Request) {
     if (message.type === "assistant-request") {
       const voiceUser = await prisma.user.findUnique({
         where: { id: configuration.businessProfile.userId },
-        select: { plan: true },
+        select: { plan: true, stripeSubscriptionId: true },
       });
+
+      if (!voiceUser?.stripeSubscriptionId) {
+        return NextResponse.json(
+          { error: "AI Phone calls are disabled until a paid subscription is active." },
+          { status: 402 },
+        );
+      }
+
+      let paidSubscriptionActive = false;
+      try {
+        const paidSubscription = await stripe.subscriptions.retrieve(voiceUser.stripeSubscriptionId);
+        paidSubscriptionActive = ["active", "trialing"].includes(paidSubscription.status);
+      } catch (error) {
+        console.error("Unable to verify paid subscription before AI Phone call:", error);
+      }
+
+      if (!paidSubscriptionActive) {
+        return NextResponse.json(
+          { error: "AI Phone calls require an active paid subscription." },
+          { status: 402 },
+        );
+      }
 
       const voiceBalance = await hasVoiceMinutesAvailable(
         configuration.businessProfile.userId,
