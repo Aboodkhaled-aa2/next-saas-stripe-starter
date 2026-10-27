@@ -437,6 +437,11 @@ model AIPhoneSettings {
   provider    String?
   phoneNumber String?
 
+  // How incoming calls should be routed for this business.
+  callHandlingMode String @default("ALL_CALLS") @map("call_handling_mode")
+  businessPhoneNumber String? @map("business_phone_number")
+  ringTimeoutSeconds Int @default(20) @map("ring_timeout_seconds")
+
   assistantName String?
   greeting     String?
   enabled      Boolean @default(false)
