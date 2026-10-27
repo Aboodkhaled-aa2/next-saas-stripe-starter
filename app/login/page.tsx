@@ -88,7 +88,7 @@ function LoginForm() {
     try {
       await signIn("google", {
         callbackUrl: selectedPlan
-          ? `/pricing?plan=${selectedPlan.title.toLowerCase()}`
+          ? `/api/trial/select-plan?plan=${selectedPlan.title.toLowerCase()}`
           : callbackUrl,
       });
     } catch {
