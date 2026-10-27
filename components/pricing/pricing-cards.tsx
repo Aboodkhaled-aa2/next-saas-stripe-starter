@@ -155,9 +155,9 @@ export function PricingCards({
           Email{" "}
           <a
             className="font-medium text-blue-400 hover:underline"
-            href="mailto:support@smartcleaningdesk.com"
+            href="mailto:supportsmartcleaningdesk@gmail.com"
           >
-            support@smartcleaningdesk.com
+            supportsmartcleaningdesk@gmail.com
           </a>{" "}
           to contact our support team.
         </p>
