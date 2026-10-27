@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { Mail, ArrowRight, Sparkles } from "lucide-react";
 
 export default function VerifyEmailPage() {
@@ -62,11 +63,21 @@ export default function VerifyEmailPage() {
         return;
       }
 
-      setSuccessMsg("Email verified successfully.");
+      const signInResult = await signIn("credentials", {
+        email,
+        verificationCode: code,
+        redirect: false,
+      });
 
-      setTimeout(() => {
-        router.push(plan ? `/login?plan=${encodeURIComponent(plan)}` : "/login");
-      }, 1000);
+      if (signInResult?.error) {
+        setErrorMsg("Email verified, but automatic sign-in failed. Please log in with your email and password.");
+        setLoading(false);
+        return;
+      }
+
+      setSuccessMsg("Email verified. Opening your dashboard...");
+
+      router.replace("/dashboard");
     } catch {
       setErrorMsg("Something went wrong. Please try again.");
       setLoading(false);
