@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/session";
@@ -57,12 +56,6 @@ export default async function TrialExpiredPage() {
         <p className="mt-5 text-sm text-slate-400">
           No payment is taken unless you complete checkout.
         </p>
-        <Link
-          href="/logout"
-          className="mt-6 inline-block text-sm text-slate-500 underline hover:text-slate-300"
-        >
-          Sign out
-        </Link>
       </section>
     </main>
   );
