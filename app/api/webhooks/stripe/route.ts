@@ -7,6 +7,7 @@ import { stripe } from "@/lib/stripe";
 import { pricingData } from "@/config/subscriptions";
 import { resend, sendPaymentConfirmation } from "@/lib/email";
 import { siteConfig } from "@/config/site";
+import { absoluteUrl } from "@/lib/utils";
 
 const allowedStripePriceIds = new Set(
   pricingData
@@ -877,7 +878,7 @@ export async function POST(req: Request) {
             `Add a payment method: ${portal.url}`,
             "",
             `— ${siteConfig.name}`,
-          ].join("\\n"),
+          ].join("\n"),
         });
 
         if (error) {
