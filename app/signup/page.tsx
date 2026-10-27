@@ -150,7 +150,7 @@ function SignupForm() {
     try {
       await signIn("google", {
         callbackUrl: selectedPlan
-          ? `/pricing?plan=${selectedPlan}`
+          ? `/api/trial/select-plan?plan=${selectedPlan}`
           : "/dashboard",
       });
     } catch {
