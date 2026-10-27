@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   }
 
   if (!user.trialEndsAt || user.trialEndsAt.getTime() <= Date.now()) {
-    return NextResponse.json({ error: "Your free trial has ended." }, { status: 410 });
+    return NextResponse.redirect(new URL("/pricing?trial=expired", request.url));
   }
 
   await prisma.user.update({
@@ -49,5 +49,5 @@ export async function POST(request: Request) {
     data: { plan },
   });
 
-  return NextResponse.json({ success: true, plan: planKey });
+  return NextResponse.redirect(new URL("/dashboard", request.url));
 }
