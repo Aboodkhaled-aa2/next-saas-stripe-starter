@@ -71,6 +71,11 @@ export async function generateUserStripe(
         line_items: [{ price: priceId, quantity: 1 }],
         subscription_data: {
           trial_period_days: TRIAL_PERIOD_DAYS,
+          trial_settings: {
+            end_behavior: {
+              missing_payment_method: "cancel",
+            },
+          },
           metadata: { userId: user.id, plan: selectedPlan },
         },
         metadata: { userId: user.id, plan: selectedPlan },
