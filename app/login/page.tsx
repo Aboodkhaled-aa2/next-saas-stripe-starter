@@ -17,6 +17,7 @@ import { pricingData } from "@/config/subscriptions";
 function LoginForm() {
   const searchParams = useSearchParams();
 
+  const trialExpired = searchParams.get("trial") === "expired";
   const rawCallbackUrl = searchParams.get("callbackUrl");
 
   const callbackUrl = (() => {
