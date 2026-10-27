@@ -63,23 +63,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const consumedToken = await prisma.verificationToken.deleteMany({
-      where: {
-        identifier: email,
-        token: code,
-        expires: {
-          gte: now,
-        },
-      },
-    });
-
-    if (consumedToken.count !== 1) {
-      return NextResponse.json(
-        { error: "Invalid or already used verification code." },
-        { status: 400 },
-      );
-    }
-
+    // Keep the valid code briefly so Auth.js can consume it once to sign in
+    // immediately after verification. The credentials provider deletes it atomically.
     await prisma.user.update({
       where: { id: user.id },
       data: {
