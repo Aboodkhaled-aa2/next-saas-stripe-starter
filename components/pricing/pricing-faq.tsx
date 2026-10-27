@@ -12,13 +12,13 @@ const pricingFaqData = [
     id: "item-1",
     question: "Is there a free trial?",
     answer:
-      "Yes. Every plan includes a 3-day free trial. Your subscription begins billing after the trial period ends.",
+      "Yes. Every plan includes a 7-day free trial. Your subscription begins billing after the trial period ends, according to the terms shown at checkout.",
   },
   {
     id: "item-2",
     question: "What happens after I subscribe?",
     answer:
-      "After payment is verified, your subscription becomes active. You can then complete your business setup and configure your AI employee.",
+      "After your subscription is confirmed, you can complete your business setup and configure your AI employee. Features are available according to your selected plan.",
   },
   {
     id: "item-3",
@@ -36,7 +36,7 @@ const pricingFaqData = [
     id: "item-5",
     question: "Is the annual plan available?",
     answer:
-      "Annual billing can be offered as an additional billing option when the corresponding Stripe prices are enabled. The current pricing experience focuses on monthly plans.",
+      "Annual billing is available only when the corresponding annual plan is configured for checkout. The current pricing page displays monthly prices.",
   },
 ];
 
