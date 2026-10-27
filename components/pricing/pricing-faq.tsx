@@ -12,7 +12,7 @@ const pricingFaqData = [
     id: "item-1",
     question: "Is there a free trial?",
     answer:
-      "Yes. Every plan includes a 7-day free trial. Your subscription begins billing after the trial period ends, according to the terms shown at checkout.",
+      "Yes. Every plan includes a 7-day free trial. You can try your selected plan for seven full days before billing begins.",
   },
   {
     id: "item-2",
