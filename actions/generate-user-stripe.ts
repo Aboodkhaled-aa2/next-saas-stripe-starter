@@ -33,6 +33,28 @@ export async function generateUserStripe(
       throw new Error("Unauthorized");
     }
 
+    const currentUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        stripeSubscriptionId: true,
+        trialStartedAt: true,
+        trialEndsAt: true,
+        stripePriceId: true,
+      },
+    });
+
+    if (!currentUser) {
+      throw new Error("User not found");
+    }
+
+    const activeTrial =
+      !currentUser.stripeSubscriptionId &&
+      Boolean(currentUser.trialEndsAt && currentUser.trialEndsAt.getTime() > Date.now());
+
+    if (activeTrial) {
+      throw new Error("Your seven-day free trial is active. Checkout is unavailable until it ends.");
+    }
+
     if (!allowedStripePriceIds.has(priceId)) {
       throw new Error("Invalid Stripe price selected");
     }
