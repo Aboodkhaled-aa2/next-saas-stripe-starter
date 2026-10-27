@@ -40,8 +40,21 @@ async function provisionReceptionNumber(userId: string, subscriptionId: string) 
     select: { id: true, phoneNumber: true, status: true },
   });
 
-  if (existingNumber?.status === "ACTIVE") {
-    return existingNumber;
+  if (
+    existingNumber?.status === "ACTIVE" &&
+    existingNumber.phoneNumber !== TEST_PHONE_NUMBER
+  ) {
+    const saved = await prisma.phoneNumber.findUnique({
+      where: { id: existingNumber.id },
+      select: { metadata: true },
+    });
+    const metadata = saved?.metadata as Record<string, unknown> | null;
+    if (metadata?.routingConfigured === true && typeof metadata?.vapiPhoneNumberId === "string") {
+      return existingNumber;
+    }
+    throw new Error(
+      "A reception number already exists but routing is not verified; manual recovery is required to avoid buying a duplicate number",
+    );
   }
 
   if (
@@ -202,7 +215,9 @@ async function provisionReceptionNumber(userId: string, subscriptionId: string) 
         credentialId: vapiCredentialId,
         number: purchasePayload.number,
         name: `Smart Cleaning Desk ${purchasePayload.number}`,
-        serverUrl: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
+        server: {
+          url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
+        },
         numberE164CheckEnabled: true,
       }),
     });
