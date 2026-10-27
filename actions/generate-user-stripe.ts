@@ -1,7 +1,6 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
 import { pricingData } from "@/config/subscriptions";
@@ -15,6 +14,7 @@ export type responseAction = {
 };
 
 const billingUrl = absoluteUrl("/pricing");
+const TRIAL_PERIOD_DAYS = 7;
 
 const allowedStripePriceIds = new Set(
   pricingData
@@ -69,7 +69,10 @@ export async function generateUserStripe(
         billing_address_collection: "auto",
         customer_email: user.email,
         line_items: [{ price: priceId, quantity: 1 }],
-        subscription_data: { metadata: { userId: user.id, plan: selectedPlan } },
+        subscription_data: {
+          trial_period_days: TRIAL_PERIOD_DAYS,
+          metadata: { userId: user.id, plan: selectedPlan },
+        },
         metadata: { userId: user.id, plan: selectedPlan },
       });
 
