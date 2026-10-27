@@ -203,6 +203,23 @@ async function canUseMessaging(userId: string) {
     };
   }
 
+  let paidSubscriptionActive = false;
+  try {
+    const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+    paidSubscriptionActive = ["active", "trialing"].includes(subscription.status);
+  } catch (error) {
+    console.error("Failed to verify paid subscription before messaging:", error);
+  }
+
+  if (!paidSubscriptionActive) {
+    return {
+      allowed: false,
+      remaining: 0,
+      usesExtraCredit: false,
+      reason: "Messaging automation requires an active paid subscription.",
+    };
+  }
+
   const paidLimit =
     user.plan === "PRO" ? 5000 : user.plan === "BUSINESS" ? 2000 : 500;
 
