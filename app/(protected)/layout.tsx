@@ -55,7 +55,7 @@ export default async function Dashboard({
 
     const subscriptionPlan = await getUserSubscriptionPlan(user.id);
 
-    if (!subscriptionPlan.isPaid) {
+    if (!subscriptionPlan.isPaid && !subscriptionPlan.isTrial) {
       redirect("/pricing");
     }
 
