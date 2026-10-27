@@ -18,7 +18,7 @@ export default function PaymentSuccessPage() {
         </h1>
 
         <p className="mx-auto mt-5 max-w-md text-base leading-7 text-slate-400">
-          Your 3-day free trial is now active. Your subscription will begin billing after the trial period ends.
+          Your 7-day free trial is now active. Your subscription will begin billing after the trial period ends.
         </p>
 
         <div className="mt-10">
