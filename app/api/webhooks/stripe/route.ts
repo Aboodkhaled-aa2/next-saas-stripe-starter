@@ -5,7 +5,8 @@ import { env } from "@/env.mjs";
 import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { pricingData } from "@/config/subscriptions";
-import { sendPaymentConfirmation } from "@/lib/email";
+import { resend, sendPaymentConfirmation } from "@/lib/email";
+import { siteConfig } from "@/config/site";
 
 const allowedStripePriceIds = new Set(
   pricingData
@@ -842,6 +843,47 @@ export async function POST(req: Request) {
         });
 
         return new Response(null, { status: 200 });
+      }
+    }
+
+    if (event.type === "customer.subscription.trial_will_end") {
+      const subscription = event.data.object as Stripe.Subscription;
+      const customerId =
+        typeof subscription.customer === "string"
+          ? subscription.customer
+          : subscription.customer.id;
+
+      const user = await prisma.user.findFirst({
+        where: { stripeSubscriptionId: subscription.id },
+        select: { email: true, name: true },
+      });
+
+      if (user?.email) {
+        const portal = await stripe.billingPortal.sessions.create({
+          customer: customerId,
+          return_url: absoluteUrl("/pricing"),
+        });
+
+        const { error } = await resend.emails.send({
+          from: env.EMAIL_FROM,
+          to: user.email,
+          subject: `Your free trial ends soon — ${siteConfig.name}`,
+          text: [
+            `Hi ${user.name || "there"},`,
+            "",
+            "Your 7-day free trial ends soon. Add a payment method to keep using your selected plan.",
+            "You will not be charged during the free trial. If you do not add a payment method, the subscription will pause and no subscription payment will be collected.",
+            "",
+            `Add a payment method: ${portal.url}`,
+            "",
+            `— ${siteConfig.name}`,
+          ].join("\\n"),
+        });
+
+        if (error) {
+          console.error("Trial ending email failed:", error);
+          return new Response("Trial reminder email failed", { status: 500 });
+        }
       }
     }
 
