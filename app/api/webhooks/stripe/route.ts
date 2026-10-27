@@ -491,7 +491,16 @@ export async function POST(req: Request) {
         },
       });
 
-      const selectedPlan = session.metadata?.plan?.toUpperCase();
+      const selectedPlan =
+        session.metadata?.plan?.toUpperCase() ??
+        pricingData
+          .find(
+            (plan) =>
+              plan.stripeIds.monthly === priceId ||
+              plan.stripeIds.yearly === priceId,
+          )
+          ?.title.toUpperCase();
+
       if (selectedPlan === "BUSINESS" || selectedPlan === "PRO") {
         await provisionReceptionNumber(userId, subscription.id);
       }
