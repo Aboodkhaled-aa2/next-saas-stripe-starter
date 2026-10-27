@@ -245,8 +245,6 @@ export default function AIPhoneSetupPage() {
 
         <section className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-xl sm:p-8">
           <div className="mb-6">
-        <section className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-xl sm:p-8">
-          <div className="mb-6">
             <h2 className="font-semibold text-white">Incoming call routing</h2>
             <p className="mt-1 text-sm text-slate-500">
               Choose when the AI receptionist should answer. These settings are saved to your account.
@@ -301,6 +299,8 @@ export default function AIPhoneSetupPage() {
           </div>
         </section>
 
+        <section className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-xl sm:p-8">
+          <div className="mb-6">
             <h2 className="font-semibold text-white">Call behavior</h2>
             <p className="mt-1 text-sm text-slate-500">
               The AI will follow your existing business rules and handoff instructions.
