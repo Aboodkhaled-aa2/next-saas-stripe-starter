@@ -70,7 +70,7 @@ export async function generateUserStripe(
         customer_email: user.email,
         line_items: [{ price: priceId, quantity: 1 }],
         subscription_data: {
-          ...(!subscriptionPlan.trialStartedAt && !subscriptionPlan.trialEndsAt
+          ...(!subscriptionPlan.trialEndsAt
             ? {
                 trial_period_days: TRIAL_PERIOD_DAYS,
                 trial_settings: {
