@@ -56,7 +56,7 @@ export default async function Dashboard({
     const subscriptionPlan = await getUserSubscriptionPlan(user.id);
 
     if (!subscriptionPlan.isPaid && !subscriptionPlan.isTrial) {
-      redirect("/pricing");
+      redirect("/trial-expired");
     }
 
     const filteredLinks = filterLinksByPlan(
