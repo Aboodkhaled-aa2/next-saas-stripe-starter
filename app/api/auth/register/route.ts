@@ -115,9 +115,7 @@ export async function POST(request: Request) {
             ? new Date()
             : existingUser.emailVerified,
           ...(selectedPlan ? { plan: selectedPlan } : {}),
-          ...(!isMetaReviewAccount && !existingUser.trialStartedAt
-            ? { trialStartedAt, trialEndsAt }
-            : {}),
+          // Existing accounts keep their existing trial dates; never grant a new trial here.
         },
       });
     } else {

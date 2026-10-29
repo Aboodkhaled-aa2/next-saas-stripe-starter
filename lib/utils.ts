@@ -80,7 +80,28 @@ export function formatDate(input: string | number): string {
 }
 
 export function absoluteUrl(path: string) {
-  return `${env.NEXT_PUBLIC_APP_URL}${path}`;
+  const candidates = [
+    env.NEXT_PUBLIC_APP_URL,
+    siteConfig.url,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
+    "https://www.smartcleaningdesk.com",
+  ];
+
+  let baseUrl = "https://www.smartcleaningdesk.com";
+  for (const candidate of candidates) {
+    if (!candidate?.trim() || ["undefined", "null"].includes(candidate.trim().toLowerCase())) continue;
+    try {
+      const parsed = new URL(candidate);
+      if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+        baseUrl = parsed.origin;
+        break;
+      }
+    } catch {
+      // Ignore invalid configuration and use the next candidate.
+    }
+  }
+
+  return new URL(path, `${baseUrl}/`).toString();
 }
 
 // Utils from precedent.dev
