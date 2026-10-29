@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { AIChat } from "@/components/dashboard/ai-chat";
+import { AIPhoneDemoNumber } from "@/components/dashboard/ai-phone-demo-number";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
@@ -134,6 +135,8 @@ export default async function AIEmployeePage() {
           <PhoneStatusItem label="Provider" value={aiPhoneSettings?.provider || "Not connected"} />
         </div>
       </section>
+
+      {hasVoice ? <AIPhoneDemoNumber /> : null}
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
         <section className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 shadow-xl sm:p-8">
