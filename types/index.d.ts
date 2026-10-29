@@ -64,7 +64,8 @@ export type UserSubscriptionPlan = SubscriptionPlan &
     stripeCurrentPeriodEnd: number;
     isPaid: boolean;
     isTrial?: boolean;
-    trialEndsAt?: Date | null;
+    trialStartedAt: Date | null;
+    trialEndsAt: Date | null;
     interval: "month" | "year" | null;
     isCanceled?: boolean;
   };
