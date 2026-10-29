@@ -10,6 +10,8 @@ import {
   Lock,
   Mail,
   Chrome,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 import { pricingData } from "@/config/subscriptions";
@@ -47,6 +49,7 @@ function LoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -206,15 +209,28 @@ function LoginForm() {
                 <Lock className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
 
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   disabled={isLoading}
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 py-3 pl-12 pr-4 text-white placeholder-slate-600 transition focus:border-blue-500 focus:outline-none disabled:opacity-50"
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 py-3 pl-12 pr-12 text-white placeholder-slate-600 transition focus:border-blue-500 focus:outline-none disabled:opacity-50"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 rounded-md text-slate-500 transition hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" aria-hidden="true" />
+                  ) : (
+                    <Eye className="h-5 w-5" aria-hidden="true" />
+                  )}
+                </button>
               </div>
             </div>
 
