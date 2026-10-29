@@ -53,8 +53,20 @@ export async function getUserSubscriptionPlan(
   }
 
   const currentPeriodEnd = user.stripeCurrentPeriodEnd?.getTime() ?? 0;
+  const now = Date.now();
   const trialEndsAt = user.trialEndsAt?.getTime() ?? 0;
-  const isTrial = !user.stripeSubscriptionId && trialEndsAt > Date.now();
+  const isTrial = !user.stripeSubscriptionId && trialEndsAt > now;
+
+  console.info("[TRIAL][SUBSCRIPTION_CHECK]", {
+    userId: user.id,
+    status: isPaid ? "active" : isTrial ? "trialing" : "expired",
+    trialStartedAt: user.trialStartedAt?.toISOString() ?? null,
+    trialEndsAt: user.trialEndsAt?.toISOString() ?? null,
+    nowUtc: new Date(now).toISOString(),
+    hasStripeSubscription: Boolean(user.stripeSubscriptionId),
+    isPaid,
+    isTrial,
+  });
 
   const isPaid =
     Boolean(user.stripePriceId) &&
