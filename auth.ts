@@ -22,6 +22,8 @@ declare module "next-auth/jwt" {
   }
 }
 
+const META_REVIEW_EMAIL = "meta-review@smartcleaningdesk.com";
+
 export const {
   handlers: { GET, POST },
   auth,
@@ -34,8 +36,6 @@ export const {
   },
   callbacks: {
     async signIn() {
-      // Trial dates are assigned only when a new account is created.
-      // Logging in with Google must never restart or grant a legacy trial.
       return true;
     },
 
@@ -64,7 +64,32 @@ export const {
       return session;
     },
 
-    async jwt({ token }) {
+    async jwt({ token, user, isNewUser }) {
+      // OAuth-created accounts do not pass through the email/password registration
+      // route. In Auth.js, isNewUser is available in the JWT callback, not signIn.
+      // Assign the initial seven-day trial once, without restarting existing trials.
+      if (
+        isNewUser &&
+        user?.id &&
+        user.email?.toLowerCase() !== META_REVIEW_EMAIL
+      ) {
+        const now = new Date();
+        const trialEndsAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+        await prisma.user.updateMany({
+          where: {
+            id: user.id,
+            trialStartedAt: null,
+            trialEndsAt: null,
+            stripeSubscriptionId: null,
+          },
+          data: {
+            trialStartedAt: now,
+            trialEndsAt,
+          },
+        });
+      }
+
       if (!token.sub) return token;
 
       const dbUser = await getUserById(token.sub);

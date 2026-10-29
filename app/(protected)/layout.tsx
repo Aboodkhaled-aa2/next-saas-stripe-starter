@@ -55,6 +55,24 @@ export default async function Dashboard({
 
     const subscriptionPlan = await getUserSubscriptionPlan(user.id);
 
+    console.info("[TRIAL][DASHBOARD_GUARD]", {
+      userId: user.id,
+      status: subscriptionPlan.isPaid
+        ? "active"
+        : subscriptionPlan.isTrial
+          ? "trialing"
+          : "expired",
+      trialStartedAt: subscriptionPlan.trialStartedAt instanceof Date
+        ? subscriptionPlan.trialStartedAt.toISOString()
+        : null,
+      trialEndsAt: subscriptionPlan.trialEndsAt instanceof Date
+        ? subscriptionPlan.trialEndsAt.toISOString()
+        : null,
+      nowUtc: new Date().toISOString(),
+      isPaid: Boolean(subscriptionPlan.isPaid),
+      isTrial: Boolean(subscriptionPlan.isTrial),
+    });
+
     if (!subscriptionPlan.isPaid && !subscriptionPlan.isTrial) {
       redirect("/trial-expired");
     }

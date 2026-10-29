@@ -76,7 +76,14 @@ function LoginForm() {
         return;
       }
 
-      // A selected plan is saved during signup. Logging in must never start checkout.
+      // Expired trials must go straight to checkout after the user signs in again.
+      // The checkout API reads the saved plan from the database.
+      if (trialExpired) {
+        window.location.href = "/checkout/continue?trial=expired";
+        return;
+      }
+
+      // A selected plan is saved during signup. New users enter the dashboard first.
       window.location.href = selectedPlan ? "/dashboard" : callbackUrl;
     } catch {
       setErrorMsg("Something went wrong. Please try again.");
@@ -90,9 +97,11 @@ function LoginForm() {
 
     try {
       await signIn("google", {
-        callbackUrl: selectedPlan
-          ? `/api/trial/select-plan?plan=${selectedPlan.title.toLowerCase()}`
-          : callbackUrl,
+        callbackUrl: trialExpired
+          ? "/checkout/continue?trial=expired"
+          : selectedPlan
+            ? `/api/trial/select-plan?plan=${selectedPlan.title.toLowerCase()}`
+            : callbackUrl,
       });
     } catch {
       setErrorMsg("Unable to continue with Google.");

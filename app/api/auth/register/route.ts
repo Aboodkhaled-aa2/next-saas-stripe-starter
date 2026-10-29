@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 
 import { prisma } from "@/lib/db";
 import { sendVerificationCode } from "@/lib/email";
+import { createTrialWindow } from "@/lib/trial-policy";
 
 const validPlans = ["starter", "business", "pro"] as const;
 const META_REVIEW_EMAIL = "meta-review@smartcleaningdesk.com";
@@ -87,8 +88,7 @@ export async function POST(request: Request) {
 
     const selectedPlan = plan ? planMap[plan as Plan] : undefined;
     const isMetaReviewAccount = email === META_REVIEW_EMAIL;
-    const trialStartedAt = new Date();
-    const trialEndsAt = new Date(trialStartedAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const { startedAt: trialStartedAt, endsAt: trialEndsAt } = createTrialWindow();
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -115,7 +115,13 @@ export async function POST(request: Request) {
             ? new Date()
             : existingUser.emailVerified,
           ...(selectedPlan ? { plan: selectedPlan } : {}),
-          // Existing accounts keep their existing trial dates; never grant a new trial here.
+          // An unverified, partially-created signup may be retried before verification.
+          // Give it a trial only when no trial has ever been recorded and no subscription exists.
+          ...(!existingUser.trialStartedAt &&
+          !existingUser.trialEndsAt &&
+          !existingUser.stripeSubscriptionId
+            ? { trialStartedAt, trialEndsAt }
+            : {}),
         },
       });
     } else {
@@ -130,6 +136,16 @@ export async function POST(request: Request) {
         },
       });
     }
+
+    console.info("[TRIAL][REGISTER]", {
+      userId: user.id,
+      emailDomain: email.split("@")[1] ?? null,
+      path: existingUser ? "existing-unverified-account" : "new-account",
+      trialStartedAt: user.trialStartedAt?.toISOString() ?? null,
+      trialEndsAt: user.trialEndsAt?.toISOString() ?? null,
+      nowUtc: new Date().toISOString(),
+      hasStripeSubscription: Boolean(user.stripeSubscriptionId),
+    });
 
     if (isMetaReviewAccount) {
       return NextResponse.json({
