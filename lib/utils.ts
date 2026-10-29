@@ -80,7 +80,8 @@ export function formatDate(input: string | number): string {
 }
 
 export function absoluteUrl(path: string) {
-  return `${env.NEXT_PUBLIC_APP_URL}${path}`;
+  const baseUrl = env.NEXT_PUBLIC_APP_URL || siteConfig.url || "https://www.smartcleaningdesk.com";
+  return new URL(path, baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`).toString();
 }
 
 // Utils from precedent.dev
