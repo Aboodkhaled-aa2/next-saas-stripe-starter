@@ -23,7 +23,8 @@ function filterLinksByPlan(
     ...section,
     items: section.items.filter(({ authorizeOnly, href }) => {
       if (authorizeOnly) {
-        return authorizeOnly === "ADMIN";
+        // This layout branch is for non-admin users, so never expose admin-only links.
+        return false;
       }
 
       if (href === "/dashboard/calendar") {
