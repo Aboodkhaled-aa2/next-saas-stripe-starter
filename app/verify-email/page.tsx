@@ -75,9 +75,9 @@ export default function VerifyEmailPage() {
         return;
       }
 
-      setSuccessMsg("Email verified. Opening your dashboard...");
+      setSuccessMsg("Email verified. Redirecting to plan selection...");
 
-      router.replace("/dashboard");
+      router.replace("/pricing");
     } catch {
       setErrorMsg("Something went wrong. Please try again.");
       setLoading(false);
