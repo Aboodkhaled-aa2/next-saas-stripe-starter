@@ -307,6 +307,7 @@ model BusinessProfile {
   businessPhone String?
   businessEmail String?
   websiteUrl    String?
+  businessType  String? @db.Text
 
   services      Json?
   serviceAreas  Json?

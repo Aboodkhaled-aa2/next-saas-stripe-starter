@@ -7,6 +7,7 @@ type BusinessProfileData = {
   businessPhone: string | null;
   businessEmail: string | null;
   websiteUrl: string | null;
+  businessType: string | null;
   services: unknown;
   serviceAreas: unknown;
   pricing: unknown;
@@ -43,7 +44,8 @@ export function buildEmployeeContext(
 Business Name: ${businessProfile.businessName || "Not provided"}
 Business Phone: ${businessProfile.businessPhone || "Not provided"}
 Business Email: ${businessProfile.businessEmail || "Not provided"}
-Website: ${businessProfile.websiteUrl || "Not provided"}`,
+Website: ${businessProfile.websiteUrl || "Not provided"}
+Business Type: ${businessProfile.businessType || "Not provided"}`,
 
     `SERVICES
 ${formatValue(businessProfile.services)}`,
