@@ -167,26 +167,12 @@ export const truncate = (str: string, length: number) => {
   return `${str.slice(0, length)}...`;
 };
 
-export const getBlurDataURL = async (url: string | null) => {
-  if (!url) {
-    return "data:image/webp;base64,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
-  }
-
-  if (url.startsWith("/_static/")) {
-    url = `${siteConfig.url}${url}`;
-  }
-
-  try {
-    const response = await fetch(
-      `https://wsrv.nl/?url=${url}&w=50&h=50&blur=5`,
-    );
-    const buffer = await response.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString("base64");
-
-    return `data:image/png;base64,${base64}`;
-  } catch (error) {
-    return "data:image/webp;base64,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
-  }
+export const getBlurDataURL = async (_url: string | null) => {
+  // Avoid remote image processing during Next.js static generation.
+  // External placeholder services can stall the build worker and cause
+  // repeated static-page generation timeouts. The existing local blurhash
+  // is sufficient as a lightweight placeholder.
+  return placeholderBlurhash;
 };
 
 export const placeholderBlurhash =

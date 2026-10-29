@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { env } from "@/env.mjs";
 
+export const dynamic = "force-dynamic";
+
 type SignalWireNumber = {
   number?: string;
   region?: string | null;
