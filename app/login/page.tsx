@@ -65,7 +65,7 @@ function LoginForm() {
       return;
     }
 
-    if (result.code === "TRIAL_ACTIVE") {
+    if (result.code === "TRIAL_ACTIVE" || result.code === "SUBSCRIPTION_ACTIVE") {
       window.location.assign("/dashboard");
       return;
     }
@@ -103,11 +103,8 @@ function LoginForm() {
         setLoading(false);
         return;
       }
-      if (trialExpired || checkoutAfterLogin) {
-        await continueAfterLogin();
-        return;
-      }
-      window.location.href = selectedPlan ? "/dashboard" : callbackUrl;
+      await continueAfterLogin();
+      return;
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : "Something went wrong. Please try again.");
       setLoading(false);
@@ -119,11 +116,7 @@ function LoginForm() {
     setGoogleLoading(true);
     try {
       await signIn("google", {
-        callbackUrl: trialExpired || checkoutAfterLogin
-          ? "/login?trial=expired&checkout=1"
-          : selectedPlan
-            ? `/api/trial/select-plan?plan=${selectedPlan.title.toLowerCase()}`
-            : callbackUrl,
+        callbackUrl: "/login?checkout=1",
       });
     } catch {
       setErrorMsg("Unable to continue with Google.");
