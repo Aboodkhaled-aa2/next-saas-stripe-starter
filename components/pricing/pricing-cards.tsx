@@ -74,16 +74,19 @@ export function PricingCards({
                 : `Trial: ${subscriptionPlan.title}`}
             </div>
           ) : userId && subscriptionPlan && !subscriptionPlan.isPaid ? (
-            subscriptionPlan.title === offer.title ? (
+            subscriptionPlan.title.toLowerCase() === offer.title.toLowerCase() ? (
               <BillingFormButton
                 year={false}
                 offer={offer}
                 subscriptionPlan={subscriptionPlan}
               />
             ) : (
-              <div className="w-full rounded-xl border border-slate-700 px-4 py-3 text-center text-sm text-slate-400">
-                Saved plan: {subscriptionPlan.title}
-              </div>
+              <Link
+                href={`/api/trial/select-plan?plan=${offer.title.toLowerCase()}`}
+                className="inline-block w-full rounded-xl border border-blue-500/50 bg-blue-500/10 px-4 py-3 text-center text-sm font-semibold text-blue-300 transition hover:bg-blue-500/20"
+              >
+                Select {offer.title}
+              </Link>
             )
           ) : userId && subscriptionPlan ? (
             <BillingFormButton
