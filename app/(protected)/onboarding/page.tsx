@@ -22,6 +22,8 @@ type FormData = {
   businessPhone: string;
   businessEmail: string;
   websiteUrl: string;
+  businessType: string;
+  customBusinessType: string;
   services: string[];
   serviceAreas: string;
   pricing: string;
@@ -44,6 +46,8 @@ const initialFormData: FormData = {
   businessPhone: "",
   businessEmail: "",
   websiteUrl: "",
+  businessType: "",
+  customBusinessType: "",
   services: [],
   serviceAreas: "",
   pricing: "",
@@ -65,6 +69,11 @@ const steps = [
   {
     title: "Business basics",
     description: "Tell us about your cleaning business.",
+    icon: Building2,
+  },
+  {
+    title: "Business type",
+    description: "Choose the type that best describes your cleaning business.",
     icon: Building2,
   },
   {
@@ -99,16 +108,25 @@ const steps = [
   },
 ];
 
-const serviceOptions = [
-  "Standard Cleaning",
-  "Deep Cleaning",
-  "Move In / Move Out",
-  "Office Cleaning",
-  "Recurring Cleaning",
-  "Post Construction Cleaning",
-  "Airbnb Cleaning",
-  "Other",
+const businessTypeOptions = [
+  { value: "Residential Cleaning", label: "Residential Cleaning", description: "Homes and apartments" },
+  { value: "Commercial & Janitorial", label: "Commercial & Janitorial", description: "Offices and commercial buildings" },
+  { value: "Hotels & Hospitality", label: "Hotels & Hospitality", description: "Hotels and housekeeping" },
+  { value: "Car Wash & Auto Detailing", label: "Car Wash & Auto Detailing", description: "Vehicle cleaning and detailing" },
+  { value: "Industrial Cleaning", label: "Industrial Cleaning", description: "Factories and warehouses" },
+  { value: "Specialty Cleaning", label: "Specialty Cleaning", description: "Carpets, upholstery and windows" },
+  { value: "Other", label: "Other", description: "Describe your cleaning specialty" },
 ];
+
+const serviceOptionsByType: Record<string, string[]> = {
+  "Residential Cleaning": ["Standard Home Cleaning", "Deep Cleaning", "Move In / Move Out Cleaning", "Recurring Cleaning", "Post-Construction Cleaning", "Vacation Rental / Airbnb Cleaning", "Other"],
+  "Commercial & Janitorial": ["Office Cleaning", "Commercial Building Cleaning", "Janitorial Services", "Restroom Sanitizing", "Floor Care", "Window Cleaning", "Post-Construction Cleaning", "Other"],
+  "Hotels & Hospitality": ["Hotel Room Cleaning", "Housekeeping", "Public Area Cleaning", "Laundry Services", "Vacation Rental / Airbnb Cleaning", "Deep Cleaning", "Other"],
+  "Car Wash & Auto Detailing": ["Exterior Car Wash", "Interior Cleaning", "Full Auto Detailing", "Carpet & Upholstery Cleaning", "Fleet Cleaning", "Engine Bay Cleaning", "Other"],
+  "Industrial Cleaning": ["Factory Cleaning", "Warehouse Cleaning", "Equipment Cleaning", "Floor & Surface Cleaning", "Industrial Deep Cleaning", "Post-Construction Cleaning", "Other"],
+  "Specialty Cleaning": ["Carpet Cleaning", "Upholstery Cleaning", "Window Cleaning", "Pressure Washing", "Tile & Grout Cleaning", "Mattress Cleaning", "Other"],
+  Other: ["General Cleaning", "Deep Cleaning", "Specialty Service", "Recurring Service", "Other"],
+};
 
 const paymentOptions = [
   "Cash",
@@ -182,24 +200,31 @@ export default function OnboardingPage() {
     }
 
     if (currentStep === 1) {
+      return Boolean(
+        formData.businessType &&
+          (formData.businessType !== "Other" || formData.customBusinessType.trim()),
+      );
+    }
+
+    if (currentStep === 2) {
       return (
         formData.services.length > 0 &&
         formData.pricing.trim().length > 0
       );
     }
 
-    if (currentStep === 2) {
+    if (currentStep === 3) {
       return Boolean(
         formData.serviceAreas.trim() &&
           formData.businessHours.trim(),
       );
     }
 
-    if (currentStep === 3) {
+    if (currentStep === 4) {
       return formData.paymentMethods.length > 0;
     }
 
-    if (currentStep === 4) {
+    if (currentStep === 5) {
       return Boolean(
         formData.cancellationPolicy.trim() &&
           formData.reschedulingPolicy.trim(),
@@ -245,6 +270,7 @@ export default function OnboardingPage() {
         },
         body: JSON.stringify({
           ...formData,
+          businessType: formData.businessType === "Other" ? formData.customBusinessType.trim() : formData.businessType,
           bookingRules: JSON.stringify({
             generalRules: formData.bookingRules.trim(),
             duration: {
@@ -447,6 +473,41 @@ export default function OnboardingPage() {
               )}
 
               {currentStep === 1 && (
+                <div className="space-y-5">
+                  <div>
+                    <Label text="What type of cleaning business do you run?" required />
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      {businessTypeOptions.map((option) => (
+                        <SelectableButton
+                          key={option.value}
+                          selected={formData.businessType === option.value}
+                          onClick={() => {
+                            updateField("businessType", option.value);
+                            updateField("services", []);
+                          }}
+                          icon={<Building2 className="h-4 w-4" />}
+                        >
+                          <span className="block text-left">
+                            <span className="block">{option.label}</span>
+                            <span className="mt-1 block text-xs font-normal text-slate-400">{option.description}</span>
+                          </span>
+                        </SelectableButton>
+                      ))}
+                    </div>
+                  </div>
+                  {formData.businessType === "Other" && (
+                    <Field
+                      label="What type of cleaning business do you run?"
+                      placeholder="Example: Solar panel cleaning, pool cleaning, pressure washing..."
+                      value={formData.customBusinessType}
+                      onChange={(value) => updateField("customBusinessType", value)}
+                      required
+                    />
+                  )}
+                </div>
+              )}
+
+              {currentStep === 2 && (
                 <div className="space-y-7">
                   <div>
                     <Label
@@ -455,7 +516,7 @@ export default function OnboardingPage() {
                     />
 
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      {serviceOptions.map((service) => {
+                      {(serviceOptionsByType[formData.businessType] || serviceOptionsByType.Other).map((service) => {
                         const selected =
                           formData.services.includes(service);
 
@@ -498,7 +559,7 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {currentStep === 2 && (
+              {currentStep === 3 && (
                 <div className="space-y-6">
                   <div>
                     <Label
@@ -542,7 +603,7 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {currentStep === 3 && (
+              {currentStep === 4 && (
                 <div className="space-y-7">
                   <div>
                     <Label
@@ -666,7 +727,7 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {currentStep === 4 && (
+              {currentStep === 5 && (
                 <div className="space-y-6">
                   <div>
                     <Label
@@ -710,7 +771,7 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {currentStep === 5 && (
+              {currentStep === 6 && (
                 <div className="space-y-7">
                   <div>
                     <Label text="How should your AI communicate?" />
@@ -798,7 +859,7 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {currentStep === 6 && (
+              {currentStep === 7 && (
                 <div className="space-y-6">
                   <div>
                     <Label
