@@ -149,17 +149,10 @@ try {
   // in the supported metadata shape. Never guess a Vapi ID from a SignalWire ID.
   const aiSettings = user.businessProfile?.aiPhoneSettings;
   const metadata = aiSettings && typeof aiSettings === "object" ? aiSettings : null;
-  const vapiPhoneNumberId = metadata?.provider === "VAPI" && typeof metadata?.phoneNumber === "string"
-    ? metadata.phoneNumber
-    : null;
-  if (vapiPhoneNumberId) {
-    if (!process.env.VAPI_PRIVATE_API_KEY) {
-      throw new Error("Vapi phone number was detected but VAPI_PRIVATE_API_KEY is missing.");
-    }
-    await requestJson(`https://api.vapi.ai/phone-number/${encodeURIComponent(vapiPhoneNumberId)}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${process.env.VAPI_PRIVATE_API_KEY}` },
-    });
+  // AIPhoneSettings.phoneNumber stores a display/phone number, not a Vapi resource ID.
+  // Do not call Vapi DELETE with it. The current schema has no dedicated Vapi phone ID.
+  if (aiSettings?.provider && String(aiSettings.provider).toUpperCase() === "VAPI") {
+    console.warn("Vapi cleanup skipped: schema does not store a Vapi phone-number resource ID. Remove it in Vapi using the dashboard before retrying database deletion.");
   }
 
   // Remove account-owned records and token/session data. User deletion cascades
