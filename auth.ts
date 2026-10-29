@@ -33,34 +33,9 @@ export const {
     // error: "/auth/error",
   },
   callbacks: {
-    async signIn({ user, account }) {
-      if (user.id && account?.provider === "google") {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: {
-            stripeSubscriptionId: true,
-            trialStartedAt: true,
-            trialEndsAt: true,
-          },
-        });
-
-        if (
-          dbUser &&
-          !dbUser.stripeSubscriptionId &&
-          !dbUser.trialStartedAt
-        ) {
-          const trialStartedAt = new Date();
-          const trialEndsAt = new Date(
-            trialStartedAt.getTime() + 7 * 24 * 60 * 60 * 1000,
-          );
-
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { trialStartedAt, trialEndsAt },
-          });
-        }
-      }
-
+    async signIn() {
+      // Trial dates are assigned only when a new account is created.
+      // Logging in with Google must never restart or grant a legacy trial.
       return true;
     },
 
