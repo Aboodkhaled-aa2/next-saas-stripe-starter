@@ -211,6 +211,7 @@ export default function OnboardingPage() {
     if (currentStep === 2) {
       return (
         formData.services.length > 0 &&
+        (!formData.services.includes("Other") || formData.customServices.trim().length > 0) &&
         formData.pricing.trim().length > 0
       );
     }
