@@ -57,7 +57,7 @@ export async function POST() {
       Boolean(user.stripeCurrentPeriodEnd && user.stripeCurrentPeriodEnd > now);
 
     if (hasActiveSubscription) {
-      return NextResponse.json({ error: "Your subscription is already active." }, { status: 409 });
+      return NextResponse.json({ code: "SUBSCRIPTION_ACTIVE", redirect: "/dashboard" });
     }
 
     // Missing trial dates mean this is a legacy account. Do not create a new trial
