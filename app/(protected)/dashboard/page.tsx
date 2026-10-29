@@ -17,6 +17,7 @@ import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { constructMetadata } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
+import { TrialDemoPhoneCard } from "@/components/dashboard/trial-demo-phone-card";
 
 export const metadata = constructMetadata({
   title: "Dashboard – Smart Cleaning Desk",
@@ -223,17 +224,13 @@ export default async function DashboardPage() {
   const voicePlanEnabled = user?.plan === "BUSINESS" || user?.plan === "PRO";
 
   const includedVoiceMinutes =
-    !voicePlanEnabled
+    !voicePlanEnabled || trialActive
       ? 0
-      : trialActive
+      : paidActive
         ? user?.plan === "PRO"
-          ? 30
-          : 15
-        : paidActive
-          ? user?.plan === "PRO"
-            ? 500
-            : 200
-          : 0;
+          ? 500
+          : 200
+        : 0;
 
   const usedVoiceSeconds = voicePlanEnabled
     ? voiceUsage._sum.durationSeconds ?? 0
@@ -479,10 +476,12 @@ export default async function DashboardPage() {
                       month: "short",
                       day: "numeric",
                     })}.`}
-              {" "}AI Phone trial allowance: {includedVoiceMinutes} minutes total.
+              {" "}Try our AI receptionist by calling the shared demo number below.
             </p>
           </div>
         )}
+
+        {trialActive && <TrialDemoPhoneCard />}
 
         {trialExpired && (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
