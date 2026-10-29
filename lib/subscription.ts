@@ -62,6 +62,10 @@ export async function getUserSubscriptionPlan(
     Boolean(user.stripeSubscriptionId),
   );
 
+  const isPaid =
+    Boolean(user.stripePriceId) &&
+    currentPeriodEnd + 86_400_000 > Date.now();
+
   console.info("[TRIAL][SUBSCRIPTION_CHECK]", {
     userId: user.id,
     status: isPaid ? "active" : isTrial ? "trialing" : "expired",
@@ -72,10 +76,6 @@ export async function getUserSubscriptionPlan(
     isPaid,
     isTrial,
   });
-
-  const isPaid =
-    Boolean(user.stripePriceId) &&
-    currentPeriodEnd + 86_400_000 > Date.now();
 
   const userPlan =
     pricingData.find(
