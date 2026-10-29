@@ -68,26 +68,28 @@ export function PricingCards({
 
         <div className="mb-8">
           {userId && subscriptionPlan?.isTrial ? (
-            <div className="w-full rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-center text-sm font-semibold text-blue-300">
-              {subscriptionPlan.title === offer.title
-                ? "Free Trial Active"
-                : `Trial: ${subscriptionPlan.title}`}
-            </div>
+            <Link
+              href={`/api/trial/select-plan?plan=${offer.title.toLowerCase()}`}
+              className={cn(
+                "inline-block w-full rounded-xl border px-4 py-3 text-center font-medium transition-colors",
+                subscriptionPlan.title.toLowerCase() === offer.title.toLowerCase()
+                  ? "border-blue-500 bg-blue-600 text-white hover:bg-blue-500"
+                  : "border-blue-500/50 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20",
+              )}
+            >
+              {subscriptionPlan.title.toLowerCase() === offer.title.toLowerCase()
+                ? "Selected plan · Change"
+                : `Choose ${offer.title}`}
+            </Link>
           ) : userId && subscriptionPlan && !subscriptionPlan.isPaid ? (
-            subscriptionPlan.title.toLowerCase() === offer.title.toLowerCase() ? (
-              <BillingFormButton
-                year={false}
-                offer={offer}
-                subscriptionPlan={subscriptionPlan}
-              />
-            ) : (
-              <Link
-                href={`/api/trial/select-plan?plan=${offer.title.toLowerCase()}`}
-                className="inline-block w-full rounded-xl border border-blue-500/50 bg-blue-500/10 px-4 py-3 text-center text-sm font-semibold text-blue-300 transition hover:bg-blue-500/20"
-              >
-                Select {offer.title}
-              </Link>
-            )
+            <Link
+              href={`/api/trial/select-plan?plan=${offer.title.toLowerCase()}`}
+              className="inline-block w-full rounded-xl border border-blue-500/50 bg-blue-500/10 px-4 py-3 text-center text-sm font-semibold text-blue-300 transition hover:bg-blue-500/20"
+            >
+              {subscriptionPlan.title.toLowerCase() === offer.title.toLowerCase()
+                ? "Save selected plan"
+                : `Select ${offer.title}`}
+            </Link>
           ) : userId && subscriptionPlan ? (
             <BillingFormButton
               year={false}
