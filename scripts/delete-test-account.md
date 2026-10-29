@@ -16,7 +16,7 @@ The target email is passed on the command line; it is not hard-coded in the scri
 ## Dry-run (default)
 
 ```bash
-TEST_ACCOUNT_EMAILS="your-test-email@example.com" npx tsx scripts/delete-test-account.ts your-test-email@example.com
+TEST_ACCOUNT_EMAILS="your-test-email@example.com" node scripts/delete-test-account.mjs your-test-email@example.com
 ```
 
 Review the email, plan, Stripe customer/subscription identifiers, phone number, and related record counts. Dry-run makes no provider or database changes.
@@ -26,7 +26,7 @@ Review the email, plan, Stripe customer/subscription identifiers, phone number, 
 Only after reviewing the dry-run, and only against Preview:
 
 ```bash
-ALLOW_ACCOUNT_DELETE=true TEST_ACCOUNT_EMAILS="your-test-email@example.com" npx tsx scripts/delete-test-account.ts your-test-email@example.com --confirm
+ALLOW_ACCOUNT_DELETE=true TEST_ACCOUNT_EMAILS="your-test-email@example.com" node scripts/delete-test-account.mjs your-test-email@example.com --confirm
 ```
 
 Production additionally requires `ALLOW_PROD_DELETE=true`; do not set it for this workflow. The script records a JSONL audit entry in `.test-account-delete-audit.jsonl` (override with `TEST_ACCOUNT_DELETE_AUDIT`). The audit records event/time/actor and non-secret counts; it does not write tokens or API credentials.
