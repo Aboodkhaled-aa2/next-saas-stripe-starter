@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 
 import { prisma } from "@/lib/db";
 import { sendVerificationCode } from "@/lib/email";
+import { createTrialWindow } from "@/lib/trial-policy";
 
 const validPlans = ["starter", "business", "pro"] as const;
 const META_REVIEW_EMAIL = "meta-review@smartcleaningdesk.com";
@@ -87,8 +88,7 @@ export async function POST(request: Request) {
 
     const selectedPlan = plan ? planMap[plan as Plan] : undefined;
     const isMetaReviewAccount = email === META_REVIEW_EMAIL;
-    const trialStartedAt = new Date();
-    const trialEndsAt = new Date(trialStartedAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const { startedAt: trialStartedAt, endsAt: trialEndsAt } = createTrialWindow();
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
