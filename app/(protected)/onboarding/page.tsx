@@ -24,6 +24,7 @@ type FormData = {
   websiteUrl: string;
   businessType: string;
   customBusinessType: string;
+  customServices: string;
   services: string[];
   serviceAreas: string;
   pricing: string;
@@ -48,6 +49,7 @@ const initialFormData: FormData = {
   websiteUrl: "",
   businessType: "",
   customBusinessType: "",
+  customServices: "",
   services: [],
   serviceAreas: "",
   pricing: "",
@@ -55,7 +57,7 @@ const initialFormData: FormData = {
   paymentMethods: [],
   bookingRules: "",
   durationMode: "fixed",
-  fixedDurationMinutes: "180",
+  fixedDurationMinutes: "",
   durationRules: "",
   cancellationPolicy: "",
   reschedulingPolicy: "",
@@ -221,7 +223,12 @@ export default function OnboardingPage() {
     }
 
     if (currentStep === 4) {
-      return formData.paymentMethods.length > 0;
+      if (formData.paymentMethods.length === 0) return false;
+      if (formData.durationMode === "fixed") {
+        const minutes = Number(formData.fixedDurationMinutes);
+        return Number.isInteger(minutes) && minutes >= 15 && minutes <= 1440;
+      }
+      return Boolean(formData.durationRules.trim());
     }
 
     if (currentStep === 5) {
@@ -271,6 +278,11 @@ export default function OnboardingPage() {
         body: JSON.stringify({
           ...formData,
           businessType: formData.businessType === "Other" ? formData.customBusinessType.trim() : formData.businessType,
+          services: formData.services.flatMap((service) =>
+            service === "Other"
+              ? formData.customServices.split("\n").map((item) => item.trim()).filter(Boolean)
+              : [service],
+          ),
           bookingRules: JSON.stringify({
             generalRules: formData.bookingRules.trim(),
             duration: {
@@ -533,6 +545,18 @@ export default function OnboardingPage() {
                         );
                       })}
                     </div>
+                    {formData.services.includes("Other") && (
+                      <div className="mt-4">
+                        <Label text="Add your own service names (one per line)" required />
+                        <textarea
+                          value={formData.customServices}
+                          onChange={(event) => updateField("customServices", event.target.value)}
+                          placeholder={"Example: Solar panel cleaning\\nPool cleaning\\nPressure washing"}
+                          rows={3}
+                          className="mt-3 w-full resize-y rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-blue-500/50"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -546,7 +570,7 @@ export default function OnboardingPage() {
                       onChange={(event) =>
                         updateField("pricing", event.target.value)
                       }
-                      placeholder="Example: Standard cleaning starts at $120 for homes up to 1,500 sq ft. Deep cleaning starts at $200."
+                      placeholder={formData.businessType === "Car Wash & Auto Detailing" ? "Example: Exterior wash starts at $35; full detailing starts at $180." : formData.businessType === "Hotels & Hospitality" ? "Example: Room cleaning starts at $45 per room; deep cleaning is quoted by room size." : formData.businessType === "Industrial Cleaning" ? "Example: Warehouse cleaning is quoted by square footage and job requirements." : formData.businessType === "Commercial & Janitorial" ? "Example: Office cleaning is quoted by square footage and frequency." : formData.businessType === "Other" ? "Describe prices for your specific cleaning services." : "Example: Standard home cleaning starts at $120; deep cleaning starts at $200."}
                       rows={5}
                       className="mt-3 w-full resize-none rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
                     />
@@ -670,7 +694,7 @@ export default function OnboardingPage() {
                     {formData.durationMode === "fixed" ? (
                       <Field
                         label="Default appointment duration (minutes)"
-                        placeholder="180"
+                        placeholder="Enter minutes (15–1440)"
                         type="number"
                         value={formData.fixedDurationMinutes}
                         onChange={(value) =>
@@ -869,21 +893,21 @@ export default function OnboardingPage() {
 
                     <textarea
                       value={formData.additionalNotes}
+                      maxLength={1000}
                       onChange={(event) =>
                         updateField(
                           "additionalNotes",
                           event.target.value,
                         )
                       }
-                      placeholder="Example: We are family-owned, we have a no-shoes policy, customers should mention gate codes before appointments, or anything else important about your business."
+                      placeholder="Share anything important that wasn't covered above."
                       rows={8}
                       className="mt-3 w-full resize-none rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
                     />
 
                     <p className="mt-2 text-xs leading-5 text-slate-600">
-                      This is optional. Add any extra information, preferences,
-                      special instructions, or business details that may help
-                      your AI employee serve customers better.
+                      Optional. Don&apos;t repeat services, prices, hours, or policies already entered.
+                      {formData.additionalNotes.length}/1000 characters.
                     </p>
                   </div>
 
