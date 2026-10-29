@@ -1,7 +1,8 @@
 "use client";
 
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { pricingData } from "@/config/subscriptions";
 import { UserSubscriptionPlan } from "@/types";
@@ -23,6 +24,32 @@ export function PricingCards({
   subscriptionPlan,
 }: PricingCardsProps) {
   const { setShowSignInModal } = useContext(ModalContext);
+  const router = useRouter();
+  const [selectingPlan, setSelectingPlan] = useState<string | null>(null);
+  const [planError, setPlanError] = useState<string | null>(null);
+
+  async function startTrial(plan: string) {
+    setSelectingPlan(plan);
+    setPlanError(null);
+    try {
+      const response = await fetch("/api/trial/select-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setPlanError(result.error || "Unable to select this plan. Please try again.");
+        return;
+      }
+      router.push(result.redirect || "/dashboard");
+      router.refresh();
+    } catch {
+      setPlanError("Unable to select this plan. Please try again.");
+    } finally {
+      setSelectingPlan(null);
+    }
+  }
   const PricingCard = ({
     offer,
   }: {
@@ -67,42 +94,25 @@ export function PricingCards({
         </p>
 
         <div className="mb-8">
-          {userId && subscriptionPlan?.isTrial ? (
-            <Link
-              href={`/api/trial/select-plan?plan=${offer.title.toLowerCase()}`}
-              className={cn(
-                "inline-block w-full rounded-xl border px-4 py-3 text-center font-medium transition-colors",
-                subscriptionPlan.title.toLowerCase() === offer.title.toLowerCase()
-                  ? "border-blue-500 bg-blue-600 text-white hover:bg-blue-500"
-                  : "border-blue-500/50 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20",
-              )}
+          {userId ? (
+            <button
+              type="button"
+              onClick={() => void startTrial(offer.title.toLowerCase())}
+              disabled={selectingPlan !== null}
+              className="inline-block w-full rounded-xl bg-blue-600 px-4 py-3 text-center font-medium text-white shadow-lg shadow-blue-600/30 transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {subscriptionPlan.title.toLowerCase() === offer.title.toLowerCase()
-                ? "Selected plan · Change"
-                : `Choose ${offer.title}`}
-            </Link>
-          ) : userId && subscriptionPlan && !subscriptionPlan.isPaid ? (
-            <Link
-              href={`/api/trial/select-plan?plan=${offer.title.toLowerCase()}`}
-              className="inline-block w-full rounded-xl border border-blue-500/50 bg-blue-500/10 px-4 py-3 text-center text-sm font-semibold text-blue-300 transition hover:bg-blue-500/20"
-            >
-              {subscriptionPlan.title.toLowerCase() === offer.title.toLowerCase()
-                ? "Save selected plan"
-                : `Select ${offer.title}`}
-            </Link>
-          ) : userId && subscriptionPlan ? (
-            <BillingFormButton
-              year={false}
-              offer={offer}
-              subscriptionPlan={subscriptionPlan}
-            />
+              {selectingPlan === offer.title.toLowerCase() ? "Starting..." : "Start Free Trial"}
+            </button>
           ) : (
             <Link
-              href={`/signup?plan=${offer.title.toLowerCase()}`}
+              href={"/signup?plan=" + offer.title.toLowerCase()}
               className="inline-block w-full rounded-xl bg-blue-600 px-4 py-3 text-center font-medium text-white shadow-lg shadow-blue-600/30 transition-colors hover:bg-blue-500"
             >
-              Choose {offer.title} →
+              Start Free Trial
             </Link>
+          )}
+          {planError && (
+            <p role="alert" className="mt-2 text-sm text-red-400">{planError}</p>
           )}
         </div>
 
