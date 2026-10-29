@@ -18,12 +18,13 @@ interface ProtectedLayoutProps {
 function filterLinksByPlan(
   links: typeof sidebarLinks,
   planTitle: string,
+  userRole: string,
 ) {
   return links.map((section) => ({
     ...section,
     items: section.items.filter(({ authorizeOnly, href }) => {
       if (authorizeOnly) {
-        return authorizeOnly === "ADMIN";
+        return authorizeOnly === userRole;
       }
 
       if (href === "/dashboard/calendar") {
@@ -62,6 +63,7 @@ export default async function Dashboard({
     const filteredLinks = filterLinksByPlan(
       sidebarLinks,
       subscriptionPlan.title,
+      user.role,
     );
 
     return (
