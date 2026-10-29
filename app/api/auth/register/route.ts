@@ -115,7 +115,13 @@ export async function POST(request: Request) {
             ? new Date()
             : existingUser.emailVerified,
           ...(selectedPlan ? { plan: selectedPlan } : {}),
-          // Existing accounts keep their existing trial dates; never grant a new trial here.
+          // An unverified, partially-created signup may be retried before verification.
+          // Give it a trial only when no trial has ever been recorded and no subscription exists.
+          ...(!existingUser.trialStartedAt &&
+          !existingUser.trialEndsAt &&
+          !existingUser.stripeSubscriptionId
+            ? { trialStartedAt, trialEndsAt }
+            : {}),
         },
       });
     } else {
@@ -130,6 +136,16 @@ export async function POST(request: Request) {
         },
       });
     }
+
+    console.info("[TRIAL][REGISTER]", {
+      userId: user.id,
+      emailDomain: email.split("@")[1] ?? null,
+      path: existingUser ? "existing-unverified-account" : "new-account",
+      trialStartedAt: user.trialStartedAt?.toISOString() ?? null,
+      trialEndsAt: user.trialEndsAt?.toISOString() ?? null,
+      nowUtc: new Date().toISOString(),
+      hasStripeSubscription: Boolean(user.stripeSubscriptionId),
+    });
 
     if (isMetaReviewAccount) {
       return NextResponse.json({
