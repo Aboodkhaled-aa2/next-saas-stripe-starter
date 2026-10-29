@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
@@ -18,6 +18,8 @@ function LoginForm() {
   const searchParams = useSearchParams();
 
   const trialExpired = searchParams.get("trial") === "expired";
+  const checkoutAfterLogin = searchParams.get("checkout") === "1";
+  const checkoutStarted = useRef(false);
   const rawCallbackUrl = searchParams.get("callbackUrl");
 
   const callbackUrl = (() => {
@@ -51,35 +53,63 @@ function LoginForm() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
+  async function continueAfterLogin() {
+    const response = await fetch("/api/stripe/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    const result = await response.json().catch(() => ({}));
+
+    if (response.ok && result.url) {
+      window.location.assign(result.url);
+      return;
+    }
+
+    if (result.code === "TRIAL_ACTIVE") {
+      window.location.assign("/dashboard");
+      return;
+    }
+
+    if (result.code === "TRIAL_NOT_CONFIGURED") {
+      window.location.assign("/pricing?trial=expired&support=1");
+      return;
+    }
+
+    throw new Error(result.error || "Unable to continue to checkout.");
+  }
+
+  useEffect(() => {
+    if (!checkoutAfterLogin || checkoutStarted.current) return;
+    checkoutStarted.current = true;
+    void continueAfterLogin().catch((error) => {
+      setErrorMsg(error instanceof Error ? error.message : "Unable to continue to checkout.");
+      window.history.replaceState({}, "", "/login?trial=expired");
+    });
+  }, [checkoutAfterLogin]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setErrorMsg("");
     setLoading(true);
-
     try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
-
+      const result = await signIn("credentials", { email, password, redirect: false });
       if (result?.error === "EMAIL_NOT_VERIFIED") {
         setErrorMsg("Please verify your email before logging in.");
         setLoading(false);
         return;
       }
-
       if (result?.error) {
         setErrorMsg("Invalid email or password.");
         setLoading(false);
         return;
       }
-
-      // A selected plan is saved during signup. Logging in must never start checkout.
+      if (trialExpired || checkoutAfterLogin) {
+        await continueAfterLogin();
+        return;
+      }
       window.location.href = selectedPlan ? "/dashboard" : callbackUrl;
-    } catch {
-      setErrorMsg("Something went wrong. Please try again.");
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : "Something went wrong. Please try again.");
       setLoading(false);
     }
   };
@@ -87,12 +117,13 @@ function LoginForm() {
   const handleGoogleLogin = async () => {
     setErrorMsg("");
     setGoogleLoading(true);
-
     try {
       await signIn("google", {
-        callbackUrl: selectedPlan
-          ? `/api/trial/select-plan?plan=${selectedPlan.title.toLowerCase()}`
-          : callbackUrl,
+        callbackUrl: trialExpired || checkoutAfterLogin
+          ? "/login?trial=expired&checkout=1"
+          : selectedPlan
+            ? `/api/trial/select-plan?plan=${selectedPlan.title.toLowerCase()}`
+            : callbackUrl,
       });
     } catch {
       setErrorMsg("Unable to continue with Google.");
