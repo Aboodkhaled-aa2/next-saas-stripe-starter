@@ -35,32 +35,7 @@ export const {
     // error: "/auth/error",
   },
   callbacks: {
-    async signIn({ user, isNewUser }) {
-      // OAuth-created accounts do not pass through the email/password registration
-      // route, so assign their initial seven-day trial here exactly once.
-      // Never restart trials for existing or paid accounts.
-      if (
-        isNewUser &&
-        user.id &&
-        user.email?.toLowerCase() !== META_REVIEW_EMAIL
-      ) {
-        const now = new Date();
-        const trialEndsAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-        await prisma.user.updateMany({
-          where: {
-            id: user.id,
-            trialStartedAt: null,
-            trialEndsAt: null,
-            stripeSubscriptionId: null,
-          },
-          data: {
-            trialStartedAt: now,
-            trialEndsAt,
-          },
-        });
-      }
-
+    async signIn() {
       return true;
     },
 
@@ -89,7 +64,32 @@ export const {
       return session;
     },
 
-    async jwt({ token }) {
+    async jwt({ token, user, isNewUser }) {
+      // OAuth-created accounts do not pass through the email/password registration
+      // route. In Auth.js, isNewUser is available in the JWT callback, not signIn.
+      // Assign the initial seven-day trial once, without restarting existing trials.
+      if (
+        isNewUser &&
+        user?.id &&
+        user.email?.toLowerCase() !== META_REVIEW_EMAIL
+      ) {
+        const now = new Date();
+        const trialEndsAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+        await prisma.user.updateMany({
+          where: {
+            id: user.id,
+            trialStartedAt: null,
+            trialEndsAt: null,
+            stripeSubscriptionId: null,
+          },
+          data: {
+            trialStartedAt: now,
+            trialEndsAt,
+          },
+        });
+      }
+
       if (!token.sub) return token;
 
       const dbUser = await getUserById(token.sub);
