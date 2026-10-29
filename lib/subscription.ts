@@ -3,6 +3,7 @@
 import { pricingData } from "@/config/subscriptions";
 import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
+import { isTrialActive } from "@/lib/trial-policy";
 import { UserSubscriptionPlan } from "types";
 
 const META_REVIEW_EMAIL = "meta-review@smartcleaningdesk.com";
@@ -55,7 +56,11 @@ export async function getUserSubscriptionPlan(
   const currentPeriodEnd = user.stripeCurrentPeriodEnd?.getTime() ?? 0;
   const now = Date.now();
   const trialEndsAt = user.trialEndsAt?.getTime() ?? 0;
-  const isTrial = !user.stripeSubscriptionId && trialEndsAt > now;
+  const isTrial = isTrialActive(
+    user.trialEndsAt,
+    new Date(now),
+    Boolean(user.stripeSubscriptionId),
+  );
 
   console.info("[TRIAL][SUBSCRIPTION_CHECK]", {
     userId: user.id,
