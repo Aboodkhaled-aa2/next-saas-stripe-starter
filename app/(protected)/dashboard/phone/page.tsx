@@ -9,7 +9,18 @@ type AIPhoneSettings = {
   enabled: boolean;
 };
 
-type UsageSummary = {\n  eligible?: boolean;\n  plan?: string;\n  includedMinutes?: number;\n  includedUsed?: number;\n  includedRemaining?: number;\n  extraRemaining?: number;\n  totalRemaining?: number;\n  warningLevel?: "OK" | "LOW" | "CRITICAL" | "EMPTY";\n};\n\ntype AIPhoneResponse = {
+type UsageSummary = {
+  eligible?: boolean;
+  plan?: string;
+  includedMinutes?: number;
+  includedUsed?: number;
+  includedRemaining?: number;
+  extraRemaining?: number;
+  totalRemaining?: number;
+  warningLevel?: "OK" | "LOW" | "CRITICAL" | "EMPTY";
+};
+
+type AIPhoneResponse = {
   success?: boolean;
   aiPhoneSettings?: AIPhoneSettings | null;
   error?: string;
@@ -18,7 +29,8 @@ type UsageSummary = {\n  eligible?: boolean;\n  plan?: string;\n  includedMinute
 export default function PhoneNumberPage() {
   const [settings, setSettings] = useState<AIPhoneSettings | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");\n  const [usage, setUsage] = useState<UsageSummary | null>(null);
+  const [error, setError] = useState("");
+  const [usage, setUsage] = useState<UsageSummary | null>(null);
 
   useEffect(() => {
     let cancelled = false;
