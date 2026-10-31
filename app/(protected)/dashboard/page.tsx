@@ -285,7 +285,7 @@ export default async function DashboardPage() {
       : {
           id: "__NO_CURRENT_BILLING_PERIOD__",
         }),
-    metadata: { path: ["aiResponseId"], string_not: "" },
+    metadata: { path: ["aiResponseId"], not: "" },
     conversation: {
       userId: user?.id ?? "",
       ...(trialActive ? { channel: { in: ["FACEBOOK", "INSTAGRAM"] } } : {}),
