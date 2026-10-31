@@ -12,7 +12,6 @@ import {
   Chrome,
 } from "lucide-react";
 
-import { pricingData } from "@/config/subscriptions";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -41,12 +40,6 @@ function LoginForm() {
       return "/dashboard";
     }
   })();
-  const planParam = searchParams.get("plan")?.toLowerCase();
-
-  const selectedPlan =
-    pricingData.find((plan) => plan.title.toLowerCase() === planParam) ||
-    null;
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -103,7 +96,11 @@ function LoginForm() {
         setLoading(false);
         return;
       }
-      await continueAfterLogin();
+      if (checkoutAfterLogin || trialExpired) {
+        await continueAfterLogin();
+      } else {
+        window.location.assign(callbackUrl);
+      }
       return;
     } catch (error) {
       setErrorMsg(error instanceof Error ? error.message : "Something went wrong. Please try again.");
@@ -116,7 +113,9 @@ function LoginForm() {
     setGoogleLoading(true);
     try {
       await signIn("google", {
-        callbackUrl: "/login?checkout=1",
+        callbackUrl: checkoutAfterLogin || trialExpired
+          ? "/login?checkout=1"
+          : callbackUrl,
       });
     } catch {
       setErrorMsg("Unable to continue with Google.");
