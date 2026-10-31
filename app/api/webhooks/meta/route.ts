@@ -435,6 +435,8 @@ async function handleMetaMessage(
   }
 
   let reservedExtraCredit = false;
+  let reservedMessageId: string | null = null;
+  let providerSendSucceeded = false;
 
   try {
     const trialMessaging = await canUseMessaging(integration.userId, channel);
@@ -481,6 +483,7 @@ async function handleMetaMessage(
       return;
     }
     reservedExtraCredit = reservation.usesExtraCredit;
+    reservedMessageId = reservation.messageId;
 
     console.log("META SEND START:", JSON.stringify({
       channel,
@@ -502,6 +505,7 @@ async function handleMetaMessage(
       channel,
       success: true,
     }));
+    providerSendSucceeded = true;
 
     await prisma.message.update({
       where: { id: reservation.messageId },
@@ -521,7 +525,12 @@ async function handleMetaMessage(
       },
     });
   } catch (error) {
-    if (reservedExtraCredit) {
+    if (!providerSendSucceeded && reservedMessageId) {
+      await prisma.message.delete({ where: { id: reservedMessageId } }).catch((cleanupError) =>
+        console.error("Failed to release message quota reservation:", cleanupError),
+      );
+    }
+    if (!providerSendSucceeded && reservedExtraCredit) {
       await refundExtraMessageCredit(integration.userId).catch((refundError) =>
         console.error("Failed to refund message credit:", refundError),
       );
@@ -593,6 +602,8 @@ async function handleWhatsAppMessage(
   }
 
   let reservedExtraCredit = false;
+  let reservedMessageId: string | null = null;
+  let providerSendSucceeded = false;
 
   try {
     const trialMessaging = await canUseMessaging(integration.userId, "WHATSAPP");
@@ -637,6 +648,7 @@ async function handleWhatsAppMessage(
       return;
     }
     reservedExtraCredit = reservation.usesExtraCredit;
+    reservedMessageId = reservation.messageId;
 
     const sendResult = await sendWhatsAppMessage(
       integration.accessToken,
@@ -644,6 +656,7 @@ async function handleWhatsAppMessage(
       senderId,
       reply,
     );
+    providerSendSucceeded = true;
 
     await prisma.message.update({
       where: { id: reservation.messageId },
@@ -663,7 +676,12 @@ async function handleWhatsAppMessage(
       },
     });
   } catch (error) {
-    if (reservedExtraCredit) {
+    if (!providerSendSucceeded && reservedMessageId) {
+      await prisma.message.delete({ where: { id: reservedMessageId } }).catch((cleanupError) =>
+        console.error("Failed to release WhatsApp quota reservation:", cleanupError),
+      );
+    }
+    if (!providerSendSucceeded && reservedExtraCredit) {
       await refundExtraMessageCredit(integration.userId).catch((refundError) =>
         console.error("Failed to refund WhatsApp message credit:", refundError),
       );
