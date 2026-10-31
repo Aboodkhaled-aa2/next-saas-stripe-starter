@@ -256,7 +256,10 @@ async function canUseMessaging(
   const usageWhere = {
     direction: "OUTBOUND",
     createdAt: { gte: periodStart, lt: periodEnd },
-    metadata: { path: ["aiResponseId"], not: "" },
+    OR: [
+      { metadata: { path: ["aiResponseId"], not: "" } },
+      { metadata: { path: ["quotaReservationId"], not: "" } },
+    ],
     conversation: {
       userId,
       ...(isTrial
@@ -318,37 +321,29 @@ async function reserveMessagingAllowance(
       },
     });
 
-    if (used < limit) {
-      const reservationId = randomUUID();
-      const reservation = await tx.message.create({
-        data: {
-          conversationId,
-          direction: "OUTBOUND",
-          text: reply,
-          metadata: { quotaReservationId: reservationId },
-        },
-        select: { id: true },
+    const usesExtraCredit = used >= limit;
+    if (usesExtraCredit) {
+      const credit = await tx.user.updateMany({
+        where: { id: userId, extraMessageCredits: { gt: 0 } },
+        data: { extraMessageCredits: { decrement: 1 } },
       });
-      return { allowed: true, reservationId, messageId: reservation.id, usesExtraCredit: false };
+      if (credit.count !== 1) {
+        return { allowed: false, reservationId: null, messageId: null, usesExtraCredit: false };
+      }
     }
 
-    const credit = await tx.user.updateMany({
-      where: { id: userId, extraMessageCredits: { gt: 0 } },
-      data: { extraMessageCredits: { decrement: 1 } },
+    const reservationId = randomUUID();
+    const reservation = await tx.message.create({
+      data: {
+        conversationId,
+        direction: "OUTBOUND",
+        text: reply,
+        metadata: { quotaReservationId: reservationId },
+      },
+      select: { id: true },
     });
-
-    return credit.count === 1
-      ? { allowed: true, reservationId: null, messageId: null, usesExtraCredit: true }
-      : { allowed: false, reservationId: null, messageId: null, usesExtraCredit: false };
+    return { allowed: true, reservationId, messageId: reservation.id, usesExtraCredit };
   });
-}
-
-async function reserveExtraMessageCredit(userId: string) {
-  const result = await prisma.user.updateMany({
-    where: { id: userId, extraMessageCredits: { gt: 0 } },
-    data: { extraMessageCredits: { decrement: 1 } },
-  });
-  return result.count === 1;
 }
 
 async function refundExtraMessageCredit(userId: string) {
@@ -471,17 +466,21 @@ async function handleMetaMessage(
     const reply = result.text.trim();
     if (!reply) return;
 
-    reservedExtraCredit = trialMessaging.usesExtraCredit
-      ? await reserveExtraMessageCredit(integration.userId)
-      : false;
-
-    if (trialMessaging.usesExtraCredit && !reservedExtraCredit) {
-      console.log("META EXTRA MESSAGE CREDIT RESERVATION FAILED:", JSON.stringify({
-        channel,
-        userId: integration.userId,
-      }));
+    const reservation = await reserveMessagingAllowance(
+      integration.userId,
+      channel,
+      trialMessaging.periodStart,
+      trialMessaging.periodEnd,
+      trialMessaging.limit,
+      trialMessaging.isTrial,
+      conversation.id,
+      reply,
+    );
+    if (!reservation.allowed || !reservation.messageId) {
+      console.log("META MESSAGE QUOTA RESERVATION FAILED:", JSON.stringify({ channel, userId: integration.userId }));
       return;
     }
+    reservedExtraCredit = reservation.usesExtraCredit;
 
     console.log("META SEND START:", JSON.stringify({
       channel,
@@ -504,11 +503,9 @@ async function handleMetaMessage(
       success: true,
     }));
 
-    await prisma.message.create({
+    await prisma.message.update({
+      where: { id: reservation.messageId },
       data: {
-        conversationId: conversation.id,
-        direction: "OUTBOUND",
-        text: reply,
         metadata: {
           aiResponseId: result.responseId,
           externalSendResult: sendResult,
@@ -625,17 +622,21 @@ async function handleWhatsAppMessage(
     const reply = result.text.trim();
     if (!reply || !integration.whatsappPhoneNumberId) return;
 
-    reservedExtraCredit = trialMessaging.usesExtraCredit
-      ? await reserveExtraMessageCredit(integration.userId)
-      : false;
-
-    if (trialMessaging.usesExtraCredit && !reservedExtraCredit) {
-      console.log("META EXTRA MESSAGE CREDIT RESERVATION FAILED:", JSON.stringify({
-        channel: "WHATSAPP",
-        userId: integration.userId,
-      }));
+    const reservation = await reserveMessagingAllowance(
+      integration.userId,
+      "WHATSAPP",
+      trialMessaging.periodStart,
+      trialMessaging.periodEnd,
+      trialMessaging.limit,
+      trialMessaging.isTrial,
+      conversation.id,
+      reply,
+    );
+    if (!reservation.allowed || !reservation.messageId) {
+      console.log("META MESSAGE QUOTA RESERVATION FAILED:", JSON.stringify({ channel: "WHATSAPP", userId: integration.userId }));
       return;
     }
+    reservedExtraCredit = reservation.usesExtraCredit;
 
     const sendResult = await sendWhatsAppMessage(
       integration.accessToken,
@@ -644,11 +645,9 @@ async function handleWhatsAppMessage(
       reply,
     );
 
-    await prisma.message.create({
+    await prisma.message.update({
+      where: { id: reservation.messageId },
       data: {
-        conversationId: conversation.id,
-        direction: "OUTBOUND",
-        text: reply,
         metadata: {
           aiResponseId: result.responseId,
           externalSendResult: sendResult,
