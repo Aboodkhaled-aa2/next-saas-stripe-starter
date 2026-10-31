@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { getUserSubscriptionPlan } from "@/lib/subscription";
 
 const GRAPH_VERSION = process.env.META_GRAPH_VERSION || "v26.0";
 
@@ -43,6 +44,13 @@ export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user?.id) {
     return NextResponse.redirect(new URL("/login", request.url), 303);
+  }
+
+  if (user.role !== "ADMIN") {
+    const subscription = await getUserSubscriptionPlan(user.id);
+    if (!subscription.isPaid && !subscription.isTrial) {
+      return NextResponse.redirect(new URL("/trial-expired", request.url), 303);
+    }
   }
 
   const cookieHeader = request.headers.get("cookie") || "";
