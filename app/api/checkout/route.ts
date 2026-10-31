@@ -41,6 +41,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
 
+    // Keep the user's selected tier in sync even when they subscribe during
+    // the free trial, before Stripe has created the paid subscription.
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        plan: plan.toUpperCase() as "STARTER" | "BUSINESS" | "PRO",
+      },
+    });
+
     if (account.stripeSubscriptionId) {
       try {
         const existingSubscription = await stripe.subscriptions.retrieve(
