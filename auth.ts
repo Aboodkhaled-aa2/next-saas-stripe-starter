@@ -32,10 +32,32 @@ export const {
     signIn: "/login",
     // error: "/auth/error",
   },
+  events: {
+    async createUser({ user }) {
+      // Grant the 7-day trial once, only when Auth.js creates a brand-new user.
+      // Existing Google sign-ins never reset or extend a trial.
+      if (!user.id) return;
+
+      const existing = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { trialStartedAt: true, trialEndsAt: true },
+      });
+
+      if (!existing?.trialStartedAt && !existing?.trialEndsAt) {
+        const trialStartedAt = new Date();
+        const trialEndsAt = new Date(
+          trialStartedAt.getTime() + 7 * 24 * 60 * 60 * 1000,
+        );
+
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { trialStartedAt, trialEndsAt },
+        });
+      }
+    },
+  },
   callbacks: {
     async signIn() {
-      // Trial dates are assigned only when a new account is created.
-      // Logging in with Google must never restart or grant a legacy trial.
       return true;
     },
 
