@@ -256,7 +256,7 @@ async function canUseMessaging(
   const usageWhere = {
     direction: "OUTBOUND",
     createdAt: { gte: periodStart, lt: periodEnd },
-    metadata: { path: ["aiResponseId"], string_not: "" },
+    metadata: { path: ["aiResponseId"], not: "" },
     conversation: {
       userId,
       ...(isTrial
