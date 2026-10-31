@@ -441,8 +441,14 @@ async function handleMetaMessage(
   try {
     const trialMessaging = await canUseMessaging(integration.userId, channel);
 
-    if (!trialMessaging.allowed) {
-      console.log("META TRIAL MESSAGING BLOCKED:", JSON.stringify({
+    if (
+      !trialMessaging.allowed ||
+      !trialMessaging.periodStart ||
+      !trialMessaging.periodEnd ||
+      typeof trialMessaging.limit !== "number" ||
+      typeof trialMessaging.isTrial !== "boolean"
+    ) {
+      console.log("META MESSAGING BLOCKED:", JSON.stringify({
         channel,
         userId: integration.userId,
         reason: trialMessaging.reason,
@@ -608,8 +614,14 @@ async function handleWhatsAppMessage(
   try {
     const trialMessaging = await canUseMessaging(integration.userId, "WHATSAPP");
 
-    if (!trialMessaging.allowed) {
-      console.log("META TRIAL MESSAGING BLOCKED:", JSON.stringify({
+    if (
+      !trialMessaging.allowed ||
+      !trialMessaging.periodStart ||
+      !trialMessaging.periodEnd ||
+      typeof trialMessaging.limit !== "number" ||
+      typeof trialMessaging.isTrial !== "boolean"
+    ) {
+      console.log("META MESSAGING BLOCKED:", JSON.stringify({
         channel: "WHATSAPP",
         userId: integration.userId,
         reason: trialMessaging.reason,
