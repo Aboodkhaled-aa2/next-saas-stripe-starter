@@ -343,6 +343,14 @@ async function reserveMessagingAllowance(
   });
 }
 
+async function reserveExtraMessageCredit(userId: string) {
+  const result = await prisma.user.updateMany({
+    where: { id: userId, extraMessageCredits: { gt: 0 } },
+    data: { extraMessageCredits: { decrement: 1 } },
+  });
+  return result.count === 1;
+}
+
 async function refundExtraMessageCredit(userId: string) {
   await prisma.user.update({
     where: { id: userId },
