@@ -34,29 +34,11 @@ export async function POST(req: Request) {
       select: {
         stripeCustomerId: true,
         stripeSubscriptionId: true,
-        trialStartedAt: true,
-        trialEndsAt: true,
       },
     });
 
     if (!account) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 });
-    }
-
-    const now = new Date();
-    const trialIsActive =
-      !account.stripeSubscriptionId &&
-      Boolean(account.trialStartedAt && account.trialEndsAt && account.trialEndsAt > now);
-
-    if (trialIsActive) {
-      return NextResponse.json(
-        {
-          error: "Your free trial is still active. You can subscribe after it ends.",
-          code: "TRIAL_ACTIVE",
-          trialEndsAt: account.trialEndsAt,
-        },
-        { status: 409 },
-      );
     }
 
     if (account.stripeSubscriptionId) {
