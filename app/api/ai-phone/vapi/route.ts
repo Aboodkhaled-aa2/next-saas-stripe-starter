@@ -409,37 +409,52 @@ async function hasVoiceMinutesAvailable(userId: string, plan: string | null | un
   const extraVoiceMinutes = Math.max(user?.extraVoiceMinutes ?? 0, 0);
   let includedRemaining = 0;
 
-  if (user?.stripeSubscriptionId) {
-    try {
-      const subscription = await stripe.subscriptions.retrieve(
-        user.stripeSubscriptionId,
-      );
+  // Paid AI Phone access is tied to an active subscription. Purchased add-on
+  // minutes do not keep the phone service active after the base plan expires.
+  if (!user?.stripeSubscriptionId) {
+    return {
+      allowed: false,
+      reason: "Your paid subscription is not active. Renew your plan to use AI Phone.",
+    };
+  }
 
-      if (["active", "trialing"].includes(subscription.status)) {
-        const includedVoiceMinutes = plan === "PRO" ? 500 : 200;
-        const periodStart = new Date(subscription.current_period_start * 1000);
-        const periodEnd = new Date(subscription.current_period_end * 1000);
-        const usage = await prisma.voiceUsage.aggregate({
-          where: {
-            userId,
-            source: "VAPI_CALL",
-            startedAt: {
-              gte: periodStart,
-              lt: periodEnd,
-            },
-          },
-          _sum: { includedMinutesUsed: true },
-        });
+  try {
+    const subscription = await stripe.subscriptions.retrieve(
+      user.stripeSubscriptionId,
+    );
 
-        includedRemaining = Math.max(
-          includedVoiceMinutes - (usage._sum.includedMinutesUsed ?? 0),
-          0,
-        );
-      }
-    } catch (error) {
-      console.error("Unable to verify subscription for included AI Phone minutes:", error);
-      // Purchased minutes remain independently usable if Stripe is unavailable.
+    if (!["active", "trialing"].includes(subscription.status)) {
+      return {
+        allowed: false,
+        reason: "Your subscription is inactive. Renew your plan to use AI Phone.",
+      };
     }
+
+    const includedVoiceMinutes = plan === "PRO" ? 500 : 200;
+    const periodStart = new Date(subscription.current_period_start * 1000);
+    const periodEnd = new Date(subscription.current_period_end * 1000);
+    const usage = await prisma.voiceUsage.aggregate({
+      where: {
+        userId,
+        source: "VAPI_CALL",
+        startedAt: {
+          gte: periodStart,
+          lt: periodEnd,
+        },
+      },
+      _sum: { includedMinutesUsed: true },
+    });
+
+    includedRemaining = Math.max(
+      includedVoiceMinutes - (usage._sum.includedMinutesUsed ?? 0),
+      0,
+    );
+  } catch (error) {
+    console.error("Unable to verify subscription for AI Phone call:", error);
+    return {
+      allowed: false,
+      reason: "We could not verify your subscription. Please try again shortly.",
+    };
   }
 
   const remaining = includedRemaining + extraVoiceMinutes;
