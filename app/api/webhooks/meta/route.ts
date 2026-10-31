@@ -168,7 +168,10 @@ async function sendWhatsAppMessage(
   return data;
 }
 
-async function canUseMessaging(userId: string) {
+async function canUseMessaging(
+  userId: string,
+  channel: "FACEBOOK" | "INSTAGRAM" | "WHATSAPP",
+) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -190,78 +193,91 @@ async function canUseMessaging(userId: string) {
   }
 
   const now = new Date();
+  const isTrial = !user.stripeSubscriptionId &&
+    Boolean(user.trialStartedAt && user.trialEndsAt && user.trialEndsAt > now);
 
-  // A trial grants dashboard access only. Messaging automation requires payment.
-  if (!user.stripeSubscriptionId) {
+  // WhatsApp is paid-only. The free trial allowance is shared by Facebook + Instagram.
+  if (isTrial && channel === "WHATSAPP") {
     return {
       allowed: false,
       remaining: 0,
       usesExtraCredit: false,
-      reason: user.trialEndsAt && user.trialEndsAt > now
-        ? "Messaging automation is available after you subscribe."
-        : "Your free trial has ended. Choose a plan to continue.",
+      reason: "WhatsApp messaging is available after activating a paid subscription.",
     };
   }
 
-  let paidSubscriptionActive = false;
-  try {
-    const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
-    paidSubscriptionActive = ["active", "trialing"].includes(subscription.status);
-  } catch (error) {
-    console.error("Failed to verify paid subscription before messaging:", error);
-  }
+  let periodStart: Date;
+  let periodEnd: Date;
+  let limit: number;
 
-  if (!paidSubscriptionActive) {
-    return {
-      allowed: false,
-      remaining: 0,
-      usesExtraCredit: false,
-      reason: "Messaging automation requires an active paid subscription.",
-    };
-  }
+  if (isTrial) {
+    periodStart = user.trialStartedAt!;
+    periodEnd = user.trialEndsAt!;
+    limit = 100;
+  } else {
+    if (!user.stripeSubscriptionId) {
+      return {
+        allowed: false,
+        remaining: 0,
+        usesExtraCredit: false,
+        reason: "Your free trial has ended. Choose a plan to continue.",
+      };
+    }
 
-  const paidLimit =
-    user.plan === "PRO" ? 5000 : user.plan === "BUSINESS" ? 2000 : 500;
+    let subscription;
+    try {
+      subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+    } catch (error) {
+      console.error("Failed to verify subscription before messaging:", error);
+      return {
+        allowed: false,
+        remaining: 0,
+        usesExtraCredit: false,
+        reason: "We could not verify your subscription. Please try again later.",
+      };
+    }
 
-  let periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  let periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    if (!["active", "trialing"].includes(subscription.status)) {
+      return {
+        allowed: false,
+        remaining: 0,
+        usesExtraCredit: false,
+        reason: "Messaging automation requires an active paid subscription.",
+      };
+    }
 
-  try {
-    const subscription = await stripe.subscriptions.retrieve(
-      user.stripeSubscriptionId,
-    );
     periodStart = new Date(subscription.current_period_start * 1000);
     periodEnd = new Date(subscription.current_period_end * 1000);
-  } catch (error) {
-    console.error("Failed to retrieve Stripe period for messaging usage:", error);
+    limit = user.plan === "PRO" ? 5000 : user.plan === "BUSINESS" ? 2000 : 500;
   }
 
-  const conversations = await prisma.message.findMany({
-    where: {
-      direction: "OUTBOUND",
-      createdAt: { gte: periodStart, lt: periodEnd },
-      conversation: { userId },
+  // Only successful AI replies are written as outbound messages with aiResponseId.
+  // Trial usage is one shared Facebook + Instagram pool; paid plans have a pool per channel.
+  const usageWhere = {
+    direction: "OUTBOUND",
+    createdAt: { gte: periodStart, lt: periodEnd },
+    metadata: { path: ["aiResponseId"], not: null },
+    conversation: {
+      userId,
+      ...(isTrial
+        ? { channel: { in: ["FACEBOOK", "INSTAGRAM"] } }
+        : { channel }),
     },
-    distinct: ["conversationId"],
-    select: { conversationId: true },
-  });
+  } as const;
 
-  const used = conversations.length;
+  const used = await prisma.message.count({ where: usageWhere });
   const hasExtraMessageCredits = user.extraMessageCredits > 0;
-  const usesExtraCredit = used >= paidLimit && hasExtraMessageCredits;
+  const usesExtraCredit = used >= limit && hasExtraMessageCredits;
 
   return {
-    allowed: used < paidLimit || hasExtraMessageCredits,
-    remaining:
-      used < paidLimit
-        ? Math.max(paidLimit - used, 0)
-        : user.extraMessageCredits,
+    allowed: used < limit || hasExtraMessageCredits,
+    remaining: Math.max(limit - used, 0) + (used >= limit ? user.extraMessageCredits : 0),
     used,
-    limit: paidLimit,
+    limit,
     usesExtraCredit,
     reason:
-      used >= paidLimit && !hasExtraMessageCredits
-        ? "Your monthly messaging limit has been reached. Purchase additional message credits to continue."
+      used >= limit && !hasExtraMessageCredits
+        ? "Your message limit for this channel and billing period has been reached. Purchase additional message credits to continue."
         : null,
   };
 }
@@ -359,7 +375,7 @@ async function handleMetaMessage(
   let reservedExtraCredit = false;
 
   try {
-    const trialMessaging = await canUseMessaging(integration.userId);
+    const trialMessaging = await canUseMessaging(integration.userId, channel);
 
     if (!trialMessaging.allowed) {
       console.log("META TRIAL MESSAGING BLOCKED:", JSON.stringify({
@@ -510,7 +526,7 @@ async function handleWhatsAppMessage(
   let reservedExtraCredit = false;
 
   try {
-    const trialMessaging = await canUseMessaging(integration.userId);
+    const trialMessaging = await canUseMessaging(integration.userId, "WHATSAPP");
 
     if (!trialMessaging.allowed) {
       console.log("META TRIAL MESSAGING BLOCKED:", JSON.stringify({
