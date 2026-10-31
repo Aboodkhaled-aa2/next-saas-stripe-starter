@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { getUserSubscriptionPlan } from "@/lib/subscription";
 
 const GRAPH_VERSION = process.env.META_GRAPH_VERSION || "v26.0";
 
@@ -10,6 +11,16 @@ export async function POST(request: Request) {
 
   if (!user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (user.role !== "ADMIN") {
+    const subscription = await getUserSubscriptionPlan(user.id);
+    if (!subscription.isPaid) {
+      return NextResponse.json(
+        { error: "WhatsApp connection is available after activating a paid subscription." },
+        { status: 403 },
+      );
+    }
   }
 
   const stateCookie = request.headers
