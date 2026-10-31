@@ -50,6 +50,28 @@ export function PricingCards({
       setSelectingPlan(null);
     }
   }
+
+  async function subscribeNow(plan: string) {
+    setSelectingPlan(plan);
+    setPlanError(null);
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.url) {
+        setPlanError(result.error || "Unable to start Stripe Checkout. Please try again.");
+        return;
+      }
+      window.location.assign(result.url);
+    } catch {
+      setPlanError("Unable to start Stripe Checkout. Please try again.");
+    } finally {
+      setSelectingPlan(null);
+    }
+  }
   const PricingCard = ({
     offer,
   }: {
@@ -110,6 +132,16 @@ export function PricingCards({
             >
               Start Free Trial
             </Link>
+          )}
+          {userId && (
+            <button
+              type="button"
+              onClick={() => void subscribeNow(offer.title.toLowerCase())}
+              disabled={selectingPlan !== null}
+              className="mt-3 inline-block w-full rounded-xl border border-blue-500/60 bg-transparent px-4 py-3 text-center font-medium text-blue-300 transition-colors hover:bg-blue-950/50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {selectingPlan === offer.title.toLowerCase() ? "Opening Stripe..." : "Subscribe Now"}
+            </button>
           )}
           {planError && (
             <p role="alert" className="mt-2 text-sm text-red-400">{planError}</p>
