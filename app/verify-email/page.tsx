@@ -75,9 +75,23 @@ export default function VerifyEmailPage() {
         return;
       }
 
-      setSuccessMsg("Email verified. Redirecting to plan selection...");
+      if (plan && ["starter", "business", "pro"].includes(plan)) {
+        const planResponse = await fetch("/api/trial/select-plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plan }),
+        });
+        const planResult = await planResponse.json().catch(() => ({}));
 
-      router.replace("/pricing");
+        if (!planResponse.ok) {
+          setErrorMsg(planResult.error || "Email verified, but we could not save your selected plan. Please choose it again.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      setSuccessMsg("Email verified. Redirecting to your dashboard...");
+      router.replace("/dashboard");
     } catch {
       setErrorMsg("Something went wrong. Please try again.");
       setLoading(false);
