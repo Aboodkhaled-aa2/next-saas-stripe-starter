@@ -148,6 +148,37 @@ export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
         </CardFooter>
       </Card>
 
+      {isPaid ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card className="border-slate-800 bg-slate-950 text-white">
+            <CardHeader>
+              <CardTitle>Extra AI Phone Minutes</CardTitle>
+              <CardDescription className="text-slate-400">
+                Purchase additional voice minutes for your AI Receptionist.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Link href="/dashboard/billing/voice" className={cn(buttonVariants({ size: "lg" }), "w-full")}>
+                Buy Extra Minutes
+              </Link>
+            </CardFooter>
+          </Card>
+          <Card className="border-slate-800 bg-slate-950 text-white">
+            <CardHeader>
+              <CardTitle>Extra Message Credits</CardTitle>
+              <CardDescription className="text-slate-400">
+                Purchase additional message credits for your business.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Link href="/dashboard/billing/messages" className={cn(buttonVariants({ size: "lg" }), "w-full")}>
+                Buy Extra Messages
+              </Link>
+            </CardFooter>
+          </Card>
+        </div>
+      ) : null}
+
       <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-5 sm:p-6">
         <h3 className="font-semibold text-white">Billing support</h3>
         <p className="mt-1 text-sm leading-6 text-slate-400">
