@@ -9,7 +9,7 @@ type AIPhoneSettings = {
   enabled: boolean;
 };
 
-type AIPhoneResponse = {
+type UsageSummary = {\n  eligible?: boolean;\n  plan?: string;\n  includedMinutes?: number;\n  includedUsed?: number;\n  includedRemaining?: number;\n  extraRemaining?: number;\n  totalRemaining?: number;\n  warningLevel?: "OK" | "LOW" | "CRITICAL" | "EMPTY";\n};\n\ntype AIPhoneResponse = {
   success?: boolean;
   aiPhoneSettings?: AIPhoneSettings | null;
   error?: string;
@@ -18,7 +18,7 @@ type AIPhoneResponse = {
 export default function PhoneNumberPage() {
   const [settings, setSettings] = useState<AIPhoneSettings | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState("");\n  const [usage, setUsage] = useState<UsageSummary | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,6 +78,32 @@ export default function PhoneNumberPage() {
           >
             {error}
           </div>
+        ) : null}
+
+        {usage ? (
+          <section className="mb-5 rounded-2xl border border-slate-800 bg-slate-950/80 p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">AI Phone minute balance</h2>
+                <p className="mt-1 text-sm text-slate-400">
+                  {usage.includedRemaining?.toFixed(1)} included minutes and {usage.extraRemaining?.toFixed(1)} extra minutes remaining.
+                </p>
+              </div>
+              <p className="text-2xl font-bold">{usage.totalRemaining?.toFixed(1)} min</p>
+            </div>
+            {usage.warningLevel !== "OK" ? (
+              <div role="status" className={usage.warningLevel === "EMPTY"
+                ? "mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200"
+                : "mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200"}>
+                {usage.warningLevel === "EMPTY"
+                  ? "Your AI Phone minutes are exhausted. New AI calls are blocked until you add minutes or your plan renews."
+                  : usage.warningLevel === "CRITICAL"
+                    ? "Your AI Phone balance is below 10%. Add minutes soon to avoid interruptions."
+                    : "Your AI Phone balance is below 20%. Consider adding minutes soon."}
+                <a href="/dashboard/billing/voice" className="ml-2 inline-flex font-semibold underline">Buy more minutes</a>
+              </div>
+            ) : null}
+          </section>
         ) : null}
 
         <section className="rounded-2xl border border-slate-800 bg-slate-950/80 p-6">
