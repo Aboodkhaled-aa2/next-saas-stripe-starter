@@ -112,7 +112,7 @@ export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
                 Free trial ends
               </p>
               <p className="mt-2 text-base font-semibold text-white">
-                {formatDate(trialEndsAt)}
+                {formatDate(trialEndsAt.getTime())}
               </p>
               <p className="mt-1 text-sm text-slate-400">
                 Add a subscription before the trial ends to keep using all available features.
