@@ -263,7 +263,7 @@ export default async function DashboardPage() {
     totalRemainingVoiceMinutes > 0 &&
     totalRemainingVoiceMinutes <= voiceLowBalanceThreshold;
 
-  const messagingLimit = trialActive
+  const messagingChannelLimit = trialActive
     ? 100
     : paidActive
       ? billingUser?.plan === "PRO"
@@ -273,28 +273,51 @@ export default async function DashboardPage() {
           : 500
       : 0;
 
-  const messagingUsageWhere = {
-    direction: "OUTBOUND",
-    ...(currentPeriodStart && currentPeriodEnd
+  const messagingPeriodFilter =
+    currentPeriodStart && currentPeriodEnd
       ? {
           createdAt: {
             gte: currentPeriodStart,
             lt: currentPeriodEnd,
           },
         }
-      : {
-          id: "__NO_CURRENT_BILLING_PERIOD__",
-        }),
+      : { id: "__NO_CURRENT_BILLING_PERIOD__" };
+
+  const messagingBaseWhere = {
+    direction: "OUTBOUND",
+    ...messagingPeriodFilter,
     metadata: { path: ["aiResponseId"], not: "" },
-    conversation: {
-      userId: user?.id ?? "",
-      ...(trialActive ? { channel: { in: ["FACEBOOK", "INSTAGRAM"] } } : {}),
-    },
+    conversation: { userId: user?.id ?? "" },
   };
 
-  const usedMessagingMessages = await prisma.message.count({
-    where: messagingUsageWhere,
-  });
+  const [facebookMessagingUsed, instagramMessagingUsed, whatsappMessagingUsed] =
+    await Promise.all([
+      prisma.message.count({
+        where: {
+          ...messagingBaseWhere,
+          conversation: { userId: user?.id ?? "", channel: "FACEBOOK" },
+        },
+      }),
+      prisma.message.count({
+        where: {
+          ...messagingBaseWhere,
+          conversation: { userId: user?.id ?? "", channel: "INSTAGRAM" },
+        },
+      }),
+      prisma.message.count({
+        where: {
+          ...messagingBaseWhere,
+          conversation: { userId: user?.id ?? "", channel: "WHATSAPP" },
+        },
+      }),
+    ]);
+
+  const usedMessagingMessages = trialActive
+    ? facebookMessagingUsed + instagramMessagingUsed
+    : facebookMessagingUsed + instagramMessagingUsed + whatsappMessagingUsed;
+  const messagingLimit = trialActive
+    ? messagingChannelLimit
+    : messagingChannelLimit * 3;
   const remainingMessagingMessages = Math.max(
     messagingLimit - usedMessagingMessages,
     0,
@@ -732,6 +755,21 @@ export default async function DashboardPage() {
                     Your messaging limit has been reached. Purchase extra message credits to keep AI replies active.
                   </div>
                 )}
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                {[
+                  { label: "Facebook", used: facebookMessagingUsed, limit: messagingChannelLimit, visible: true },
+                  { label: "Instagram", used: instagramMessagingUsed, limit: messagingChannelLimit, visible: true },
+                  { label: "WhatsApp", used: whatsappMessagingUsed, limit: messagingChannelLimit, visible: !trialActive },
+                ].filter((item) => item.visible).map((item) => (
+                  <div key={item.label} className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+                    <p className="text-xs text-slate-400">{item.label}</p>
+                    <p className="mt-1 text-lg font-semibold text-white">
+                      {item.used.toLocaleString()} <span className="text-xs font-normal text-slate-500">/ {item.limit.toLocaleString()}</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
