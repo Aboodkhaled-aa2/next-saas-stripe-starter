@@ -71,6 +71,34 @@ export default function PhoneNumberPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadUsage() {
+      try {
+        const response = await fetch("/api/ai-phone/usage", {
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+
+        const data = (await response.json()) as UsageSummary;
+        if (!cancelled && data.eligible) {
+          setUsage(data);
+        } else if (!cancelled) {
+          setUsage(null);
+        }
+      } catch (err) {
+        console.error("Unable to load AI Phone usage:", err);
+      }
+    }
+
+    void loadUsage();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <main className="min-h-screen bg-[#020617] px-4 py-10 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-3xl">
