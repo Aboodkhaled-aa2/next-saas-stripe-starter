@@ -30,11 +30,27 @@ async function saveSelectedPlan(planKey: string) {
       stripeCurrentPeriodEnd: true,
       trialStartedAt: true,
       trialEndsAt: true,
+      accounts: {
+        where: { provider: "google" },
+        select: { provider: true },
+        take: 1,
+      },
     },
   });
 
   if (!user) return { error: "Account not found.", status: 404 as const };
-  if (!user.emailVerified) {
+
+  // Google OAuth accounts are trusted only after Auth.js completes the
+  // provider sign-in. Persist the verified-email state here as a fallback
+  // in case the signIn callback update and OAuth redirect race each other.
+  if (!user.emailVerified && user.accounts.length > 0) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { emailVerified: new Date() },
+    });
+  }
+
+  if (!user.emailVerified && user.accounts.length === 0) {
     return { error: "Verify your email before selecting a plan.", status: 403 as const };
   }
 
