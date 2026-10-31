@@ -57,7 +57,27 @@ export const {
     },
   },
   callbacks: {
-    async signIn() {
+    async signIn({ user, account, profile }) {
+      // Google has already verified this address when email_verified is true.
+      // Persist that verification so plan selection does not ask Google users
+      // to complete the separate email-code flow.
+      const googleProfile = profile as
+        | { email_verified?: boolean }
+        | undefined;
+
+      if (
+        account?.provider === "google" &&
+        googleProfile?.email_verified === true &&
+        user.id
+      ) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            emailVerified: user.email ? new Date() : undefined,
+          },
+        });
+      }
+
       return true;
     },
 
