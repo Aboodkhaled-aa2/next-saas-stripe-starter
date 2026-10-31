@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { pricingData } from "@/config/subscriptions";
 import { stripe } from "@/lib/stripe";
+import { prisma } from "@/lib/db";
 import { absoluteUrl } from "@/lib/utils";
 
 export async function POST(req: Request) {
@@ -29,9 +30,16 @@ export async function POST(req: Request) {
       );
     }
 
+    const account = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { stripeCustomerId: true },
+    });
+
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
-      customer_email: user.email,
+      ...(account?.stripeCustomerId
+        ? { customer: account.stripeCustomerId }
+        : { customer_email: user.email }),
       line_items: [
         {
           price: priceId,
