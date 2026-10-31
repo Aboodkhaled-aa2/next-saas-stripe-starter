@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { env } from "@/env.mjs";
+import { getUserSubscriptionPlan } from "@/lib/subscription";
 
 const voicePackages = {
   "100": {
@@ -25,6 +26,14 @@ export async function POST(req: Request) {
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const subscriptionPlan = await getUserSubscriptionPlan(session.user.id);
+    if (!subscriptionPlan.isPaid) {
+      return NextResponse.json(
+        { error: "A paid subscription is required to purchase voice minute credits." },
+        { status: 403 },
+      );
     }
 
     const body = await req.json();
