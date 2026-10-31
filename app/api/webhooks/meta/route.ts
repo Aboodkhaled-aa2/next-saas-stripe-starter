@@ -306,6 +306,15 @@ async function refundExtraMessageCredit(userId: string) {
 }
 
 
+function isDuplicateMessageError(error: unknown) {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code?: string }).code === "P2002",
+  );
+}
+
 async function handleMetaMessage(
   channel: "FACEBOOK" | "INSTAGRAM",
   event: MetaMessageEvent,
@@ -362,15 +371,20 @@ async function handleMetaMessage(
     if (duplicate) return;
   }
 
-  await prisma.message.create({
-    data: {
-      conversationId: conversation.id,
-      direction: "INBOUND",
-      externalMessageId: event.message?.mid ?? null,
-      senderExternalId: senderId,
-      text,
-    },
-  });
+  try {
+    await prisma.message.create({
+      data: {
+        conversationId: conversation.id,
+        direction: "INBOUND",
+        externalMessageId: event.message?.mid ?? null,
+        senderExternalId: senderId,
+        text,
+      },
+    });
+  } catch (error) {
+    if (event.message?.mid && isDuplicateMessageError(error)) return;
+    throw error;
+  }
 
   let reservedExtraCredit = false;
 
@@ -513,15 +527,20 @@ async function handleWhatsAppMessage(
     if (duplicate) return;
   }
 
-  await prisma.message.create({
-    data: {
-      conversationId: conversation.id,
-      direction: "INBOUND",
-      externalMessageId: message.id ?? null,
-      senderExternalId: senderId,
-      text,
-    },
-  });
+  try {
+    await prisma.message.create({
+      data: {
+        conversationId: conversation.id,
+        direction: "INBOUND",
+        externalMessageId: message.id ?? null,
+        senderExternalId: senderId,
+        text,
+      },
+    });
+  } catch (error) {
+    if (message.id && isDuplicateMessageError(error)) return;
+    throw error;
+  }
 
   let reservedExtraCredit = false;
 
