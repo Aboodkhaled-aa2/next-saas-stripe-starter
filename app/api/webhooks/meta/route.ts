@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
@@ -275,6 +275,9 @@ async function canUseMessaging(
     used,
     limit,
     usesExtraCredit,
+    periodStart,
+    periodEnd,
+    isTrial,
     reason:
       used >= limit && !hasExtraMessageCredits
         ? "Your message limit for this channel and billing period has been reached. Purchase additional message credits to continue."
@@ -282,26 +285,68 @@ async function canUseMessaging(
   };
 }
 
-async function reserveExtraMessageCredit(userId: string) {
-  const result = await prisma.user.updateMany({
-    where: {
-      id: userId,
-      extraMessageCredits: { gt: 0 },
-    },
-    data: {
-      extraMessageCredits: { decrement: 1 },
-    },
-  });
+async function reserveMessagingAllowance(
+  userId: string,
+  channel: "FACEBOOK" | "INSTAGRAM" | "WHATSAPP",
+  periodStart: Date,
+  periodEnd: Date,
+  limit: number,
+  isTrial: boolean,
+  conversationId: string,
+  reply: string,
+) {
+  const scope = isTrial ? "META_TRIAL_SHARED" : channel;
+  const lockKey = userId + ":" + scope + ":" + periodStart.toISOString();
 
-  return result.count === 1;
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey})::bigint)`;
+
+    const used = await tx.message.count({
+      where: {
+        direction: "OUTBOUND",
+        createdAt: { gte: periodStart, lt: periodEnd },
+        OR: [
+          { metadata: { path: ["aiResponseId"], not: "" } },
+          { metadata: { path: ["quotaReservationId"], not: "" } },
+        ],
+        conversation: {
+          userId,
+          ...(isTrial
+            ? { channel: { in: ["FACEBOOK", "INSTAGRAM"] } }
+            : { channel }),
+        },
+      },
+    });
+
+    if (used < limit) {
+      const reservationId = randomUUID();
+      const reservation = await tx.message.create({
+        data: {
+          conversationId,
+          direction: "OUTBOUND",
+          text: reply,
+          metadata: { quotaReservationId: reservationId },
+        },
+        select: { id: true },
+      });
+      return { allowed: true, reservationId, messageId: reservation.id, usesExtraCredit: false };
+    }
+
+    const credit = await tx.user.updateMany({
+      where: { id: userId, extraMessageCredits: { gt: 0 } },
+      data: { extraMessageCredits: { decrement: 1 } },
+    });
+
+    return credit.count === 1
+      ? { allowed: true, reservationId: null, messageId: null, usesExtraCredit: true }
+      : { allowed: false, reservationId: null, messageId: null, usesExtraCredit: false };
+  });
 }
 
 async function refundExtraMessageCredit(userId: string) {
   await prisma.user.update({
     where: { id: userId },
-    data: {
-      extraMessageCredits: { increment: 1 },
-    },
+    data: { extraMessageCredits: { increment: 1 } },
   });
 }
 
