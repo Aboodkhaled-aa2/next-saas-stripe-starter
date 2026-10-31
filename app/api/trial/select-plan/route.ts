@@ -11,7 +11,7 @@ const validPlans = {
 type PlanKey = keyof typeof validPlans;
 
 async function saveSelectedPlan(planKey: string) {
-  if (!(planKey in validPlans)) {
+  if (!Object.prototype.hasOwnProperty.call(validPlans, planKey)) {
     return { error: "Invalid plan selected.", status: 400 as const };
   }
 
@@ -40,29 +40,22 @@ async function saveSelectedPlan(planKey: string) {
 
   if (!user) return { error: "Account not found.", status: 404 as const };
 
-  // Google OAuth accounts are trusted only after Auth.js completes the
-  // provider sign-in. Persist the verified-email state here as a fallback
-  // in case the signIn callback update and OAuth redirect race each other.
-  if (!user.emailVerified && user.accounts.length > 0) {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { emailVerified: new Date() },
-    });
-  }
-
-  if (!user.emailVerified && user.accounts.length === 0) {
+  const isVerifiedGoogleAccount = user.accounts.length > 0;
+  if (!user.emailVerified && !isVerifiedGoogleAccount) {
     return { error: "Verify your email before selecting a plan.", status: 403 as const };
   }
 
   const now = new Date();
   const paidSubscriptionActive = Boolean(
     user.stripeSubscriptionId &&
-    user.stripePriceId &&
-    user.stripeCurrentPeriodEnd &&
-    user.stripeCurrentPeriodEnd > now
+      user.stripePriceId &&
+      user.stripeCurrentPeriodEnd &&
+      user.stripeCurrentPeriodEnd > now
   );
 
-  if (paidSubscriptionActive) return { redirect: "/dashboard" as const };
+  if (paidSubscriptionActive) {
+    return { error: "You already have an active subscription. Manage plan changes from Billing.", status: 409 as const };
+  }
 
   if (!user.trialStartedAt || !user.trialEndsAt || user.trialEndsAt <= now) {
     return {
@@ -72,10 +65,34 @@ async function saveSelectedPlan(planKey: string) {
     };
   }
 
+  const selectedPlan = validPlans[planKey as PlanKey];
+
+  // Save email verification and the customer's explicit plan choice together.
+  // Never reset trial dates here: the original 7-day trial remains unchanged.
   await prisma.user.update({
     where: { id: user.id },
-    data: { plan: validPlans[planKey as PlanKey] },
+    data: {
+      plan: selectedPlan,
+      ...(isVerifiedGoogleAccount && !user.emailVerified
+        ? { emailVerified: now }
+        : {}),
+    },
   });
+
+  // Read-after-write guard: never send a customer to the dashboard unless
+  // the exact tier they selected is persisted successfully.
+  const savedUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { plan: true },
+  });
+
+  if (savedUser?.plan !== selectedPlan) {
+    return {
+      error: "Your selected plan could not be saved. Please choose again.",
+      redirect: "/pricing?plan_error=1",
+      status: 500 as const,
+    };
+  }
 
   return { success: true, redirect: "/dashboard", plan: planKey };
 }
