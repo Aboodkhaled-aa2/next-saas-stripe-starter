@@ -266,7 +266,7 @@ async function canUseMessaging(
         ? { channel: { in: ["FACEBOOK", "INSTAGRAM"] } }
         : { channel }),
     },
-  } as const;
+  };
 
   const used = await prisma.message.count({ where: usageWhere });
   const hasExtraMessageCredits = user.extraMessageCredits > 0;
