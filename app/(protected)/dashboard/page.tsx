@@ -327,6 +327,12 @@ export default async function DashboardPage() {
       ? Math.min((usedMessagingMessages / messagingLimit) * 100, 100)
       : 0;
 
+  const messagingLimitReached = trialActive
+    ? usedMessagingMessages >= messagingChannelLimit
+    : facebookMessagingUsed >= messagingChannelLimit ||
+      instagramMessagingUsed >= messagingChannelLimit ||
+      whatsappMessagingUsed >= messagingChannelLimit;
+
   const extraVoicePackages = [
     { minutes: 100, price: 15 },
     { minutes: 500, price: 75 },
@@ -742,14 +748,14 @@ export default async function DashboardPage() {
                 </div>
               )}
 
-              {usedMessagingMessages >= messagingLimit &&
+              {messagingLimitReached &&
                 (billingUser?.extraMessageCredits ?? 0) > 0 && (
                   <div className="mt-4 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-blue-200">
                     Your included AI reply limit is reached. Your extra message credits are now being used.
                   </div>
                 )}
 
-              {usedMessagingMessages >= messagingLimit &&
+              {messagingLimitReached &&
                 (billingUser?.extraMessageCredits ?? 0) <= 0 && (
                   <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
                     Your messaging limit has been reached. Purchase extra message credits to keep AI replies active.
