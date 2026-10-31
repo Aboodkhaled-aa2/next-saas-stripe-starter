@@ -39,7 +39,7 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <UserAuthForm />
+        <UserAuthForm type="register" />
 
         <p className="px-8 text-center text-sm text-gray-400">
           By clicking continue, you agree to our{" "}
