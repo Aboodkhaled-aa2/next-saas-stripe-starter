@@ -7,7 +7,7 @@ export default function TrialExpiredPage() {
         <h1 className="text-2xl font-bold">Your 7-day free trial has ended</h1>
         <p className="mt-3 text-slate-300">
           Your account, business profile, customers, conversations, and connected
-          channel data are محفوظة. Choose a plan to restore subscription features.
+          channel data will remain available. Choose a plan to restore subscription features.
         </p>
         <p className="mt-3 text-sm text-slate-400">
           You are still signed in. You do not need to create another account or
