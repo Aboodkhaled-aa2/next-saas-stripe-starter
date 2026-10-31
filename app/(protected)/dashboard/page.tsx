@@ -689,7 +689,7 @@ export default async function DashboardPage() {
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                    Conversations
+                    AI Replies
                   </p>
                   <p className="mt-1 text-3xl font-bold tracking-tight text-white">
                     {usedMessagingMessages.toLocaleString()}
