@@ -290,7 +290,7 @@ export default async function DashboardPage() {
       userId: user?.id ?? "",
       ...(trialActive ? { channel: { in: ["FACEBOOK", "INSTAGRAM"] } } : {}),
     },
-  } as const;
+  };
 
   const usedMessagingMessages = await prisma.message.count({
     where: messagingUsageWhere,
