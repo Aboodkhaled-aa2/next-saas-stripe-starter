@@ -264,11 +264,7 @@ export default async function DashboardPage() {
     totalRemainingVoiceMinutes <= voiceLowBalanceThreshold;
 
   const messagingLimit = trialActive
-    ? billingUser?.plan === "PRO"
-      ? 200
-      : billingUser?.plan === "BUSINESS"
-        ? 100
-        : 50
+    ? 100
     : paidActive
       ? billingUser?.plan === "PRO"
         ? 5000
@@ -277,59 +273,35 @@ export default async function DashboardPage() {
           : 500
       : 0;
 
-  const messagingMessageCount = await prisma.message.count({
-    where: {
-      direction: "OUTBOUND",
-      ...(currentPeriodStart && currentPeriodEnd
-        ? {
-            createdAt: {
-              gte: currentPeriodStart,
-              lt: currentPeriodEnd,
-            },
-          }
-        : {
-            id: "__NO_CURRENT_BILLING_PERIOD__",
-          }),
-      conversation: {
-        userId: user?.id ?? "",
-      },
+  const messagingUsageWhere = {
+    direction: "OUTBOUND",
+    ...(currentPeriodStart && currentPeriodEnd
+      ? {
+          createdAt: {
+            gte: currentPeriodStart,
+            lt: currentPeriodEnd,
+          },
+        }
+      : {
+          id: "__NO_CURRENT_BILLING_PERIOD__",
+        }),
+    metadata: { path: ["aiResponseId"], not: null },
+    conversation: {
+      userId: user?.id ?? "",
+      ...(trialActive ? { channel: { in: ["FACEBOOK", "INSTAGRAM"] } } : {}),
     },
-  });
+  } as const;
 
-  const messagingUsageRows = await prisma.message.findMany({
-    where: {
-      direction: "OUTBOUND",
-      ...(currentPeriodStart && currentPeriodEnd
-        ? {
-            createdAt: {
-              gte: currentPeriodStart,
-              lt: currentPeriodEnd,
-            },
-          }
-        : {
-            id: "__NO_CURRENT_BILLING_PERIOD__",
-          }),
-      conversation: {
-        userId: user?.id ?? "",
-      },
-    },
-    distinct: ["conversationId"],
-    select: {
-      conversationId: true,
-    },
+  const usedMessagingMessages = await prisma.message.count({
+    where: messagingUsageWhere,
   });
-
-  const usedMessagingConversations = messagingUsageRows.length;
-  const remainingMessagingConversations = Math.max(
-    messagingLimit - usedMessagingConversations,
+  const remainingMessagingMessages = Math.max(
+    messagingLimit - usedMessagingMessages,
     0,
   );
   const messagingUsagePercent =
     messagingLimit > 0
-      ? Math.min(
-          (usedMessagingConversations / messagingLimit) * 100,
-          100,
-        )
+      ? Math.min((usedMessagingMessages / messagingLimit) * 100, 100)
       : 0;
 
   const extraVoicePackages = [
@@ -708,7 +680,7 @@ export default async function DashboardPage() {
               Messaging Usage
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Track unique customer conversations for the current period.
+              Track successful AI replies for the current period.
             </p>
           </div>
 
@@ -720,7 +692,7 @@ export default async function DashboardPage() {
                     Conversations
                   </p>
                   <p className="mt-1 text-3xl font-bold tracking-tight text-white">
-                    {usedMessagingConversations.toLocaleString()}
+                    {usedMessagingMessages.toLocaleString()}
                   </p>
                 </div>
                 <p className="text-sm font-semibold text-slate-400">
@@ -730,7 +702,7 @@ export default async function DashboardPage() {
 
               <div className="mt-4">
                 <div className="flex items-center justify-between text-xs text-slate-500">
-                  <span>{remainingMessagingConversations.toLocaleString()} remaining</span>
+                  <span>{remainingMessagingMessages.toLocaleString()} remaining</span>
                   <span>{messagingUsagePercent.toFixed(0)}%</span>
                 </div>
                 <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-800">
@@ -747,7 +719,7 @@ export default async function DashboardPage() {
                 </div>
               )}
 
-              {usedMessagingConversations >= messagingLimit &&
+              {usedMessagingMessages >= messagingLimit &&
                 (billingUser?.extraMessageCredits ?? 0) > 0 && (
                   <div className="mt-4 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-blue-200">
                     Your included conversation limit is reached. Your extra message credits are now being used.
