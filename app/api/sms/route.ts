@@ -1,13 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { to, message } = body;
+    const session = await auth();
 
-    if (!to || !message) {
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { to, message } = body ?? {};
+
+    if (
+      typeof to !== "string" ||
+      !to.trim() ||
+      typeof message !== "string" ||
+      !message.trim()
+    ) {
       return NextResponse.json(
         { error: "Missing 'to' or 'message'" },
+        { status: 400 }
+      );
+    }
+
+    if (message.length > 1600) {
+      return NextResponse.json(
+        { error: "Message is too long." },
         { status: 400 }
       );
     }
@@ -25,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     const response = await fetch(
-      `${spaceUrl}/api/laml/2010-04-01/Accounts/${projectId}/Messages.json`,
+      `${spaceUrl.replace(/\/$/, "")}/api/laml/2010-04-01/Accounts/${projectId}/Messages.json`,
       {
         method: "POST",
         headers: {
@@ -36,31 +55,29 @@ export async function POST(request: NextRequest) {
         },
         body: new URLSearchParams({
           From: fromNumber,
-          To: to,
-          Body: message,
+          To: to.trim(),
+          Body: message.trim(),
         }).toString(),
+        cache: "no-store",
       }
     );
 
-    const data = await response.json();
+    const data = await response.json().catch(() => null);
 
     if (!response.ok) {
+      console.error("SignalWire SMS request failed", response.status);
       return NextResponse.json(
-        {
-          error: "SignalWire SMS request failed",
-          details: data,
-        },
-        { status: response.status }
+        { error: "SignalWire SMS request failed" },
+        { status: 502 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      messageSid: data.sid ?? data.message_sid ?? null,
+      messageSid: data?.sid ?? data?.message_sid ?? null,
     });
   } catch (error) {
     console.error("SMS error:", error);
-
     return NextResponse.json(
       { error: "Failed to send SMS" },
       { status: 500 }

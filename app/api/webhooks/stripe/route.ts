@@ -7,6 +7,15 @@ import { stripe } from "@/lib/stripe";
 import { pricingData } from "@/config/subscriptions";
 import { sendPaymentConfirmation } from "@/lib/email";
 
+function isUniqueConstraintError(error: unknown) {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code?: string }).code === "P2002",
+  );
+}
+
 const allowedStripePriceIds = new Set(
   pricingData
     .flatMap((plan) => [plan.stripeIds.monthly, plan.stripeIds.yearly])
@@ -99,35 +108,41 @@ export async function POST(req: Request) {
           });
         }
 
-        await prisma.$transaction(async (tx) => {
-          const existingPurchase = await tx.voiceCreditPurchase.findUnique({
-            where: { stripeSessionId: session.id },
-            select: { id: true },
-          });
-
-          if (existingPurchase) {
-            return;
-          }
-
-          await tx.voiceCreditPurchase.create({
-            data: {
-              userId,
-              stripeSessionId: session.id,
-              minutes: selected.minutes,
-              amountCents: selected.amountCents,
-              status: "PAID",
-            },
-          });
-
-          await tx.user.update({
-            where: { id: userId },
-            data: {
-              extraVoiceMinutes: {
-                increment: selected.minutes,
+        try {
+          await prisma.$transaction(async (tx) => {
+            const existingPurchase = await tx.voiceCreditPurchase.findUnique({
+              where: { stripeSessionId: session.id },
+              select: { id: true },
+            });
+  
+            if (existingPurchase) {
+              return;
+            }
+  
+            await tx.voiceCreditPurchase.create({
+              data: {
+                userId,
+                stripeSessionId: session.id,
+                minutes: selected.minutes,
+                amountCents: selected.amountCents,
+                status: "PAID",
               },
-            },
+            });
+  
+            await tx.user.update({
+              where: { id: userId },
+              data: {
+                extraVoiceMinutes: {
+                  increment: selected.minutes,
+                },
+              },
+            });
           });
-        });
+        } catch (error) {
+          // Stripe may deliver the same paid event concurrently. The unique
+          // session constraint guarantees one credit grant; acknowledge retries.
+          if (!isUniqueConstraintError(error)) throw error;
+        }
 
         return new Response(null, { status: 200 });
       }
@@ -171,35 +186,41 @@ export async function POST(req: Request) {
           });
         }
 
-        await prisma.$transaction(async (tx) => {
-          const existingPurchase = await tx.messageCreditPurchase.findUnique({
-            where: { stripeSessionId: session.id },
-            select: { id: true },
-          });
-
-          if (existingPurchase) {
-            return;
-          }
-
-          await tx.messageCreditPurchase.create({
-            data: {
-              userId,
-              stripeSessionId: session.id,
-              messages: selected.messages,
-              amountCents: selected.amountCents,
-              status: "PAID",
-            },
-          });
-
-          await tx.user.update({
-            where: { id: userId },
-            data: {
-              extraMessageCredits: {
-                increment: selected.messages,
+        try {
+          await prisma.$transaction(async (tx) => {
+            const existingPurchase = await tx.messageCreditPurchase.findUnique({
+              where: { stripeSessionId: session.id },
+              select: { id: true },
+            });
+  
+            if (existingPurchase) {
+              return;
+            }
+  
+            await tx.messageCreditPurchase.create({
+              data: {
+                userId,
+                stripeSessionId: session.id,
+                messages: selected.messages,
+                amountCents: selected.amountCents,
+                status: "PAID",
               },
-            },
+            });
+  
+            await tx.user.update({
+              where: { id: userId },
+              data: {
+                extraMessageCredits: {
+                  increment: selected.messages,
+                },
+              },
+            });
           });
-        });
+        } catch (error) {
+          // Stripe may deliver the same paid event concurrently. The unique
+          // session constraint guarantees one credit grant; acknowledge retries.
+          if (!isUniqueConstraintError(error)) throw error;
+        }
 
         return new Response(null, { status: 200 });
       }

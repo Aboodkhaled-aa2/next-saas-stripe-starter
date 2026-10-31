@@ -42,7 +42,7 @@ export async function GET(req: Request) {
       ? Math.min(Math.max(Math.floor(requestedLimit), 1), 50)
       : 10;
 
-    if (areaCode && !/^\\d{3}$/.test(areaCode)) {
+    if (areaCode && !/^\d{3}$/.test(areaCode)) {
       return NextResponse.json(
         { error: "Area code must be exactly 3 digits." },
         { status: 400 },
@@ -95,7 +95,6 @@ export async function GET(req: Request) {
       console.error(
         "[SIGNALWIRE PHONE SEARCH ERROR]",
         signalWireResponse.status,
-        payload,
       );
 
       return NextResponse.json(
@@ -123,7 +122,6 @@ export async function GET(req: Request) {
     });
   } catch (error) {
     console.error("[PHONE NUMBER SEARCH ERROR]", error);
-
     return NextResponse.json(
       { error: "Unable to search available phone numbers." },
       { status: 500 },

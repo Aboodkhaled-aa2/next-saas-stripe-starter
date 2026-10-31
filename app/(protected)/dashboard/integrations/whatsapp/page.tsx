@@ -12,11 +12,17 @@ import { WhatsAppDisconnectButton } from "@/components/dashboard/whatsapp-discon
 import { WhatsAppConnectionNotesModal } from "@/components/dashboard/whatsapp-connection-notes-modal";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
+import { getUserSubscriptionPlan } from "@/lib/subscription";
 
 export const dynamic = "force-dynamic";
 
 export default async function WhatsAppIntegrationPage() {
   const user = await getCurrentUser();
+
+  const subscription = user?.id && user.role !== "ADMIN"
+    ? await getUserSubscriptionPlan(user.id)
+    : null;
+  const canUseWhatsApp = user?.role === "ADMIN" || Boolean(subscription?.isPaid);
 
   const connection = user?.id
     ? await prisma.metaIntegration.findFirst({
@@ -36,6 +42,20 @@ export default async function WhatsAppIntegrationPage() {
         heading="WhatsApp"
         text="Connect your business WhatsApp to Smart Cleaning Desk and manage customer conversations with AI."
       />
+
+      {!canUseWhatsApp && (
+        <section className="rounded-2xl border border-blue-500/30 bg-blue-500/10 p-5">
+          <h2 className="text-base font-semibold text-blue-200">
+            WhatsApp is available with an active paid subscription
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-300">
+            WhatsApp connection is disabled during the free trial and while a subscription is inactive. Your existing connection and saved data are retained.
+          </p>
+          <a href="/pricing" className="mt-4 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500">
+            View plans
+          </a>
+        </section>
+      )}
 
       <section
         className="rounded-2xl border border-amber-700/40 bg-amber-950/20 p-4 sm:p-5"
@@ -75,7 +95,11 @@ export default async function WhatsAppIntegrationPage() {
               </div>
             </div>
 
-            {connection ? (
+            {!canUseWhatsApp ? (
+              <div className="rounded-xl border border-slate-700 bg-slate-900 px-5 py-3 text-sm font-semibold text-slate-400">
+                Connection locked
+              </div>
+            ) : connection ? (
               <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
                 <div className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-700/40 bg-emerald-950/40 px-5 py-3 text-sm font-semibold text-emerald-400">
                   <CheckCircle2 className="h-4 w-4" />

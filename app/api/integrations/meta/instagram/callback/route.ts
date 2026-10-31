@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { getUserSubscriptionPlan } from "@/lib/subscription";
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();
@@ -12,6 +13,12 @@ export async function GET(request: Request) {
   const expectedState = request.headers.get("cookie")?.match(/(?:^|; )meta_instagram_oauth_state=([^;]+)/)?.[1];
 
   if (!user?.id) return NextResponse.redirect(new URL("/login", request.url));
+  if (user.role !== "ADMIN") {
+    const subscription = await getUserSubscriptionPlan(user.id);
+    if (!subscription.isPaid && !subscription.isTrial) {
+      return NextResponse.redirect(new URL("/trial-expired", request.url));
+    }
+  }
   if (error) return NextResponse.redirect(new URL("/dashboard/integrations/instagram?error=meta_denied", request.url));
   if (!code || !state || state !== expectedState) {
     return NextResponse.redirect(new URL("/dashboard/integrations/instagram?error=invalid_oauth_state", request.url));

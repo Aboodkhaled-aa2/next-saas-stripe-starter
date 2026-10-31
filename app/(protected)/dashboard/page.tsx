@@ -263,12 +263,8 @@ export default async function DashboardPage() {
     totalRemainingVoiceMinutes > 0 &&
     totalRemainingVoiceMinutes <= voiceLowBalanceThreshold;
 
-  const messagingLimit = trialActive
-    ? billingUser?.plan === "PRO"
-      ? 200
-      : billingUser?.plan === "BUSINESS"
-        ? 100
-        : 50
+  const messagingChannelLimit = trialActive
+    ? 100
     : paidActive
       ? billingUser?.plan === "PRO"
         ? 5000
@@ -277,60 +273,65 @@ export default async function DashboardPage() {
           : 500
       : 0;
 
-  const messagingMessageCount = await prisma.message.count({
-    where: {
-      direction: "OUTBOUND",
-      ...(currentPeriodStart && currentPeriodEnd
-        ? {
-            createdAt: {
-              gte: currentPeriodStart,
-              lt: currentPeriodEnd,
-            },
-          }
-        : {
-            id: "__NO_CURRENT_BILLING_PERIOD__",
-          }),
-      conversation: {
-        userId: user?.id ?? "",
-      },
-    },
-  });
+  const messagingPeriodFilter =
+    currentPeriodStart && currentPeriodEnd
+      ? {
+          createdAt: {
+            gte: currentPeriodStart,
+            lt: currentPeriodEnd,
+          },
+        }
+      : { id: "__NO_CURRENT_BILLING_PERIOD__" };
 
-  const messagingUsageRows = await prisma.message.findMany({
-    where: {
-      direction: "OUTBOUND",
-      ...(currentPeriodStart && currentPeriodEnd
-        ? {
-            createdAt: {
-              gte: currentPeriodStart,
-              lt: currentPeriodEnd,
-            },
-          }
-        : {
-            id: "__NO_CURRENT_BILLING_PERIOD__",
-          }),
-      conversation: {
-        userId: user?.id ?? "",
-      },
-    },
-    distinct: ["conversationId"],
-    select: {
-      conversationId: true,
-    },
-  });
+  const messagingBaseWhere = {
+    direction: "OUTBOUND",
+    ...messagingPeriodFilter,
+    metadata: { path: ["aiResponseId"], not: "" },
+    conversation: { userId: user?.id ?? "" },
+  };
 
-  const usedMessagingConversations = messagingUsageRows.length;
-  const remainingMessagingConversations = Math.max(
-    messagingLimit - usedMessagingConversations,
+  const [facebookMessagingUsed, instagramMessagingUsed, whatsappMessagingUsed] =
+    await Promise.all([
+      prisma.message.count({
+        where: {
+          ...messagingBaseWhere,
+          conversation: { userId: user?.id ?? "", channel: "FACEBOOK" },
+        },
+      }),
+      prisma.message.count({
+        where: {
+          ...messagingBaseWhere,
+          conversation: { userId: user?.id ?? "", channel: "INSTAGRAM" },
+        },
+      }),
+      prisma.message.count({
+        where: {
+          ...messagingBaseWhere,
+          conversation: { userId: user?.id ?? "", channel: "WHATSAPP" },
+        },
+      }),
+    ]);
+
+  const usedMessagingMessages = trialActive
+    ? facebookMessagingUsed + instagramMessagingUsed
+    : facebookMessagingUsed + instagramMessagingUsed + whatsappMessagingUsed;
+  const messagingLimit = trialActive
+    ? messagingChannelLimit
+    : messagingChannelLimit * 3;
+  const remainingMessagingMessages = Math.max(
+    messagingLimit - usedMessagingMessages,
     0,
   );
   const messagingUsagePercent =
     messagingLimit > 0
-      ? Math.min(
-          (usedMessagingConversations / messagingLimit) * 100,
-          100,
-        )
+      ? Math.min((usedMessagingMessages / messagingLimit) * 100, 100)
       : 0;
+
+  const messagingLimitReached = trialActive
+    ? usedMessagingMessages >= messagingChannelLimit
+    : facebookMessagingUsed >= messagingChannelLimit ||
+      instagramMessagingUsed >= messagingChannelLimit ||
+      whatsappMessagingUsed >= messagingChannelLimit;
 
   const extraVoicePackages = [
     { minutes: 100, price: 15 },
@@ -708,7 +709,7 @@ export default async function DashboardPage() {
               Messaging Usage
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Track unique customer conversations for the current period.
+              Track successful AI replies for the current period.
             </p>
           </div>
 
@@ -717,10 +718,10 @@ export default async function DashboardPage() {
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                    Conversations
+                    AI Replies
                   </p>
                   <p className="mt-1 text-3xl font-bold tracking-tight text-white">
-                    {usedMessagingConversations.toLocaleString()}
+                    {usedMessagingMessages.toLocaleString()}
                   </p>
                 </div>
                 <p className="text-sm font-semibold text-slate-400">
@@ -730,7 +731,7 @@ export default async function DashboardPage() {
 
               <div className="mt-4">
                 <div className="flex items-center justify-between text-xs text-slate-500">
-                  <span>{remainingMessagingConversations.toLocaleString()} remaining</span>
+                  <span>{remainingMessagingMessages.toLocaleString()} remaining</span>
                   <span>{messagingUsagePercent.toFixed(0)}%</span>
                 </div>
                 <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-800">
@@ -743,29 +744,44 @@ export default async function DashboardPage() {
 
               {messagingUsagePercent >= 80 && (
                 <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
-                  You have used {messagingUsagePercent.toFixed(0)}% of your messaging conversations for this period.
+                  You have used {messagingUsagePercent.toFixed(0)}% of your AI replies for this period.
                 </div>
               )}
 
-              {usedMessagingConversations >= messagingLimit &&
+              {messagingLimitReached &&
                 (billingUser?.extraMessageCredits ?? 0) > 0 && (
                   <div className="mt-4 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-blue-200">
-                    Your included conversation limit is reached. Your extra message credits are now being used.
+                    Your included AI reply limit is reached. Your extra message credits are now being used.
                   </div>
                 )}
 
-              {usedMessagingConversations >= messagingLimit &&
+              {messagingLimitReached &&
                 (billingUser?.extraMessageCredits ?? 0) <= 0 && (
                   <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
                     Your messaging limit has been reached. Purchase extra message credits to keep AI replies active.
                   </div>
                 )}
 
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                {[
+                  { label: "Facebook", used: facebookMessagingUsed, limit: messagingChannelLimit, visible: true },
+                  { label: "Instagram", used: instagramMessagingUsed, limit: messagingChannelLimit, visible: true },
+                  { label: "WhatsApp", used: whatsappMessagingUsed, limit: messagingChannelLimit, visible: !trialActive },
+                ].filter((item) => item.visible).map((item) => (
+                  <div key={item.label} className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+                    <p className="text-xs text-slate-400">{item.label}</p>
+                    <p className="mt-1 text-lg font-semibold text-white">
+                      {item.used.toLocaleString()} <span className="text-xs font-normal text-slate-500">/ {item.limit.toLocaleString()}</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
                   <p className="text-xs text-slate-500">AI Messages Sent</p>
                   <p className="mt-1 text-2xl font-bold text-white">
-                    {messagingMessageCount.toLocaleString()}
+                    {usedMessagingMessages.toLocaleString()}
                   </p>
                   <p className="mt-1 text-[11px] text-slate-600">
                     Outbound AI replies this billing period

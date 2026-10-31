@@ -13,18 +13,23 @@ interface CustomerPortalButtonProps {
 export function CustomerPortalButton({
   userStripeId,
 }: CustomerPortalButtonProps) {
-  let [isPending, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
   const generateUserStripeSession = openCustomerPortal.bind(null, userStripeId);
 
   const stripeSessionAction = () =>
     startTransition(async () => await generateUserStripeSession());
 
   return (
-    <Button disabled={isPending} onClick={stripeSessionAction}>
+    <Button
+      disabled={isPending}
+      onClick={stripeSessionAction}
+      size="lg"
+      className="w-full sm:w-auto"
+    >
       {isPending ? (
         <Icons.spinner className="mr-2 size-4 animate-spin" />
       ) : null}
-      Open Customer Portal
+      {isPending ? "Opening billing..." : "Manage subscription"}
     </Button>
   );
 }

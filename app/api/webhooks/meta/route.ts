@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
@@ -168,7 +168,10 @@ async function sendWhatsAppMessage(
   return data;
 }
 
-async function canUseMessaging(userId: string) {
+async function canUseMessaging(
+  userId: string,
+  channel: "FACEBOOK" | "INSTAGRAM" | "WHATSAPP",
+) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -190,105 +193,175 @@ async function canUseMessaging(userId: string) {
   }
 
   const now = new Date();
+  const isTrial = !user.stripeSubscriptionId &&
+    Boolean(user.trialStartedAt && user.trialEndsAt && user.trialEndsAt > now);
 
-  // A trial grants dashboard access only. Messaging automation requires payment.
-  if (!user.stripeSubscriptionId) {
+  // WhatsApp is paid-only. The free trial allowance is shared by Facebook + Instagram.
+  if (isTrial && channel === "WHATSAPP") {
     return {
       allowed: false,
       remaining: 0,
       usesExtraCredit: false,
-      reason: user.trialEndsAt && user.trialEndsAt > now
-        ? "Messaging automation is available after you subscribe."
-        : "Your free trial has ended. Choose a plan to continue.",
+      reason: "WhatsApp messaging is available after activating a paid subscription.",
     };
   }
 
-  let paidSubscriptionActive = false;
-  try {
-    const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
-    paidSubscriptionActive = ["active", "trialing"].includes(subscription.status);
-  } catch (error) {
-    console.error("Failed to verify paid subscription before messaging:", error);
-  }
+  let periodStart: Date;
+  let periodEnd: Date;
+  let limit: number;
 
-  if (!paidSubscriptionActive) {
-    return {
-      allowed: false,
-      remaining: 0,
-      usesExtraCredit: false,
-      reason: "Messaging automation requires an active paid subscription.",
-    };
-  }
+  if (isTrial) {
+    periodStart = user.trialStartedAt!;
+    periodEnd = user.trialEndsAt!;
+    limit = 100;
+  } else {
+    if (!user.stripeSubscriptionId) {
+      return {
+        allowed: false,
+        remaining: 0,
+        usesExtraCredit: false,
+        reason: "Your free trial has ended. Choose a plan to continue.",
+      };
+    }
 
-  const paidLimit =
-    user.plan === "PRO" ? 5000 : user.plan === "BUSINESS" ? 2000 : 500;
+    let subscription;
+    try {
+      subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+    } catch (error) {
+      console.error("Failed to verify subscription before messaging:", error);
+      return {
+        allowed: false,
+        remaining: 0,
+        usesExtraCredit: false,
+        reason: "We could not verify your subscription. Please try again later.",
+      };
+    }
 
-  let periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  let periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    if (!["active", "trialing"].includes(subscription.status)) {
+      return {
+        allowed: false,
+        remaining: 0,
+        usesExtraCredit: false,
+        reason: "Messaging automation requires an active paid subscription.",
+      };
+    }
 
-  try {
-    const subscription = await stripe.subscriptions.retrieve(
-      user.stripeSubscriptionId,
-    );
     periodStart = new Date(subscription.current_period_start * 1000);
     periodEnd = new Date(subscription.current_period_end * 1000);
-  } catch (error) {
-    console.error("Failed to retrieve Stripe period for messaging usage:", error);
+    limit = user.plan === "PRO" ? 5000 : user.plan === "BUSINESS" ? 2000 : 500;
   }
 
-  const conversations = await prisma.message.findMany({
-    where: {
-      direction: "OUTBOUND",
-      createdAt: { gte: periodStart, lt: periodEnd },
-      conversation: { userId },
+  // Only successful AI replies are written as outbound messages with aiResponseId.
+  // Trial usage is one shared Facebook + Instagram pool; paid plans have a pool per channel.
+  const usageWhere = {
+    direction: "OUTBOUND",
+    createdAt: { gte: periodStart, lt: periodEnd },
+    OR: [
+      { metadata: { path: ["aiResponseId"], not: "" } },
+      { metadata: { path: ["quotaReservationId"], not: "" } },
+    ],
+    conversation: {
+      userId,
+      ...(isTrial
+        ? { channel: { in: ["FACEBOOK", "INSTAGRAM"] } }
+        : { channel }),
     },
-    distinct: ["conversationId"],
-    select: { conversationId: true },
-  });
+  };
 
-  const used = conversations.length;
+  const used = await prisma.message.count({ where: usageWhere });
   const hasExtraMessageCredits = user.extraMessageCredits > 0;
-  const usesExtraCredit = used >= paidLimit && hasExtraMessageCredits;
+  const usesExtraCredit = used >= limit && hasExtraMessageCredits;
 
   return {
-    allowed: used < paidLimit || hasExtraMessageCredits,
-    remaining:
-      used < paidLimit
-        ? Math.max(paidLimit - used, 0)
-        : user.extraMessageCredits,
+    allowed: used < limit || hasExtraMessageCredits,
+    remaining: Math.max(limit - used, 0) + (used >= limit ? user.extraMessageCredits : 0),
     used,
-    limit: paidLimit,
+    limit,
     usesExtraCredit,
+    periodStart,
+    periodEnd,
+    isTrial,
     reason:
-      used >= paidLimit && !hasExtraMessageCredits
-        ? "Your monthly messaging limit has been reached. Purchase additional message credits to continue."
+      used >= limit && !hasExtraMessageCredits
+        ? "Your message limit for this channel and billing period has been reached. Purchase additional message credits to continue."
         : null,
   };
 }
 
-async function reserveExtraMessageCredit(userId: string) {
-  const result = await prisma.user.updateMany({
-    where: {
-      id: userId,
-      extraMessageCredits: { gt: 0 },
-    },
-    data: {
-      extraMessageCredits: { decrement: 1 },
-    },
-  });
+async function reserveMessagingAllowance(
+  userId: string,
+  channel: "FACEBOOK" | "INSTAGRAM" | "WHATSAPP",
+  periodStart: Date,
+  periodEnd: Date,
+  limit: number,
+  isTrial: boolean,
+  conversationId: string,
+  reply: string,
+) {
+  const scope = isTrial ? "META_TRIAL_SHARED" : channel;
+  const lockKey = userId + ":" + scope + ":" + periodStart.toISOString();
 
-  return result.count === 1;
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey})::bigint)`;
+
+    const used = await tx.message.count({
+      where: {
+        direction: "OUTBOUND",
+        createdAt: { gte: periodStart, lt: periodEnd },
+        OR: [
+          { metadata: { path: ["aiResponseId"], not: "" } },
+          { metadata: { path: ["quotaReservationId"], not: "" } },
+        ],
+        conversation: {
+          userId,
+          ...(isTrial
+            ? { channel: { in: ["FACEBOOK", "INSTAGRAM"] } }
+            : { channel }),
+        },
+      },
+    });
+
+    const usesExtraCredit = used >= limit;
+    if (usesExtraCredit) {
+      const credit = await tx.user.updateMany({
+        where: { id: userId, extraMessageCredits: { gt: 0 } },
+        data: { extraMessageCredits: { decrement: 1 } },
+      });
+      if (credit.count !== 1) {
+        return { allowed: false, reservationId: null, messageId: null, usesExtraCredit: false };
+      }
+    }
+
+    const reservationId = randomUUID();
+    const reservation = await tx.message.create({
+      data: {
+        conversationId,
+        direction: "OUTBOUND",
+        text: reply,
+        metadata: { quotaReservationId: reservationId },
+      },
+      select: { id: true },
+    });
+    return { allowed: true, reservationId, messageId: reservation.id, usesExtraCredit };
+  });
 }
 
 async function refundExtraMessageCredit(userId: string) {
   await prisma.user.update({
     where: { id: userId },
-    data: {
-      extraMessageCredits: { increment: 1 },
-    },
+    data: { extraMessageCredits: { increment: 1 } },
   });
 }
 
+
+function isDuplicateMessageError(error: unknown) {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code?: string }).code === "P2002",
+  );
+}
 
 async function handleMetaMessage(
   channel: "FACEBOOK" | "INSTAGRAM",
@@ -346,23 +419,36 @@ async function handleMetaMessage(
     if (duplicate) return;
   }
 
-  await prisma.message.create({
-    data: {
-      conversationId: conversation.id,
-      direction: "INBOUND",
-      externalMessageId: event.message?.mid ?? null,
-      senderExternalId: senderId,
-      text,
-    },
-  });
+  try {
+    await prisma.message.create({
+      data: {
+        conversationId: conversation.id,
+        direction: "INBOUND",
+        externalMessageId: event.message?.mid ?? null,
+        senderExternalId: senderId,
+        text,
+      },
+    });
+  } catch (error) {
+    if (event.message?.mid && isDuplicateMessageError(error)) return;
+    throw error;
+  }
 
   let reservedExtraCredit = false;
+  let reservedMessageId: string | null = null;
+  let providerSendSucceeded = false;
 
   try {
-    const trialMessaging = await canUseMessaging(integration.userId);
+    const trialMessaging = await canUseMessaging(integration.userId, channel);
 
-    if (!trialMessaging.allowed) {
-      console.log("META TRIAL MESSAGING BLOCKED:", JSON.stringify({
+    if (
+      !trialMessaging.allowed ||
+      !trialMessaging.periodStart ||
+      !trialMessaging.periodEnd ||
+      typeof trialMessaging.limit !== "number" ||
+      typeof trialMessaging.isTrial !== "boolean"
+    ) {
+      console.log("META MESSAGING BLOCKED:", JSON.stringify({
         channel,
         userId: integration.userId,
         reason: trialMessaging.reason,
@@ -388,17 +474,22 @@ async function handleMetaMessage(
     const reply = result.text.trim();
     if (!reply) return;
 
-    reservedExtraCredit = trialMessaging.usesExtraCredit
-      ? await reserveExtraMessageCredit(integration.userId)
-      : false;
-
-    if (trialMessaging.usesExtraCredit && !reservedExtraCredit) {
-      console.log("META EXTRA MESSAGE CREDIT RESERVATION FAILED:", JSON.stringify({
-        channel,
-        userId: integration.userId,
-      }));
+    const reservation = await reserveMessagingAllowance(
+      integration.userId,
+      channel,
+      trialMessaging.periodStart,
+      trialMessaging.periodEnd,
+      trialMessaging.limit,
+      trialMessaging.isTrial,
+      conversation.id,
+      reply,
+    );
+    if (!reservation.allowed || !reservation.messageId) {
+      console.log("META MESSAGE QUOTA RESERVATION FAILED:", JSON.stringify({ channel, userId: integration.userId }));
       return;
     }
+    reservedExtraCredit = reservation.usesExtraCredit;
+    reservedMessageId = reservation.messageId;
 
     console.log("META SEND START:", JSON.stringify({
       channel,
@@ -420,12 +511,11 @@ async function handleMetaMessage(
       channel,
       success: true,
     }));
+    providerSendSucceeded = true;
 
-    await prisma.message.create({
+    await prisma.message.update({
+      where: { id: reservation.messageId },
       data: {
-        conversationId: conversation.id,
-        direction: "OUTBOUND",
-        text: reply,
         metadata: {
           aiResponseId: result.responseId,
           externalSendResult: sendResult,
@@ -441,7 +531,12 @@ async function handleMetaMessage(
       },
     });
   } catch (error) {
-    if (reservedExtraCredit) {
+    if (!providerSendSucceeded && reservedMessageId) {
+      await prisma.message.delete({ where: { id: reservedMessageId } }).catch((cleanupError) =>
+        console.error("Failed to release message quota reservation:", cleanupError),
+      );
+    }
+    if (!providerSendSucceeded && reservedExtraCredit) {
       await refundExtraMessageCredit(integration.userId).catch((refundError) =>
         console.error("Failed to refund message credit:", refundError),
       );
@@ -497,23 +592,36 @@ async function handleWhatsAppMessage(
     if (duplicate) return;
   }
 
-  await prisma.message.create({
-    data: {
-      conversationId: conversation.id,
-      direction: "INBOUND",
-      externalMessageId: message.id ?? null,
-      senderExternalId: senderId,
-      text,
-    },
-  });
+  try {
+    await prisma.message.create({
+      data: {
+        conversationId: conversation.id,
+        direction: "INBOUND",
+        externalMessageId: message.id ?? null,
+        senderExternalId: senderId,
+        text,
+      },
+    });
+  } catch (error) {
+    if (message.id && isDuplicateMessageError(error)) return;
+    throw error;
+  }
 
   let reservedExtraCredit = false;
+  let reservedMessageId: string | null = null;
+  let providerSendSucceeded = false;
 
   try {
-    const trialMessaging = await canUseMessaging(integration.userId);
+    const trialMessaging = await canUseMessaging(integration.userId, "WHATSAPP");
 
-    if (!trialMessaging.allowed) {
-      console.log("META TRIAL MESSAGING BLOCKED:", JSON.stringify({
+    if (
+      !trialMessaging.allowed ||
+      !trialMessaging.periodStart ||
+      !trialMessaging.periodEnd ||
+      typeof trialMessaging.limit !== "number" ||
+      typeof trialMessaging.isTrial !== "boolean"
+    ) {
+      console.log("META MESSAGING BLOCKED:", JSON.stringify({
         channel: "WHATSAPP",
         userId: integration.userId,
         reason: trialMessaging.reason,
@@ -537,17 +645,22 @@ async function handleWhatsAppMessage(
     const reply = result.text.trim();
     if (!reply || !integration.whatsappPhoneNumberId) return;
 
-    reservedExtraCredit = trialMessaging.usesExtraCredit
-      ? await reserveExtraMessageCredit(integration.userId)
-      : false;
-
-    if (trialMessaging.usesExtraCredit && !reservedExtraCredit) {
-      console.log("META EXTRA MESSAGE CREDIT RESERVATION FAILED:", JSON.stringify({
-        channel: "WHATSAPP",
-        userId: integration.userId,
-      }));
+    const reservation = await reserveMessagingAllowance(
+      integration.userId,
+      "WHATSAPP",
+      trialMessaging.periodStart,
+      trialMessaging.periodEnd,
+      trialMessaging.limit,
+      trialMessaging.isTrial,
+      conversation.id,
+      reply,
+    );
+    if (!reservation.allowed || !reservation.messageId) {
+      console.log("META MESSAGE QUOTA RESERVATION FAILED:", JSON.stringify({ channel: "WHATSAPP", userId: integration.userId }));
       return;
     }
+    reservedExtraCredit = reservation.usesExtraCredit;
+    reservedMessageId = reservation.messageId;
 
     const sendResult = await sendWhatsAppMessage(
       integration.accessToken,
@@ -555,12 +668,11 @@ async function handleWhatsAppMessage(
       senderId,
       reply,
     );
+    providerSendSucceeded = true;
 
-    await prisma.message.create({
+    await prisma.message.update({
+      where: { id: reservation.messageId },
       data: {
-        conversationId: conversation.id,
-        direction: "OUTBOUND",
-        text: reply,
         metadata: {
           aiResponseId: result.responseId,
           externalSendResult: sendResult,
@@ -576,7 +688,12 @@ async function handleWhatsAppMessage(
       },
     });
   } catch (error) {
-    if (reservedExtraCredit) {
+    if (!providerSendSucceeded && reservedMessageId) {
+      await prisma.message.delete({ where: { id: reservedMessageId } }).catch((cleanupError) =>
+        console.error("Failed to release WhatsApp quota reservation:", cleanupError),
+      );
+    }
+    if (!providerSendSucceeded && reservedExtraCredit) {
       await refundExtraMessageCredit(integration.userId).catch((refundError) =>
         console.error("Failed to refund WhatsApp message credit:", refundError),
       );

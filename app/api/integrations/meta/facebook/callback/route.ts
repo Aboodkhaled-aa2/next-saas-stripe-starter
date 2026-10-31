@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { getUserSubscriptionPlan } from "@/lib/subscription";
 
 const GRAPH_VERSION = process.env.META_GRAPH_VERSION || "v26.0";
 
@@ -69,6 +70,16 @@ async function handleFacebookCallback(
     }
 
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (user.role !== "ADMIN") {
+    const subscription = await getUserSubscriptionPlan(user.id);
+    if (!subscription.isPaid && !subscription.isTrial) {
+      if (mode === "json") {
+        return NextResponse.json({ error: "An active trial or paid subscription is required to connect Facebook." }, { status: 403 });
+      }
+      return NextResponse.redirect(new URL("/trial-expired", request.url));
+    }
   }
 
   const cookieHeader = request.headers.get("cookie") || "";

@@ -381,9 +381,7 @@ async function hasVoiceMinutesAvailable(userId: string, plan: string | null | un
           equals: "trial",
         },
       },
-      _sum: {
-        billedMinutes: true,
-      },
+      _sum: { billedMinutes: true },
     });
 
     const usedTrialMinutes = usage._sum.billedMinutes ?? 0;
@@ -392,10 +390,7 @@ async function hasVoiceMinutesAvailable(userId: string, plan: string | null | un
     return {
       allowed: remaining >= 10 / 60,
       remaining,
-      maxDurationSeconds: Math.max(
-        10,
-        Math.floor(remaining * 60),
-      ),
+      maxDurationSeconds: Math.max(10, Math.floor(remaining * 60)),
       reason:
         remaining < 10 / 60
           ? "Trial voice minutes exhausted. Choose a plan to continue."
@@ -403,79 +398,56 @@ async function hasVoiceMinutesAvailable(userId: string, plan: string | null | un
     };
   }
 
-  const includedVoiceMinutes =
-    plan === "PRO" ? 500 : plan === "BUSINESS" ? 200 : 0;
-
-  if (includedVoiceMinutes <= 0) {
+  const planSupportsVoice = plan === "PRO" || plan === "BUSINESS";
+  if (!planSupportsVoice) {
     return {
       allowed: false,
       reason: "AI Phone requires a Business or Pro plan.",
     };
   }
 
-  if (!user?.stripeSubscriptionId) {
-    return {
-      allowed: false,
-      reason: "An active Stripe subscription is required for AI Phone.",
-    };
-  }
+  const extraVoiceMinutes = Math.max(user?.extraVoiceMinutes ?? 0, 0);
+  let includedRemaining = 0;
 
-  let periodStart: Date;
-  let periodEnd: Date;
+  if (user?.stripeSubscriptionId) {
+    try {
+      const subscription = await stripe.subscriptions.retrieve(
+        user.stripeSubscriptionId,
+      );
 
-  try {
-    const subscription = await stripe.subscriptions.retrieve(
-      user.stripeSubscriptionId,
-    );
+      if (["active", "trialing"].includes(subscription.status)) {
+        const includedVoiceMinutes = plan === "PRO" ? 500 : 200;
+        const periodStart = new Date(subscription.current_period_start * 1000);
+        const periodEnd = new Date(subscription.current_period_end * 1000);
+        const usage = await prisma.voiceUsage.aggregate({
+          where: {
+            userId,
+            source: "VAPI_CALL",
+            startedAt: {
+              gte: periodStart,
+              lt: periodEnd,
+            },
+          },
+          _sum: { includedMinutesUsed: true },
+        });
 
-    if (!["active", "trialing"].includes(subscription.status)) {
-      return {
-        allowed: false,
-        reason: "Your subscription is not active.",
-      };
+        includedRemaining = Math.max(
+          includedVoiceMinutes - (usage._sum.includedMinutesUsed ?? 0),
+          0,
+        );
+      }
+    } catch (error) {
+      console.error("Unable to verify subscription for included AI Phone minutes:", error);
+      // Purchased minutes remain independently usable if Stripe is unavailable.
     }
-
-    periodStart = new Date(subscription.current_period_start * 1000);
-    periodEnd = new Date(subscription.current_period_end * 1000);
-  } catch (error) {
-    console.error("Failed to retrieve Stripe subscription for AI Phone:", error);
-
-    return {
-      allowed: false,
-      reason: "Unable to verify your voice balance right now.",
-    };
   }
-
-  const usage = await prisma.voiceUsage.aggregate({
-    where: {
-      userId,
-      source: "VAPI_CALL",
-      startedAt: {
-        gte: periodStart,
-        lt: periodEnd,
-      },
-    },
-    _sum: {
-      includedMinutesUsed: true,
-    },
-  });
-
-  const usedIncludedMinutes = usage._sum.includedMinutesUsed ?? 0;
-  const includedRemaining = Math.max(
-    includedVoiceMinutes - usedIncludedMinutes,
-    0,
-  );
-  const extraVoiceMinutes = user.extraVoiceMinutes ?? 0;
 
   const remaining = includedRemaining + extraVoiceMinutes;
 
   return {
     allowed: remaining >= 10 / 60,
     remaining,
-    maxDurationSeconds: Math.max(
-      10,
-      Math.floor(remaining * 60),
-    ),
+    maxDurationSeconds: Math.max(10, Math.floor(remaining * 60)),
     reason:
       remaining < 10 / 60
         ? "Voice minutes exhausted. Please add more minutes to continue."
@@ -523,28 +495,6 @@ export async function POST(request: Request) {
         where: { id: configuration.businessProfile.userId },
         select: { plan: true, stripeSubscriptionId: true },
       });
-
-      if (!voiceUser?.stripeSubscriptionId) {
-        return NextResponse.json(
-          { error: "AI Phone calls are disabled until a paid subscription is active." },
-          { status: 402 },
-        );
-      }
-
-      let paidSubscriptionActive = false;
-      try {
-        const paidSubscription = await stripe.subscriptions.retrieve(voiceUser.stripeSubscriptionId);
-        paidSubscriptionActive = ["active", "trialing"].includes(paidSubscription.status);
-      } catch (error) {
-        console.error("Unable to verify paid subscription before AI Phone call:", error);
-      }
-
-      if (!paidSubscriptionActive) {
-        return NextResponse.json(
-          { error: "AI Phone calls require an active paid subscription." },
-          { status: 402 },
-        );
-      }
 
       const voiceBalance = await hasVoiceMinutesAvailable(
         configuration.businessProfile.userId,
@@ -794,7 +744,11 @@ export async function POST(request: Request) {
               ? new Date(message.call.startedAt)
               : message.startedAt
                 ? new Date(message.startedAt)
-                : null,
+                : message.call?.endedAt
+                  ? new Date(message.call.endedAt)
+                  : message.endedAt
+                    ? new Date(message.endedAt)
+                    : new Date(),
             endedAt: message.call?.endedAt
               ? new Date(message.call.endedAt)
               : message.endedAt
