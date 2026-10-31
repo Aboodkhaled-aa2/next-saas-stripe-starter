@@ -715,18 +715,18 @@ export default async function DashboardPage() {
 
               {messagingUsagePercent >= 80 && (
                 <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
-                  You have used {messagingUsagePercent.toFixed(0)}% of your messaging conversations for this period.
+                  You have used {messagingUsagePercent.toFixed(0)}% of your AI replies for this period.
                 </div>
               )}
 
               {usedMessagingMessages >= messagingLimit &&
                 (billingUser?.extraMessageCredits ?? 0) > 0 && (
                   <div className="mt-4 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-blue-200">
-                    Your included conversation limit is reached. Your extra message credits are now being used.
+                    Your included AI reply limit is reached. Your extra message credits are now being used.
                   </div>
                 )}
 
-              {usedMessagingConversations >= messagingLimit &&
+              {usedMessagingMessages >= messagingLimit &&
                 (billingUser?.extraMessageCredits ?? 0) <= 0 && (
                   <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
                     Your messaging limit has been reached. Purchase extra message credits to keep AI replies active.
@@ -737,7 +737,7 @@ export default async function DashboardPage() {
                 <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
                   <p className="text-xs text-slate-500">AI Messages Sent</p>
                   <p className="mt-1 text-2xl font-bold text-white">
-                    {messagingMessageCount.toLocaleString()}
+                    {usedMessagingMessages.toLocaleString()}
                   </p>
                   <p className="mt-1 text-[11px] text-slate-600">
                     Outbound AI replies this billing period
