@@ -22,10 +22,13 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const signalWireApiToken =
+      env.SIGNALWIRE_API_TOKEN_PHONE || env.SIGNALWIRE_API_TOKEN;
+
     if (
       !env.SIGNALWIRE_SPACE_URL ||
       !env.SIGNALWIRE_PROJECT_ID ||
-      !env.SIGNALWIRE_API_TOKEN
+      !signalWireApiToken
     ) {
       return NextResponse.json(
         { error: "SignalWire is not configured." },
@@ -82,7 +85,7 @@ export async function GET(req: Request) {
           Authorization:
             "Basic " +
             Buffer.from(
-              `${env.SIGNALWIRE_PROJECT_ID}:${env.SIGNALWIRE_API_TOKEN}`,
+              `${env.SIGNALWIRE_PROJECT_ID}:${signalWireApiToken}`,
             ).toString("base64"),
         },
         cache: "no-store",
