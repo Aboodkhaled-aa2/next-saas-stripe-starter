@@ -4,6 +4,8 @@ import { env } from "@/env.mjs";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 
+export const dynamic = "force-dynamic";
+
 const VAPI_BASE_URL = env.VAPI_API_BASE_URL || "https://api.vapi.ai";
 const DEMO_NUMBER = "+12012770096";
 
