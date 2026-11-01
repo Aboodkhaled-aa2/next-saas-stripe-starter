@@ -1,97 +1,26 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { useState } from "react";
+import { getCurrentUser } from "@/lib/session";
+import { getUserSubscriptionPlan } from "@/lib/subscription";
+import MessageCreditPurchase from "@/components/dashboard/message-credit-purchase";
 
-const packages = [
-  { conversations: 100, price: 10 },
-  { conversations: 500, price: 40 },
-  { conversations: 1000, price: 70 },
-];
+export const metadata = {
+  title: "Extra Customer Conversations – Smart Cleaning Desk",
+  description: "Purchase additional AI-powered customer conversations.",
+};
 
-export default function MessageCreditPurchase({
-  searchParams,
-}: {
-  searchParams: { conversations?: string };
-}) {
-  const [loading, setLoading] = useState<number | null>(null);
-  const selectedMessages = Number(searchParams.conversations);
-  const selectedPackage = packages.find(
-    (pack) => pack.conversations === selectedMessages,
-  );
+export default async function MessageCreditPurchasePage() {
+  const user = await getCurrentUser();
 
-  const buy = async (messages: number) => {
-    try {
-      setLoading(messages);
-      const response = await fetch("/api/stripe/message-credits", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages }),
-      });
-      const data = await response.json();
+  if (!user?.id || user.role !== "USER") {
+    redirect("/login");
+  }
 
-      if (!response.ok || !data.url) {
-        throw new Error(data.error || "Unable to start checkout.");
-      }
+  const subscriptionPlan = await getUserSubscriptionPlan(user.id);
 
-      window.location.href = data.url;
-    } catch (error) {
-      console.error(error);
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Unable to start checkout.",
-      );
-      setLoading(null);
-    }
-  };
+  if (!subscriptionPlan.isPaid) {
+    redirect("/dashboard/billing");
+  }
 
-  return (
-    <div className="min-h-screen bg-[#020617] px-4 py-12 text-white sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-3xl">
-        <div className="mb-8">
-          <p className="text-sm font-medium text-blue-400">SMART CLEANING DESK</p>
-          <h1 className="mt-2 text-3xl font-bold">Extra Customer Conversations</h1>
-          <p className="mt-2 text-sm text-slate-400">
-            Buy additional AI-powered customer conversations when you reach your included monthly conversation limit.
-          </p>
-        </div>
-
-        {selectedPackage ? (
-          <div className="mb-8 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-5">
-            <p className="text-sm text-slate-300">Selected package</p>
-            <p className="mt-1 text-2xl font-bold">
-              {selectedPackage.conversations.toLocaleString()} conversations — ${selectedPackage.price}
-            </p>
-          </div>
-        ) : null}
-
-        <div className="grid gap-4 sm:grid-cols-3">
-          {packages.map((pack) => (
-            <button
-              key={pack.conversations}
-              type="button"
-              onClick={() => buy(pack.conversations)}
-              disabled={loading !== null}
-              className="rounded-2xl border border-slate-800 bg-slate-950/80 p-6 text-left transition hover:border-blue-500/40 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <p className="text-sm font-semibold text-slate-300">
-                {pack.conversations.toLocaleString()} Extra Customer Conversations
-              </p>
-              <p className="mt-3 text-3xl font-bold text-blue-400">
-                ${pack.price}
-              </p>
-              <p className="mt-3 text-xs text-slate-500">
-                One-time purchase
-              </p>
-              <span className="mt-5 inline-flex text-sm font-semibold text-white">
-                {loading === pack.conversations
-                  ? "Opening checkout..."
-                  : "Buy conversations"}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  return <MessageCreditPurchase />;
 }
