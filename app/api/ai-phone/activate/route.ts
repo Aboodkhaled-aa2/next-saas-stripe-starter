@@ -4,6 +4,7 @@ import { env } from "@/env.mjs";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
+import { stripe } from "@/lib/stripe";
 
 export const maxDuration = 60;
 
@@ -168,6 +169,29 @@ export async function POST(request: Request) {
           error:
             "Automatic AI Phone activation requires an active paid Business or Pro subscription. Free trials are not eligible for automatic number provisioning.",
         },
+        { status: 403 },
+      );
+    }
+
+    const billingAccount = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { stripeSubscriptionId: true },
+    });
+
+    if (!billingAccount?.stripeSubscriptionId) {
+      return NextResponse.json(
+        { error: "An active paid Stripe subscription is required." },
+        { status: 403 },
+      );
+    }
+
+    const stripeSubscription = await stripe.subscriptions.retrieve(
+      billingAccount.stripeSubscriptionId,
+    );
+
+    if (stripeSubscription.status !== "active") {
+      return NextResponse.json(
+        { error: "Your Stripe subscription is not active. Update billing before activating AI Phone." },
         { status: 403 },
       );
     }
