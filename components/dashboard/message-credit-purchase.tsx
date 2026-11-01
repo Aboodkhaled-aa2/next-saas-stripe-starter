@@ -9,9 +9,9 @@ const packages = [
 ];
 
 export default function MessageCreditPurchase({
-  searchParams,
+  searchParams = {},
 }: {
-  searchParams: { conversations?: string };
+  searchParams?: { conversations?: string };
 }) {
   const [loading, setLoading] = useState<number | null>(null);
   const selectedMessages = Number(searchParams.conversations);
@@ -25,7 +25,7 @@ export default function MessageCreditPurchase({
       const response = await fetch("/api/stripe/message-credits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages }),
+        body: JSON.stringify({ conversations: messages }),
       });
       const data = await response.json();
 
