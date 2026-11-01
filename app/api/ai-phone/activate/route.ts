@@ -378,6 +378,8 @@ export async function POST(request: Request) {
               provider: "byo-phone-number",
               number,
               credentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
+              assistantId: null,
+              squadId: null,
               name: `${appProfile.businessName || "Smart Cleaning Desk"} Phone`.slice(0, 40),
               server: {
                 url: VAPI_WEBHOOK_URL,
