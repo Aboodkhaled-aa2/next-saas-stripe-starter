@@ -450,46 +450,54 @@ export async function POST(request: Request) {
     resourcesPersisted = true;
     const metadata = readProvisioningMetadata(provisioning.phone.metadata);
 
-    if (provisioning.phone.status === "PENDING") {
-      if (!metadata.callRelayScriptUrl) {
-        return NextResponse.json(
-          {
-            error:
-              "The number is purchased but its routing details are incomplete. Contact support before retrying.",
-            phoneNumber: provisioning.phone.phoneNumber,
-          },
-          { status: 409 },
-        );
-      }
-
-      await finishSignalWireRouting(
-        provisioning.phone.providerId,
-        metadata.callRelayScriptUrl,
+    if (!metadata.callRelayScriptUrl) {
+      return NextResponse.json(
+        {
+          error:
+            "This phone number has no saved SignalWire routing script. Contact support so the existing number can be safely reconnected without purchasing a replacement.",
+          phoneNumber: provisioning.phone.phoneNumber,
+        },
+        { status: 409 },
       );
-
-      await prisma.$transaction([
-        prisma.phoneNumber.update({
-          where: { id: provisioning.phone.id },
-          data: {
-            status: "ACTIVE",
-            metadata: {
-              vapiPhoneNumberId: metadata.vapiPhoneNumberId,
-              swmlScriptId: metadata.swmlScriptId,
-              callRelayScriptUrl: metadata.callRelayScriptUrl,
-              provisioningStatus: "ACTIVE",
-            },
-          },
-        }),
-        prisma.aIPhoneSettings.update({
-          where: { businessProfileId: appProfile.id },
-          data: {
-            status: "ACTIVE",
-            enabled: true,
-            phoneNumber: provisioning.phone.phoneNumber,
-          },
-        }),
-      ]);
     }
+
+    // Reapply the saved route for both PENDING numbers and previously assigned
+    // numbers whose AI Phone service was disabled during subscription cancellation.
+    await finishSignalWireRouting(
+      provisioning.phone.providerId,
+      metadata.callRelayScriptUrl,
+    );
+
+    await prisma.$transaction([
+      prisma.phoneNumber.update({
+        where: { id: provisioning.phone.id },
+        data: {
+          status: "ACTIVE",
+          metadata: {
+            vapiPhoneNumberId: metadata.vapiPhoneNumberId,
+            swmlScriptId: metadata.swmlScriptId,
+            callRelayScriptUrl: metadata.callRelayScriptUrl,
+            provisioningStatus: "ACTIVE",
+          },
+        },
+      }),
+      prisma.aIPhoneSettings.upsert({
+        where: { businessProfileId: appProfile.id },
+        create: {
+          businessProfileId: appProfile.id,
+          status: "ACTIVE",
+          provider: "Vapi",
+          phoneNumber: provisioning.phone.phoneNumber,
+          assistantName: `${appProfile.businessName || "AI"} Receptionist`.slice(0, 80),
+          enabled: true,
+        },
+        update: {
+          status: "ACTIVE",
+          enabled: true,
+          phoneNumber: provisioning.phone.phoneNumber,
+        },
+      }),
+    ]);
 
     const finalSettings = await prisma.aIPhoneSettings.findUnique({
       where: { businessProfileId: appProfile.id },
