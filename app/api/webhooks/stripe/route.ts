@@ -329,81 +329,27 @@ export async function POST(req: Request) {
     if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as Stripe.Subscription;
 
-      const phoneNumber = await prisma.phoneNumber.findUnique({
+      // Keep the customer's SignalWire number reserved when the SaaS
+      // subscription ends. The number must remain attached to the same user
+      // so it can be reactivated on a future subscription.
+      const user = await prisma.user.findFirst({
         where: { stripeSubscriptionId: subscription.id },
         select: {
           id: true,
-          provider: true,
-          providerId: true,
-          status: true,
+          businessProfile: {
+            select: { id: true },
+          },
         },
       });
 
-      if (phoneNumber) {
-        if (phoneNumber.status === "RELEASED") {
-          return new Response(null, { status: 200 });
-        }
-
-        if (phoneNumber.provider !== "SIGNALWIRE") {
-          await prisma.phoneNumber.update({
-            where: { id: phoneNumber.id },
-            data: {
-              status: "RELEASED",
-              releasedAt: new Date(),
-            },
-          });
-          return new Response(null, { status: 200 });
-        }
-
-        if (
-          !env.SIGNALWIRE_SPACE_URL ||
-          !env.SIGNALWIRE_PROJECT_ID ||
-          !env.SIGNALWIRE_API_TOKEN
-        ) {
-          console.error("SignalWire is not configured for phone release");
-          return new Response("SignalWire is not configured", { status: 500 });
-        }
-
-        const baseUrl = env.SIGNALWIRE_SPACE_URL.replace(/\/$/, "");
-        const authorization =
-          "Basic " +
-          Buffer.from(
-            env.SIGNALWIRE_PROJECT_ID + ":" + env.SIGNALWIRE_API_TOKEN,
-          ).toString("base64");
-
-        const releaseResponse = await fetch(
-          baseUrl +
-            "/api/relay/rest/phone_numbers/" +
-            encodeURIComponent(phoneNumber.providerId),
-          {
-            method: "DELETE",
-            headers: {
-              Accept: "application/json",
-              Authorization: authorization,
-            },
-            cache: "no-store",
-          },
-        );
-
-        if (!releaseResponse.ok && releaseResponse.status !== 404) {
-          const payload = await releaseResponse.json().catch(() => null);
-          console.error(
-            "SignalWire phone number release failed",
-            releaseResponse.status,
-            payload,
-          );
-          return new Response("Phone number release failed", { status: 502 });
-        }
-
-        await prisma.phoneNumber.update({
-          where: { id: phoneNumber.id },
+      if (user?.businessProfile?.id) {
+        await prisma.aIPhoneSettings.updateMany({
+          where: { businessProfileId: user.businessProfile.id },
           data: {
-            status: "RELEASED",
-            releasedAt: new Date(),
+            enabled: false,
+            status: "DISCONNECTED",
           },
         });
-
-        return new Response(null, { status: 200 });
       }
     }
 
