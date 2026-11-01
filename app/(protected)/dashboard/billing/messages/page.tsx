@@ -3,20 +3,20 @@
 import { useState } from "react";
 
 const packages = [
-  { messages: 1000, price: 10 },
-  { messages: 5000, price: 40 },
-  { messages: 10000, price: 70 },
+  { conversations: 100, price: 10 },
+  { conversations: 500, price: 40 },
+  { conversations: 1000, price: 70 },
 ];
 
 export default function MessageCreditPurchase({
   searchParams,
 }: {
-  searchParams: { messages?: string };
+  searchParams: { conversations?: string };
 }) {
   const [loading, setLoading] = useState<number | null>(null);
-  const selectedMessages = Number(searchParams.messages);
+  const selectedMessages = Number(searchParams.conversations);
   const selectedPackage = packages.find(
-    (pack) => pack.messages === selectedMessages,
+    (pack) => pack.conversations === selectedMessages,
   );
 
   const buy = async (messages: number) => {
@@ -50,10 +50,9 @@ export default function MessageCreditPurchase({
       <div className="mx-auto max-w-3xl">
         <div className="mb-8">
           <p className="text-sm font-medium text-blue-400">SMART CLEANING DESK</p>
-          <h1 className="mt-2 text-3xl font-bold">Extra Message Credits</h1>
+          <h1 className="mt-2 text-3xl font-bold">Extra Customer Conversations</h1>
           <p className="mt-2 text-sm text-slate-400">
-            Buy one-time AI messaging credits and use them after your included
-            messaging limit is reached.
+            Buy additional AI-powered customer conversations when you reach your included monthly conversation limit.
           </p>
         </div>
 
@@ -61,7 +60,7 @@ export default function MessageCreditPurchase({
           <div className="mb-8 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-5">
             <p className="text-sm text-slate-300">Selected package</p>
             <p className="mt-1 text-2xl font-bold">
-              {selectedPackage.messages.toLocaleString()} messages — ${selectedPackage.price}
+              {selectedPackage.conversations.toLocaleString()} conversations — ${selectedPackage.price}
             </p>
           </div>
         ) : null}
@@ -69,14 +68,14 @@ export default function MessageCreditPurchase({
         <div className="grid gap-4 sm:grid-cols-3">
           {packages.map((pack) => (
             <button
-              key={pack.messages}
+              key={pack.conversations}
               type="button"
-              onClick={() => buy(pack.messages)}
+              onClick={() => buy(pack.conversations)}
               disabled={loading !== null}
               className="rounded-2xl border border-slate-800 bg-slate-950/80 p-6 text-left transition hover:border-blue-500/40 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <p className="text-sm font-semibold text-slate-300">
-                {pack.messages.toLocaleString()} Extra Messages
+                {pack.conversations.toLocaleString()} Extra Customer Conversations
               </p>
               <p className="mt-3 text-3xl font-bold text-blue-400">
                 ${pack.price}
@@ -85,9 +84,9 @@ export default function MessageCreditPurchase({
                 One-time purchase
               </p>
               <span className="mt-5 inline-flex text-sm font-semibold text-white">
-                {loading === pack.messages
+                {loading === pack.conversations
                   ? "Opening checkout..."
-                  : "Buy messages"}
+                  : "Buy conversations"}
               </span>
             </button>
           ))}
