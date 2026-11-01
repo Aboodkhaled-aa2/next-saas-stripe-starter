@@ -443,9 +443,9 @@ export async function POST(request: Request) {
           data: {
             status: "ACTIVE",
             metadata: {
-              ...(isRecord(provisioning.phone.metadata)
-                ? provisioning.phone.metadata
-                : {}),
+              vapiPhoneNumberId: metadata.vapiPhoneNumberId,
+              swmlScriptId: metadata.swmlScriptId,
+              callRelayScriptUrl: metadata.callRelayScriptUrl,
               provisioningStatus: "ACTIVE",
             },
           },
