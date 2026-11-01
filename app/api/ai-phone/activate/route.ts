@@ -5,6 +5,8 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
 
+export const maxDuration = 60;
+
 const VAPI_BASE_URL = env.VAPI_API_BASE_URL || "https://api.vapi.ai";
 const VAPI_WEBHOOK_URL = "https://www.smartcleaningdesk.com/api/ai-phone/vapi";
 
@@ -74,7 +76,7 @@ async function providerRequest(
 ) {
   const response = await fetch(url, {
     ...init,
-    signal: AbortSignal.timeout(20000),
+    signal: AbortSignal.timeout(8000),
     cache: "no-store",
   });
 
@@ -413,7 +415,7 @@ export async function POST(request: Request) {
       },
       {
         maxWait: 15000,
-        timeout: 80000,
+        timeout: 45000,
       },
     );
 
