@@ -12,52 +12,96 @@ type AIPhoneSettings = {
 type AIPhoneResponse = {
   success?: boolean;
   aiPhoneSettings?: AIPhoneSettings | null;
+  phoneNumber?: string;
   error?: string;
+  message?: string;
 };
 
 export default function PhoneNumberPage() {
   const [settings, setSettings] = useState<AIPhoneSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activating, setActivating] = useState(false);
+  const [areaCode, setAreaCode] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  async function loadSettings() {
+    try {
+      const response = await fetch("/api/ai-phone", {
+        cache: "no-store",
+      });
+      const data = (await response.json()) as AIPhoneResponse;
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to load AI Phone settings.");
+      }
+
+      setSettings(data.aiPhoneSettings ?? null);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to load AI Phone settings.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadSettings() {
-      try {
-        const response = await fetch("/api/ai-phone", {
-          cache: "no-store",
-        });
-        const data = (await response.json()) as AIPhoneResponse;
-
-        if (!response.ok) {
-          throw new Error(data.error || "Unable to load AI Phone settings.");
-        }
-
-        if (!cancelled) {
-          setSettings(data.aiPhoneSettings ?? null);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Unable to load AI Phone settings.",
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
     void loadSettings();
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  async function activatePhone() {
+    if (activating) return;
+
+    const confirmed = window.confirm(
+      "Activate a dedicated US reception number for this Business or Pro account? The system will automatically purchase an available local number and connect it to your AI receptionist.",
+    );
+
+    if (!confirmed) return;
+
+    setActivating(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const response = await fetch("/api/ai-phone/activate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(
+          areaCode ? { areaCode } : {},
+        ),
+      });
+
+      const data = (await response.json()) as AIPhoneResponse;
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to activate AI Phone.");
+      }
+
+      if (data.aiPhoneSettings) {
+        setSettings(data.aiPhoneSettings);
+      } else {
+        await loadSettings();
+      }
+
+      setNotice(data.message || "Your AI Phone number is connected.");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to activate AI Phone.",
+      );
+    } finally {
+      setActivating(false);
+    }
+  }
+
+  const hasNumber = Boolean(settings?.phoneNumber);
+  const isEnabled = Boolean(settings?.enabled);
 
   return (
     <main className="min-h-screen bg-[#020617] px-4 py-10 text-white sm:px-6 lg:px-8">
@@ -66,17 +110,26 @@ export default function PhoneNumberPage() {
           <p className="text-sm font-medium text-blue-400">SMART CLEANING DESK</p>
           <h1 className="mt-2 text-3xl font-bold">AI Phone</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
-            Manage the phone number connected to your AI Receptionist. Your
-            existing business number can stay with your current phone provider.
+            Activate a dedicated US reception number for your AI receptionist.
+            Your existing business number can stay with your current phone provider.
           </p>
         </header>
 
         {error ? (
           <div
             role="alert"
-            className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200"
+            className="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200"
           >
             {error}
+          </div>
+        ) : null}
+
+        {notice ? (
+          <div
+            role="status"
+            className="mb-5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-200"
+          >
+            {notice}
           </div>
         ) : null}
 
@@ -104,18 +157,18 @@ export default function PhoneNumberPage() {
                 <p className="mt-2 text-sm text-slate-400">
                   Loading your phone settings...
                 </p>
-              ) : settings?.phoneNumber ? (
+              ) : hasNumber ? (
                 <>
                   <p className="mt-2 break-all text-2xl font-bold tracking-wide">
-                    {settings.phoneNumber}
+                    {settings?.phoneNumber}
                   </p>
                   <p className="mt-2 text-sm text-slate-400">
-                    {settings.assistantName
+                    {settings?.assistantName
                       ? `Connected to ${settings.assistantName}`
-                      : "A phone number is saved in your AI Phone settings."}
+                      : "Your dedicated number is assigned to this account."}
                   </p>
                   <span className="mt-4 inline-flex rounded-full border border-slate-700 px-3 py-1 text-xs font-medium text-slate-300">
-                    {settings.enabled ? "Enabled" : "Saved — not enabled"}
+                    {isEnabled ? "Active and connected" : "Number assigned — setup pending"}
                   </span>
                 </>
               ) : (
@@ -124,21 +177,66 @@ export default function PhoneNumberPage() {
                     No reception number has been assigned to your account yet.
                   </p>
                   <p className="mt-2 text-sm leading-6 text-slate-400">
-                    Automatic number assignment is being set up. You do not
-                    need to search for or purchase a number manually on this page.
+                    Activate AI Phone to automatically purchase and connect a dedicated US number.
                   </p>
                 </>
               )}
             </div>
           </div>
+
+          {!loading && !isEnabled ? (
+            <div className="mt-6 border-t border-slate-800 pt-6">
+              <div className="max-w-xs">
+                <label
+                  htmlFor="areaCode"
+                  className="text-sm font-medium text-slate-300"
+                >
+                  Preferred US area code (optional)
+                </label>
+                <input
+                  id="areaCode"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  maxLength={3}
+                  pattern="[0-9]{3}"
+                  value={areaCode}
+                  onChange={(event) =>
+                    setAreaCode(event.target.value.replace(/\D/g, "").slice(0, 3))
+                  }
+                  placeholder="e.g. 904"
+                  className="mt-2 h-11 w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-blue-500"
+                />
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  Leave this blank to assign any available US local number.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={activatePhone}
+                disabled={activating}
+                className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {activating
+                  ? "Connecting your number..."
+                  : hasNumber
+                    ? "Finish AI Phone Setup"
+                    : "Activate AI Phone"}
+              </button>
+              <p className="mt-3 text-xs leading-5 text-slate-500">
+                Available to active paid Business and Pro subscriptions. No number is purchased until you confirm activation.
+              </p>
+            </div>
+          ) : null}
         </section>
 
         <section className="mt-5 rounded-2xl border border-slate-800 bg-slate-950/50 p-6">
           <h2 className="font-semibold">Keep your existing business number</h2>
           <p className="mt-2 text-sm leading-6 text-slate-400">
-            Once your dedicated reception number is assigned and connected,
-            you can set up call forwarding with your current phone provider.
-            Customers can continue calling your existing business number.
+            Once your dedicated reception number is active, you can set up call
+            forwarding with your current phone provider. Customers can continue
+            calling your existing business number.
           </p>
           <p className="mt-3 text-xs leading-5 text-slate-500">
             Call forwarding instructions will be shown after the reception
