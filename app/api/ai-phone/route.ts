@@ -153,26 +153,41 @@ export async function POST(request: Request) {
       );
     }
 
+    const existingSettings = await prisma.aIPhoneSettings.findUnique({
+      where: { businessProfileId: businessProfile.id },
+      select: {
+        phoneNumber: true,
+        status: true,
+        enabled: true,
+      },
+    });
+
+    const keepNumberActive = Boolean(
+      existingSettings?.enabled &&
+      existingSettings.status === "ACTIVE" &&
+      existingSettings.phoneNumber === phoneNumber
+    );
+
     const aiPhoneSettings = await prisma.aIPhoneSettings.upsert({
       where: {
         businessProfileId: businessProfile.id,
       },
       create: {
         businessProfileId: businessProfile.id,
-        status: "READY",
+        status: keepNumberActive ? "ACTIVE" : "READY",
         provider: provider || "Vapi",
         phoneNumber,
         assistantName,
         greeting: greeting || null,
-        enabled: false,
+        enabled: keepNumberActive,
       },
       update: {
-        status: "READY",
+        status: keepNumberActive ? "ACTIVE" : "READY",
         provider: provider || "Vapi",
         phoneNumber,
         assistantName,
         greeting: greeting || null,
-        enabled: false,
+        enabled: keepNumberActive,
       },
     });
 
