@@ -75,6 +75,7 @@ export async function GET(req: Request) {
     if (region) params.set("region", region);
     if (city) params.set("city", city);
 
+    const apiToken = env.SIGNALWIRE_API_TOKEN_PHONE || env.SIGNALWIRE_API_TOKEN;
     const baseUrl = env.SIGNALWIRE_SPACE_URL.replace(/\/$/, "");
     const signalWireResponse = await fetch(
       `${baseUrl}/api/relay/rest/phone_numbers/search?${params.toString()}`,
