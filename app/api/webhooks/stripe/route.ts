@@ -32,9 +32,9 @@ const voicePackages = {
 } as const;
 
 const messagePackages = {
-  "1000": { messages: 1000, amountCents: 1000 },
-  "5000": { messages: 5000, amountCents: 4000 },
-  "10000": { messages: 10000, amountCents: 7000 },
+  "100": { conversations: 100, amountCents: 1000 },
+  "500": { conversations: 500, amountCents: 4000 },
+  "1000": { conversations: 1000, amountCents: 7000 },
 } as const;
 
 export async function POST(req: Request) {
@@ -201,7 +201,7 @@ export async function POST(req: Request) {
               data: {
                 userId,
                 stripeSessionId: session.id,
-                messages: selected.messages,
+                messages: selected.conversations,
                 amountCents: selected.amountCents,
                 status: "PAID",
               },
@@ -211,7 +211,7 @@ export async function POST(req: Request) {
               where: { id: userId },
               data: {
                 extraMessageCredits: {
-                  increment: selected.messages,
+                  increment: selected.conversations,
                 },
               },
             });
