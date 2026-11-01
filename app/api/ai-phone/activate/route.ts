@@ -145,6 +145,7 @@ async function finishSignalWireRouting(phoneId: string, scriptUrl: string) {
 
 export async function POST(request: Request) {
   const resources: ProviderResources = {};
+  let resourcesPersisted = false;
 
   try {
     const user = await getCurrentUser();
@@ -416,6 +417,7 @@ export async function POST(request: Request) {
       },
     );
 
+    resourcesPersisted = true;
     const metadata = readProvisioningMetadata(provisioning.phone.metadata);
 
     if (provisioning.phone.status === "PENDING") {
@@ -471,8 +473,9 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[AI PHONE ACTIVATION ERROR]", error);
 
-    // If the workflow failed before a pending phone was saved, undo provider resources.
-    if (resources.vapiPhoneId || resources.signalWirePhoneId) {
+    // If provider resources were created but the database transaction did not commit, undo them.
+    // Persisted PENDING records are intentionally retained so the next activation attempt can finish routing.
+    if (!resourcesPersisted && (resources.vapiPhoneId || resources.signalWirePhoneId || resources.swmlScriptId)) {
       const vapiHeaders = {
         Authorization: `Bearer ${env.VAPI_PRIVATE_API_KEY || ""}`,
         Accept: "application/json",
@@ -484,6 +487,19 @@ export async function POST(request: Request) {
           vapiHeaders,
           "Vapi",
         );
+      }
+
+      if (resources.swmlScriptId) {
+        try {
+          const signalWire = getSignalWireAuth();
+          await deleteProviderResource(
+            `${signalWire.baseUrl}/api/fabric/resources/swml_scripts/${resources.swmlScriptId}`,
+            signalWire.headers,
+            "SignalWire",
+          );
+        } catch (cleanupError) {
+          console.error("[SIGNALWIRE SWML CLEANUP CONFIGURATION ERROR]", cleanupError);
+        }
       }
 
       if (resources.signalWirePhoneId) {
