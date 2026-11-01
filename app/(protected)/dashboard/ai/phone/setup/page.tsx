@@ -150,7 +150,7 @@ export default function AIPhoneSetupPage() {
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Phone number" name="phoneNumber" placeholder="+1 555 123 4567" type="tel" />
+            <Field label="Assigned reception number" name="phoneNumber" placeholder="Activate AI Phone to receive a number" type="tel" readOnly />
             <Field label="AI receptionist name" name="assistantName" placeholder="Sarah" />
           </div>
 
@@ -290,11 +290,13 @@ function Field({
   name,
   placeholder,
   type = "text",
+  readOnly = false,
 }: {
   label: string;
   name: string;
   placeholder: string;
   type?: string;
+  readOnly?: boolean;
 }) {
   return (
     <div>
@@ -306,6 +308,7 @@ function Field({
         name={name}
         type={type}
         required
+        readOnly={readOnly}
         placeholder={placeholder}
         className="mt-2 h-11 w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-violet-500"
       />
