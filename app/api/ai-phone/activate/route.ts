@@ -156,7 +156,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
-    const subscriptionPlan = await getUserSubscriptionPlan(user.id);
+    const userId = user.id;
+
+    const subscriptionPlan = await getUserSubscriptionPlan(userId);
     const supportsAIPhone =
       subscriptionPlan.title === "Business" || subscriptionPlan.title === "Pro";
 
@@ -200,7 +202,7 @@ export async function POST(request: Request) {
     }
 
     const appProfile = await prisma.businessProfile.findUnique({
-      where: { userId: user.id },
+      where: { userId: userId },
       select: {
         id: true,
         businessName: true,
@@ -224,11 +226,11 @@ export async function POST(request: Request) {
 
     const provisioning = await prisma.$transaction(
       async (tx) => {
-        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${user.id}))`;
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${userId}))`;
 
         const existing = await tx.phoneNumber.findFirst({
           where: {
-            userId: user.id,
+            userId: userId,
             status: { in: ["ACTIVE", "PENDING"] },
           },
           orderBy: { purchasedAt: "desc" },
@@ -371,7 +373,7 @@ export async function POST(request: Request) {
 
         const phone = await tx.phoneNumber.create({
           data: {
-            userId: user.id,
+            userId: userId,
             provider: "SIGNALWIRE",
             providerId: signalWirePhoneId,
             phoneNumber: number,
