@@ -461,11 +461,22 @@ export async function POST(request: Request) {
       ]);
     }
 
+    const finalSettings = await prisma.aIPhoneSettings.findUnique({
+      where: { businessProfileId: appProfile.id },
+      select: {
+        phoneNumber: true,
+        assistantName: true,
+        status: true,
+        enabled: true,
+      },
+    });
+
     return NextResponse.json({
       success: true,
       existingNumber: provisioning.isExisting,
       phoneNumber: provisioning.phone.phoneNumber,
       status: "ACTIVE",
+      aiPhoneSettings: finalSettings,
       message: provisioning.isExisting
         ? "Your existing AI Phone number is ready."
         : "Your AI Phone number has been assigned and connected.",
