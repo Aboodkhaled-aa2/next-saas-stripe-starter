@@ -237,6 +237,10 @@ type VapiMessage = {
     toolCall?: {
       id?: string;
       parameters?: Record<string, unknown>;
+      function?: {
+        name?: string;
+        arguments?: Record<string, unknown> | string;
+      };
     };
   }>;
 };
@@ -303,11 +307,19 @@ function normalizeToolCalls(message: VapiMessage) {
         : call.parameters ?? call.function?.arguments ?? {},
   }));
 
-  const wrappedCalls = (message.toolWithToolCallList ?? []).map((item) => ({
-    id: item.toolCall?.id ?? "",
-    name: item.name ?? "",
-    parameters: item.toolCall?.parameters ?? {},
-  }));
+  const wrappedCalls = (message.toolWithToolCallList ?? []).map((item) => {
+    const rawArguments =
+      item.toolCall?.function?.arguments ?? item.toolCall?.parameters ?? {};
+
+    return {
+      id: item.toolCall?.id ?? "",
+      name: item.name ?? item.toolCall?.function?.name ?? "",
+      parameters:
+        typeof rawArguments === "string"
+          ? safeJsonObject(rawArguments)
+          : rawArguments,
+    };
+  });
 
   return [...directCalls, ...wrappedCalls].filter(
     (call) => call.id && call.name,
@@ -530,11 +542,11 @@ export async function POST(request: Request) {
               },
             ],
             tools: toolSchemas,
+          },
           serverMessages: [
             "end-of-call-report",
             "tool-calls",
           ],
-          },
           server: {
             url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
           },
