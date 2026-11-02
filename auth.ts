@@ -49,7 +49,7 @@ export const {
           trialStartedAt.getTime() + 7 * 24 * 60 * 60 * 1000,
         );
 
-        await prisma.user.update({
+        await prisma.user.updateMany({
           where: { id: user.id },
           data: { trialStartedAt, trialEndsAt },
         });
@@ -59,8 +59,8 @@ export const {
   callbacks: {
     async signIn({ user, account, profile }) {
       // Google has already verified this address when email_verified is true.
-      // Persist that verification so plan selection does not ask Google users
-      // to complete the separate email-code flow.
+      // Persist that verification without throwing if the adapter's user row
+      // disappeared between account lookup and this callback.
       const googleProfile = profile as
         | { email_verified?: boolean }
         | undefined;
@@ -70,12 +70,15 @@ export const {
         googleProfile?.email_verified === true &&
         user.id
       ) {
-        await prisma.user.update({
+        const updated = await prisma.user.updateMany({
           where: { id: user.id },
           data: {
             emailVerified: user.email ? new Date() : undefined,
           },
         });
+
+        // Do not create a JWT session for a user that no longer exists.
+        if (updated.count !== 1) return false;
       }
 
       return true;
