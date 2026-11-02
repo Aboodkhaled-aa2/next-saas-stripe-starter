@@ -1,6 +1,8 @@
 import { PlansRow, SubscriptionPlan } from "types";
 import { env } from "@/env.mjs";
 
+const useStripeSandbox = env.NEXT_PUBLIC_STRIPE_SANDBOX_MODE === "true";
+
 export const pricingData: SubscriptionPlan[] = [
   {
     title: "Starter",
@@ -27,10 +29,10 @@ export const pricingData: SubscriptionPlan[] = [
     },
     stripeIds: {
       monthly:
-        env.NEXT_PUBLIC_STRIPE_STARTER_MONTHLY_PLAN_ID ||
+        (useStripeSandbox ? env.NEXT_PUBLIC_STRIPE_SANDBOX_STARTER_MONTHLY_PLAN_ID : env.NEXT_PUBLIC_STRIPE_STARTER_MONTHLY_PLAN_ID) ||
         "price_placeholder_starter",
       yearly:
-        env.NEXT_PUBLIC_STRIPE_STARTER_YEARLY_PLAN_ID ||
+        (useStripeSandbox ? env.NEXT_PUBLIC_STRIPE_SANDBOX_STARTER_YEARLY_PLAN_ID : env.NEXT_PUBLIC_STRIPE_STARTER_YEARLY_PLAN_ID) ||
         "price_placeholder_starter_yearly",
     },
   },
@@ -60,10 +62,10 @@ export const pricingData: SubscriptionPlan[] = [
     },
     stripeIds: {
       monthly:
-        env.NEXT_PUBLIC_STRIPE_BUSINESS_MONTHLY_PLAN_ID ||
+        (useStripeSandbox ? env.NEXT_PUBLIC_STRIPE_SANDBOX_BUSINESS_MONTHLY_PLAN_ID : env.NEXT_PUBLIC_STRIPE_BUSINESS_MONTHLY_PLAN_ID) ||
         "price_placeholder_business",
       yearly:
-        env.NEXT_PUBLIC_STRIPE_BUSINESS_YEARLY_PLAN_ID ||
+        (useStripeSandbox ? env.NEXT_PUBLIC_STRIPE_SANDBOX_BUSINESS_YEARLY_PLAN_ID : env.NEXT_PUBLIC_STRIPE_BUSINESS_YEARLY_PLAN_ID) ||
         "price_placeholder_business_yearly",
     },
   },
@@ -94,10 +96,10 @@ export const pricingData: SubscriptionPlan[] = [
     },
     stripeIds: {
       monthly:
-        env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PLAN_ID ||
+        (useStripeSandbox ? env.NEXT_PUBLIC_STRIPE_SANDBOX_PRO_MONTHLY_PLAN_ID : env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PLAN_ID) ||
         "price_placeholder_pro",
       yearly:
-        env.NEXT_PUBLIC_STRIPE_PRO_YEARLY_PLAN_ID ||
+        (useStripeSandbox ? env.NEXT_PUBLIC_STRIPE_SANDBOX_PRO_YEARLY_PLAN_ID : env.NEXT_PUBLIC_STRIPE_PRO_YEARLY_PLAN_ID) ||
         "price_placeholder_pro_yearly",
     },
   },
