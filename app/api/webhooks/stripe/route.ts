@@ -47,13 +47,20 @@ export async function POST(req: Request) {
   }
 
   let event: Stripe.Event;
+  const signingSecret =
+    process.env.VERCEL_ENV === "preview"
+      ? env.STRIPE_SANDBOX_WEBHOOK_SECRET
+      : env.STRIPE_WEBHOOK_SECRET;
+
+  if (!signingSecret) {
+    console.error("Stripe webhook error: Missing environment-specific signing secret");
+    return new Response("Webhook signing secret is not configured", {
+      status: 500,
+    });
+  }
 
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      env.STRIPE_WEBHOOK_SECRET,
-    );
+    event = stripe.webhooks.constructEvent(body, signature, signingSecret);
   } catch (error) {
     console.error(
       "Stripe webhook signature verification error:",
