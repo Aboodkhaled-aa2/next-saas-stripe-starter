@@ -29,7 +29,11 @@ export const {
   handlers: { GET, POST },
   auth,
 } = NextAuth({
-  secret: env.AUTH_SECRET,
+  // Keep the current AUTH_SECRET first for new tokens, while allowing tokens
+  // encrypted with the legacy NEXTAUTH_SECRET to be read during key rotation.
+  secret: [env.AUTH_SECRET, process.env.NEXTAUTH_SECRET].filter(
+    (value): value is string => Boolean(value),
+  ),
   trustHost: true,
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
