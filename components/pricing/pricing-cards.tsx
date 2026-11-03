@@ -2,7 +2,6 @@
 
 import { useContext, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import { pricingData } from "@/config/subscriptions";
 import { UserSubscriptionPlan } from "@/types";
@@ -24,32 +23,8 @@ export function PricingCards({
   subscriptionPlan,
 }: PricingCardsProps) {
   const { setShowSignInModal } = useContext(ModalContext);
-  const router = useRouter();
   const [selectingPlan, setSelectingPlan] = useState<string | null>(null);
   const [planError, setPlanError] = useState<string | null>(null);
-
-  async function startTrial(plan: string) {
-    setSelectingPlan(plan);
-    setPlanError(null);
-    try {
-      const response = await fetch("/api/trial/select-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setPlanError(result.error || "Unable to select this plan. Please try again.");
-        return;
-      }
-      router.push(result.redirect || "/dashboard");
-      router.refresh();
-    } catch {
-      setPlanError("Unable to select this plan. Please try again.");
-    } finally {
-      setSelectingPlan(null);
-    }
-  }
 
   async function subscribeNow(plan: string) {
     setSelectingPlan(plan);
