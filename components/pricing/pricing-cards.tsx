@@ -2,6 +2,7 @@
 
 import { useContext, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import { pricingData } from "@/config/subscriptions";
 import { UserSubscriptionPlan } from "@/types";
@@ -23,6 +24,8 @@ export function PricingCards({
   subscriptionPlan,
 }: PricingCardsProps) {
   const { setShowSignInModal } = useContext(ModalContext);
+  const searchParams = useSearchParams();
+  const choosingTrialPlan = searchParams.get("choose") === "1";
   const [selectingPlan, setSelectingPlan] = useState<string | null>(null);
   const [planError, setPlanError] = useState<string | null>(null);
 
@@ -30,6 +33,21 @@ export function PricingCards({
     setSelectingPlan(plan);
     setPlanError(null);
     try {
+      if (choosingTrialPlan) {
+        const response = await fetch("/api/trial/select-plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plan }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) {
+          setPlanError(result.error || "Unable to save your selected plan. Please try again.");
+          return;
+        }
+        window.location.assign(result.redirect || "/dashboard");
+        return;
+      }
+
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -100,7 +118,7 @@ export function PricingCards({
               disabled={selectingPlan !== null}
               className="inline-block w-full rounded-xl border border-blue-500/60 bg-transparent px-4 py-3 text-center font-medium text-blue-300 transition-colors hover:bg-blue-950/50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {selectingPlan === offer.title.toLowerCase() ? "Opening Stripe..." : "Subscribe Now"}
+              {selectingPlan === offer.title.toLowerCase() ? (choosingTrialPlan ? "Saving plan..." : "Opening Stripe...") : (choosingTrialPlan ? "Choose This Plan" : "Subscribe Now")}
             </button>
           ) : (
             <Link
