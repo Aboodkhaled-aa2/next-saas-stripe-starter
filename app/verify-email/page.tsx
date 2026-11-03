@@ -10,7 +10,6 @@ export default function VerifyEmailPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
-  const [plan, setPlan] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -19,10 +18,8 @@ export default function VerifyEmailPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const emailParam = params.get("email") || "";
-    const planParam = params.get("plan");
 
     setEmail(emailParam.toLowerCase().trim());
-    setPlan(planParam ? planParam.toLowerCase().trim() : null);
   }, []);
 
   const handleVerify = async (e: React.FormEvent) => {
