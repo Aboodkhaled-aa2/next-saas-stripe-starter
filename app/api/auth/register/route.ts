@@ -125,7 +125,8 @@ export async function POST(request: Request) {
           email,
           passwordHash,
           emailVerified: isMetaReviewAccount ? new Date() : undefined,
-          plan: selectedPlan || "STARTER",
+          ...(selectedPlan ? { plan: selectedPlan } : {}),
+          hasSelectedPlan: false,
           ...(!isMetaReviewAccount ? { trialStartedAt, trialEndsAt } : {}),
         },
       });
