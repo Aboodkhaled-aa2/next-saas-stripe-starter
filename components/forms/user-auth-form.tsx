@@ -193,6 +193,14 @@ export function UserAuthForm({
             )}
           </div>
 
+          {type === "login" && (
+            <div className="text-right">
+              <a href="/forgot-password" className="text-sm text-blue-400 hover:underline">
+                Forgot password?
+              </a>
+            </div>
+          )}
+
           <button
             className={cn(
               buttonVariants(),
@@ -223,7 +231,7 @@ export function UserAuthForm({
           signIn("google", {
             callbackUrl:
               type === "register"
-                ? `/pricing?plan=${encodeURIComponent(selectedPlan)}`
+                ? `/api/trial/select-plan?plan=${encodeURIComponent(selectedPlan)}`
                 : targetDestination,
           });
         }}
