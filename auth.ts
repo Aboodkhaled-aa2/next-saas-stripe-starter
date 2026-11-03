@@ -103,6 +103,10 @@ export const {
           session.user.plan = token.plan;
         }
 
+        if (typeof token.hasSelectedPlan === "boolean") {
+          session.user.hasSelectedPlan = token.hasSelectedPlan;
+        }
+
         session.user.name = token.name;
         session.user.image = token.picture;
       }
