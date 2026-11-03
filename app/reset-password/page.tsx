@@ -4,8 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function ResetPasswordPage() {
-  const params = useSearchParams();
-  const token = params.get("token") || "";
+  const [token, setToken] = useState("");
+
+  useEffect(() => {
+    setToken(new URLSearchParams(window.location.search).get("token") || "");
+  }, []);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
