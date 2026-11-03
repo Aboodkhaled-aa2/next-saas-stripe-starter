@@ -231,7 +231,7 @@ export function UserAuthForm({
           signIn("google", {
             callbackUrl:
               type === "register"
-                ? `/api/trial/select-plan?plan=${encodeURIComponent(selectedPlan)}`
+                ? "/pricing?choose=1"
                 : targetDestination,
           });
         }}
