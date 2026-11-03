@@ -111,19 +111,21 @@ export function PricingCards({
           </span>
         </div>
 
-        <p className="mb-6 text-sm font-semibold text-blue-400">
-          7-day free trial · No credit card required
-        </p>
+        {userId ? null : (
+          <p className="mb-6 text-sm font-semibold text-blue-400">
+            7-day free trial · No credit card required
+          </p>
+        )}
 
         <div className="mb-8">
           {userId ? (
             <button
               type="button"
-              onClick={() => void startTrial(offer.title.toLowerCase())}
+              onClick={() => void subscribeNow(offer.title.toLowerCase())}
               disabled={selectingPlan !== null}
-              className="inline-block w-full rounded-xl bg-blue-600 px-4 py-3 text-center font-medium text-white shadow-lg shadow-blue-600/30 transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-block w-full rounded-xl border border-blue-500/60 bg-transparent px-4 py-3 text-center font-medium text-blue-300 transition-colors hover:bg-blue-950/50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {selectingPlan === offer.title.toLowerCase() ? "Starting..." : "Start Free Trial"}
+              {selectingPlan === offer.title.toLowerCase() ? "Opening Stripe..." : "Subscribe Now"}
             </button>
           ) : (
             <Link
@@ -132,16 +134,6 @@ export function PricingCards({
             >
               Start Free Trial
             </Link>
-          )}
-          {userId && (
-            <button
-              type="button"
-              onClick={() => void subscribeNow(offer.title.toLowerCase())}
-              disabled={selectingPlan !== null}
-              className="mt-3 inline-block w-full rounded-xl border border-blue-500/60 bg-transparent px-4 py-3 text-center font-medium text-blue-300 transition-colors hover:bg-blue-950/50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {selectingPlan === offer.title.toLowerCase() ? "Opening Stripe..." : "Subscribe Now"}
-            </button>
           )}
           {planError && (
             <p role="alert" className="mt-2 text-sm text-red-400">{planError}</p>
