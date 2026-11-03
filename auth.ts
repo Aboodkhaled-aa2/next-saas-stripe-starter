@@ -74,7 +74,10 @@ export const {
         googleProfile?.email_verified === true &&
         user.id
       ) {
-        await prisma.user.update({
+        // Do not reject a valid Google OAuth sign-in if the user row is
+        // temporarily unavailable during the adapter callback sequence.
+        // updateMany is non-throwing when no matching row exists.
+        await prisma.user.updateMany({
           where: { id: user.id },
           data: {
             emailVerified: user.email ? new Date() : undefined,
