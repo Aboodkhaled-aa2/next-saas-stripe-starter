@@ -2,7 +2,7 @@
 
 import { useContext, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 import { pricingData } from "@/config/subscriptions";
 import { UserSubscriptionPlan } from "@/types";
@@ -24,37 +24,30 @@ export function PricingCards({
   subscriptionPlan,
 }: PricingCardsProps) {
   const { setShowSignInModal } = useContext(ModalContext);
-  const router = useRouter();
+  const searchParams = useSearchParams();
+  const choosingTrialPlan = searchParams.get("choose") === "1";
   const [selectingPlan, setSelectingPlan] = useState<string | null>(null);
   const [planError, setPlanError] = useState<string | null>(null);
-
-  async function startTrial(plan: string) {
-    setSelectingPlan(plan);
-    setPlanError(null);
-    try {
-      const response = await fetch("/api/trial/select-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setPlanError(result.error || "Unable to select this plan. Please try again.");
-        return;
-      }
-      router.push(result.redirect || "/dashboard");
-      router.refresh();
-    } catch {
-      setPlanError("Unable to select this plan. Please try again.");
-    } finally {
-      setSelectingPlan(null);
-    }
-  }
 
   async function subscribeNow(plan: string) {
     setSelectingPlan(plan);
     setPlanError(null);
     try {
+      if (choosingTrialPlan) {
+        const response = await fetch("/api/trial/select-plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plan }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) {
+          setPlanError(result.error || "Unable to save your selected plan. Please try again.");
+          return;
+        }
+        window.location.assign(result.redirect || "/dashboard");
+        return;
+      }
+
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -111,37 +104,29 @@ export function PricingCards({
           </span>
         </div>
 
-        <p className="mb-6 text-sm font-semibold text-blue-400">
-          7-day free trial · No credit card required
-        </p>
+        {userId ? null : (
+          <p className="mb-6 text-sm font-semibold text-blue-400">
+            7-day free trial · No credit card required
+          </p>
+        )}
 
         <div className="mb-8">
           {userId ? (
             <button
               type="button"
-              onClick={() => void startTrial(offer.title.toLowerCase())}
+              onClick={() => void subscribeNow(offer.title.toLowerCase())}
               disabled={selectingPlan !== null}
-              className="inline-block w-full rounded-xl bg-blue-600 px-4 py-3 text-center font-medium text-white shadow-lg shadow-blue-600/30 transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-block w-full rounded-xl border border-blue-500/60 bg-transparent px-4 py-3 text-center font-medium text-blue-300 transition-colors hover:bg-blue-950/50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {selectingPlan === offer.title.toLowerCase() ? "Starting..." : "Start Free Trial"}
+              {selectingPlan === offer.title.toLowerCase() ? (choosingTrialPlan ? "Saving plan..." : "Opening Stripe...") : (choosingTrialPlan ? "Choose This Plan" : "Subscribe Now")}
             </button>
           ) : (
             <Link
               href={"/signup?plan=" + offer.title.toLowerCase()}
               className="inline-block w-full rounded-xl bg-blue-600 px-4 py-3 text-center font-medium text-white shadow-lg shadow-blue-600/30 transition-colors hover:bg-blue-500"
             >
-              Start Free Trial
+              Choose Plan
             </Link>
-          )}
-          {userId && (
-            <button
-              type="button"
-              onClick={() => void subscribeNow(offer.title.toLowerCase())}
-              disabled={selectingPlan !== null}
-              className="mt-3 inline-block w-full rounded-xl border border-blue-500/60 bg-transparent px-4 py-3 text-center font-medium text-blue-300 transition-colors hover:bg-blue-950/50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {selectingPlan === offer.title.toLowerCase() ? "Opening Stripe..." : "Subscribe Now"}
-            </button>
           )}
           {planError && (
             <p role="alert" className="mt-2 text-sm text-red-400">{planError}</p>

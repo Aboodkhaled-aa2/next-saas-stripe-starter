@@ -46,9 +46,7 @@ export function UserAuthForm({
     rawTargetDestination && rawTargetDestination.startsWith("/")
       ? rawTargetDestination
       : "/pricing";
-  const selectedPlan = (
-    searchParams?.get("plan") || "starter"
-  ).toLowerCase();
+  const selectedPlan = (searchParams?.get("plan") || "").toLowerCase();
 
   async function onSubmit(data: FormData) {
     setIsLoading(true);
@@ -64,7 +62,7 @@ export function UserAuthForm({
             name: data.name,
             email: data.email.toLowerCase(),
             password: data.password,
-            plan: selectedPlan,
+            ...(selectedPlan ? { plan: selectedPlan } : {}),
           }),
         });
 
@@ -193,6 +191,14 @@ export function UserAuthForm({
             )}
           </div>
 
+          {type === "login" && (
+            <div className="text-right">
+              <a href="/forgot-password" className="text-sm text-blue-400 hover:underline">
+                Forgot password?
+              </a>
+            </div>
+          )}
+
           <button
             className={cn(
               buttonVariants(),
@@ -223,7 +229,7 @@ export function UserAuthForm({
           signIn("google", {
             callbackUrl:
               type === "register"
-                ? `/pricing?plan=${encodeURIComponent(selectedPlan)}`
+                ? "/pricing?choose=1"
                 : targetDestination,
           });
         }}

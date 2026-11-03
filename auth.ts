@@ -12,6 +12,7 @@ declare module "next-auth" {
     user: {
       role: UserRole;
       plan: Plan;
+      hasSelectedPlan: boolean;
     } & DefaultSession["user"];
   }
 }
@@ -19,6 +20,7 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     plan?: Plan;
+    hasSelectedPlan?: boolean;
   }
 }
 
@@ -51,8 +53,10 @@ export const {
 
         await prisma.user.update({
           where: { id: user.id },
-          data: { trialStartedAt, trialEndsAt },
+          data: { trialStartedAt, trialEndsAt, hasSelectedPlan: false },
         });
+      } else {
+        await prisma.user.update({ where: { id: user.id }, data: { hasSelectedPlan: false } });
       }
     },
   },
@@ -99,6 +103,10 @@ export const {
           session.user.plan = token.plan;
         }
 
+        if (typeof token.hasSelectedPlan === "boolean") {
+          session.user.hasSelectedPlan = token.hasSelectedPlan;
+        }
+
         session.user.name = token.name;
         session.user.image = token.picture;
       }
@@ -118,6 +126,7 @@ export const {
       token.picture = dbUser.image;
       token.role = dbUser.role;
       token.plan = dbUser.plan;
+      token.hasSelectedPlan = dbUser.hasSelectedPlan;
 
       return token;
     },

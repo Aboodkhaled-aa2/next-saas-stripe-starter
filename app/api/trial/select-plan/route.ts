@@ -73,6 +73,7 @@ async function saveSelectedPlan(planKey: string) {
     where: { id: user.id },
     data: {
       plan: selectedPlan,
+      hasSelectedPlan: true,
       ...(isVerifiedGoogleAccount && !user.emailVerified
         ? { emailVerified: now }
         : {}),

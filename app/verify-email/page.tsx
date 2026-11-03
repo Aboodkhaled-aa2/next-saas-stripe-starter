@@ -10,7 +10,6 @@ export default function VerifyEmailPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
-  const [plan, setPlan] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -19,10 +18,8 @@ export default function VerifyEmailPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const emailParam = params.get("email") || "";
-    const planParam = params.get("plan");
 
     setEmail(emailParam.toLowerCase().trim());
-    setPlan(planParam ? planParam.toLowerCase().trim() : null);
   }, []);
 
   const handleVerify = async (e: React.FormEvent) => {
@@ -75,23 +72,8 @@ export default function VerifyEmailPage() {
         return;
       }
 
-      if (plan && ["starter", "business", "pro"].includes(plan)) {
-        const planResponse = await fetch("/api/trial/select-plan", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ plan }),
-        });
-        const planResult = await planResponse.json().catch(() => ({}));
-
-        if (!planResponse.ok) {
-          setErrorMsg(planResult.error || "Email verified, but we could not save your selected plan. Please choose it again.");
-          setLoading(false);
-          return;
-        }
-      }
-
-      setSuccessMsg("Email verified. Redirecting to your dashboard...");
-      router.replace("/dashboard");
+      setSuccessMsg("Email verified. Choose your plan to continue.");
+      router.replace("/pricing?choose=1");
     } catch {
       setErrorMsg("Something went wrong. Please try again.");
       setLoading(false);
