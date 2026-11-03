@@ -46,9 +46,7 @@ export function UserAuthForm({
     rawTargetDestination && rawTargetDestination.startsWith("/")
       ? rawTargetDestination
       : "/pricing";
-  const selectedPlan = (
-    searchParams?.get("plan") || "starter"
-  ).toLowerCase();
+  const selectedPlan = (searchParams?.get("plan") || "").toLowerCase();
 
   async function onSubmit(data: FormData) {
     setIsLoading(true);
@@ -64,7 +62,7 @@ export function UserAuthForm({
             name: data.name,
             email: data.email.toLowerCase(),
             password: data.password,
-            plan: selectedPlan,
+            ...(selectedPlan ? { plan: selectedPlan } : {}),
           }),
         });
 
