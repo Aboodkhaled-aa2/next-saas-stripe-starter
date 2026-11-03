@@ -18,6 +18,10 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
+  if (!session.user.hasSelectedPlan) {
+    return NextResponse.redirect(new URL("/pricing?choose=1", nextUrl));
+  }
+
   return NextResponse.next();
 });
 
