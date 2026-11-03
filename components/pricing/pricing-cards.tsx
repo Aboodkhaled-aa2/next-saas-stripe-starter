@@ -125,7 +125,7 @@ export function PricingCards({
               href={"/signup?plan=" + offer.title.toLowerCase()}
               className="inline-block w-full rounded-xl bg-blue-600 px-4 py-3 text-center font-medium text-white shadow-lg shadow-blue-600/30 transition-colors hover:bg-blue-500"
             >
-              Start Free Trial
+              Choose Plan
             </Link>
           )}
           {planError && (
