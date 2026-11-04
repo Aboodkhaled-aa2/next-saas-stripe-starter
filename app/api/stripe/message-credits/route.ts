@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { env } from "@/env.mjs";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
+import { isDemoMode, demoPaymentsDisabledResponse } from "@/lib/demo-mode";
 
 const messagePackages = {
   "100": {
@@ -21,6 +22,7 @@ const messagePackages = {
 } as const;
 
 export async function POST(req: Request) {
+  if (isDemoMode) return demoPaymentsDisabledResponse();
   try {
     const session = await auth();
 
