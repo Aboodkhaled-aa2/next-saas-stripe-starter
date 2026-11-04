@@ -4,6 +4,16 @@ import("./env.mjs");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.smartcleaningdesk.com" }],
+        destination: "https://smartcleaningdesk.com/:path*",
+        permanent: true,
+      },
+    ];
+  },
   reactStrictMode: true,
   swcMinify: true,
   images: {

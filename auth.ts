@@ -5,6 +5,7 @@ import NextAuth, { type DefaultSession } from "next-auth";
 
 import { prisma } from "@/lib/db";
 import { getUserById } from "@/lib/user";
+import { env } from "@/env.mjs";
 
 // More info: https://authjs.dev/getting-started/typescript#module-augmentation
 declare module "next-auth" {
@@ -28,6 +29,12 @@ export const {
   handlers: { GET, POST },
   auth,
 } = NextAuth({
+  // Keep the current AUTH_SECRET first for new tokens, while allowing tokens
+  // encrypted with the legacy NEXTAUTH_SECRET to be read during key rotation.
+  secret: [env.AUTH_SECRET, process.env.NEXTAUTH_SECRET].filter(
+    (value): value is string => Boolean(value),
+  ),
+  trustHost: true,
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   pages: {
@@ -74,7 +81,10 @@ export const {
         googleProfile?.email_verified === true &&
         user.id
       ) {
-        await prisma.user.update({
+        // Do not reject a valid Google OAuth sign-in if the user row is
+        // temporarily unavailable during the adapter callback sequence.
+        // updateMany is non-throwing when no matching row exists.
+        await prisma.user.updateMany({
           where: { id: user.id },
           data: {
             emailVerified: user.email ? new Date() : undefined,
