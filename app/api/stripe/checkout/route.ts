@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { env } from "@/env.mjs";
+import { isDemoMode, demoPaymentsDisabledResponse } from "@/lib/demo-mode";
 
 const planPrices = {
   STARTER: env.NEXT_PUBLIC_STRIPE_STARTER_MONTHLY_PLAN_ID,
@@ -13,6 +14,7 @@ const planPrices = {
 type Plan = keyof typeof planPrices;
 
 export async function POST() {
+  if (isDemoMode) return demoPaymentsDisabledResponse();
   try {
     const session = await auth();
 
