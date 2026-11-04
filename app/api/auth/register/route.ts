@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 
 import { prisma } from "@/lib/db";
 import { sendVerificationCode } from "@/lib/email";
+import { isDemoMode } from "@/lib/demo-mode";
 
 const validPlans = ["starter", "business", "pro"] as const;
 const META_REVIEW_EMAIL = "meta-review@smartcleaningdesk.com";
@@ -111,7 +112,7 @@ export async function POST(request: Request) {
         data: {
           name,
           passwordHash,
-          emailVerified: isMetaReviewAccount
+          emailVerified: isDemoMode || isMetaReviewAccount
             ? new Date()
             : existingUser.emailVerified,
           ...(selectedPlan ? { plan: selectedPlan } : {}),
@@ -125,7 +126,7 @@ export async function POST(request: Request) {
           name,
           email,
           passwordHash,
-          emailVerified: isMetaReviewAccount ? new Date() : undefined,
+          emailVerified: isDemoMode || isMetaReviewAccount ? new Date() : undefined,
           ...(selectedPlan ? { plan: selectedPlan } : {}),
           hasSelectedPlan: false,
           ...(!isMetaReviewAccount ? { trialStartedAt, trialEndsAt } : {}),
@@ -139,6 +140,18 @@ export async function POST(request: Request) {
         message: "Meta review account created.",
         userId: user.id,
         plan: "pro",
+      });
+    }
+
+    // Demo accounts are marked verified and can sign in without email delivery.
+    // This is enabled only when DEMO_MODE=true; production keeps email verification.
+    if (isDemoMode) {
+      return NextResponse.json({
+        success: true,
+        message: "Demo account created. Email verification is skipped.",
+        userId: user.id,
+        ...(plan ? { plan } : {}),
+        demoMode: true,
       });
     }
 
