@@ -22,10 +22,7 @@ export const sendVerificationCode = async ({
   try {
     const { data, error } = await resend.emails.send({
       from: env.EMAIL_FROM,
-      to:
-        process.env.NODE_ENV === "development"
-          ? "delivered@resend.dev"
-          : email,
+      to: email,
       subject: `Your verification code for ${siteConfig.name}`,
       react: MagicLinkEmail({
         firstName,
@@ -121,10 +118,7 @@ export const sendVerificationRequest: EmailConfig["sendVerificationRequest"] =
 
     const { data, error } = await resend.emails.send({
       from: provider.from ?? env.EMAIL_FROM,
-      to:
-        process.env.NODE_ENV === "development"
-          ? "delivered@resend.dev"
-          : identifier,
+      to: identifier,
       subject: `Your verification code for ${siteConfig.name}`,
       react: MagicLinkEmail({
         firstName: user.name,
