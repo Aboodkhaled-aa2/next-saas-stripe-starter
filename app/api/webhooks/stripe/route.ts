@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { pricingData } from "@/config/subscriptions";
 import { sendPaymentConfirmation } from "@/lib/email";
+import { isDemoMode } from "@/lib/demo-mode";
 
 function isUniqueConstraintError(error: unknown) {
   return Boolean(
@@ -38,6 +39,7 @@ const messagePackages = {
 } as const;
 
 export async function POST(req: Request) {
+  if (isDemoMode) return new Response("Stripe webhooks are disabled in Demo mode.", { status: 404 });
   const body = await req.text();
   const signature = headers().get("Stripe-Signature");
 
