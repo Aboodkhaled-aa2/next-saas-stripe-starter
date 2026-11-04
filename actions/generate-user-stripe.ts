@@ -7,6 +7,7 @@ import { getUserSubscriptionPlan } from "@/lib/subscription";
 import { pricingData } from "@/config/subscriptions";
 import { absoluteUrl } from "@/lib/utils";
 import { redirect } from "next/navigation";
+import { isDemoMode } from "@/lib/demo-mode";
 
 export type responseAction = {
   status: "success" | "error";
@@ -23,6 +24,8 @@ const allowedStripePriceIds = new Set(
 export async function generateUserStripe(
   priceId: string,
 ): Promise<responseAction> {
+  if (isDemoMode) throw new Error("Stripe billing is disabled in Demo mode.");
+
   let redirectUrl = "";
 
   try {
