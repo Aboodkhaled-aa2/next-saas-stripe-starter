@@ -4,8 +4,10 @@ import { pricingData } from "@/config/subscriptions";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/db";
 import { absoluteUrl } from "@/lib/utils";
+import { isDemoMode, demoPaymentsDisabledResponse } from "@/lib/demo-mode";
 
 export async function POST(req: Request) {
+  if (isDemoMode) return demoPaymentsDisabledResponse();
   try {
     const session = await auth();
     const user = session?.user;
