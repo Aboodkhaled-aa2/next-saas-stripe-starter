@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { absoluteUrl } from "@/lib/utils";
+import { isDemoMode } from "@/lib/demo-mode";
 
 export type responseAction = {
   status: "success" | "error";
@@ -17,6 +18,8 @@ const billingUrl = absoluteUrl("/dashboard/billing");
 export async function openCustomerPortal(
   _userStripeId?: string,
 ): Promise<responseAction> {
+  if (isDemoMode) throw new Error("Stripe billing portal is disabled in Demo mode.");
+
   try {
     const session = await auth();
 
