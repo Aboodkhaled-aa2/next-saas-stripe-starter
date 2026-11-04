@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { isDemoMode } from "@/lib/demo-mode";
 
 const validPlans = {
   starter: "STARTER",
@@ -46,23 +47,25 @@ async function saveSelectedPlan(planKey: string) {
   }
 
   const now = new Date();
-  const paidSubscriptionActive = Boolean(
-    user.stripeSubscriptionId &&
-      user.stripePriceId &&
-      user.stripeCurrentPeriodEnd &&
-      user.stripeCurrentPeriodEnd > now
-  );
+  if (!isDemoMode) {
+    const paidSubscriptionActive = Boolean(
+      user.stripeSubscriptionId &&
+        user.stripePriceId &&
+        user.stripeCurrentPeriodEnd &&
+        user.stripeCurrentPeriodEnd > now
+    );
 
-  if (paidSubscriptionActive) {
-    return { error: "You already have an active subscription. Manage plan changes from Billing.", status: 409 as const };
-  }
+    if (paidSubscriptionActive) {
+      return { error: "You already have an active subscription. Manage plan changes from Billing.", status: 409 as const };
+    }
 
-  if (!user.trialStartedAt || !user.trialEndsAt || user.trialEndsAt <= now) {
-    return {
-      error: "Your trial has expired. Continue to checkout.",
-      redirect: "/pricing?trial=expired",
-      status: 403 as const,
-    };
+    if (!user.trialStartedAt || !user.trialEndsAt || user.trialEndsAt <= now) {
+      return {
+        error: "Your trial has expired. Continue to checkout.",
+        redirect: "/pricing?trial=expired",
+        status: 403 as const,
+      };
+    }
   }
 
   const selectedPlan = validPlans[planKey as PlanKey];
@@ -74,6 +77,9 @@ async function saveSelectedPlan(planKey: string) {
     data: {
       plan: selectedPlan,
       hasSelectedPlan: true,
+      ...(isDemoMode && !user.emailVerified
+        ? { emailVerified: now }
+        : {}),
       ...(isVerifiedGoogleAccount && !user.emailVerified
         ? { emailVerified: now }
         : {}),
