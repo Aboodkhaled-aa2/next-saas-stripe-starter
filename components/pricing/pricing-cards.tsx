@@ -8,7 +8,6 @@ import { pricingData } from "@/config/subscriptions";
 import { UserSubscriptionPlan } from "@/types";
 import { cn } from "@/lib/utils";
 
-import { BillingFormButton } from "@/components/forms/billing-form-button";
 import { ModalContext } from "@/components/modals/providers";
 import { HeaderSection } from "@/components/shared/header-section";
 import { Icons } from "@/components/shared/icons";
@@ -17,15 +16,17 @@ import MaxWidthWrapper from "@/components/shared/max-width-wrapper";
 interface PricingCardsProps {
   userId?: string;
   subscriptionPlan?: UserSubscriptionPlan;
+  demoMode?: boolean;
 }
 
 export function PricingCards({
   userId,
   subscriptionPlan,
+  demoMode = false,
 }: PricingCardsProps) {
   const { setShowSignInModal } = useContext(ModalContext);
   const searchParams = useSearchParams();
-  const choosingTrialPlan = searchParams.get("choose") === "1";
+  const choosingTrialPlan = demoMode || searchParams.get("choose") === "1";
   const [selectingPlan, setSelectingPlan] = useState<string | null>(null);
   const [planError, setPlanError] = useState<string | null>(null);
 
@@ -55,21 +56,18 @@ export function PricingCards({
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.url) {
-        setPlanError(result.error || "Unable to start Stripe Checkout. Please try again.");
+        setPlanError(result.error || "Unable to start checkout. Please try again.");
         return;
       }
       window.location.assign(result.url);
     } catch {
-      setPlanError("Unable to start Stripe Checkout. Please try again.");
+      setPlanError("Unable to save your selected plan. Please try again.");
     } finally {
       setSelectingPlan(null);
     }
   }
-  const PricingCard = ({
-    offer,
-  }: {
-    offer: (typeof pricingData)[number];
-  }) => {
+
+  const PricingCard = ({ offer }: { offer: (typeof pricingData)[number] }) => {
     const isBusiness = offer.title.toLowerCase() === "business";
 
     return (
@@ -77,8 +75,7 @@ export function PricingCards({
         className={cn(
           "relative flex flex-col overflow-hidden rounded-3xl border p-8 text-left transition-all",
           "border-gray-800 bg-[#0a0f1d] hover:border-gray-700",
-          isBusiness &&
-            "border-2 border-blue-600 shadow-2xl shadow-blue-900/20",
+          isBusiness && "border-2 border-blue-600 shadow-2xl shadow-blue-900/20",
         )}
         key={offer.title}
       >
@@ -88,20 +85,12 @@ export function PricingCards({
               {offer.title}
             </span>
           </div>
-
-          <p className="min-h-[40px] text-sm text-gray-400">
-            {offer.description}
-          </p>
+          <p className="min-h-[40px] text-sm text-gray-400">{offer.description}</p>
         </div>
 
         <div className="mb-2 flex items-baseline">
-          <span className="text-5xl font-extrabold text-white">
-            ${offer.prices.monthly}
-          </span>
-
-          <span className="ml-2 text-sm text-gray-400">
-            /month
-          </span>
+          <span className="text-5xl font-extrabold text-white">${offer.prices.monthly}</span>
+          <span className="ml-2 text-sm text-gray-400">/month</span>
         </div>
 
         {userId ? null : (
@@ -118,7 +107,11 @@ export function PricingCards({
               disabled={selectingPlan !== null}
               className="inline-block w-full rounded-xl border border-blue-500/60 bg-transparent px-4 py-3 text-center font-medium text-blue-300 transition-colors hover:bg-blue-950/50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {selectingPlan === offer.title.toLowerCase() ? (choosingTrialPlan ? "Saving plan..." : "Opening Stripe...") : (choosingTrialPlan ? "Choose This Plan" : "Subscribe Now")}
+              {selectingPlan === offer.title.toLowerCase()
+                ? "Saving plan..."
+                : choosingTrialPlan
+                  ? "Choose This Plan"
+                  : "Subscribe Now"}
             </button>
           ) : (
             <Link
@@ -128,22 +121,14 @@ export function PricingCards({
               Choose Plan
             </Link>
           )}
-          {planError && (
-            <p role="alert" className="mt-2 text-sm text-red-400">{planError}</p>
-          )}
+          {planError && <p role="alert" className="mt-2 text-sm text-red-400">{planError}</p>}
         </div>
 
         <div className="mt-auto border-t border-gray-800/80 pt-6">
-          <p className="mb-4 text-xs font-bold uppercase tracking-wider text-gray-400">
-            INCLUDES
-          </p>
-
+          <p className="mb-4 text-xs font-bold uppercase tracking-wider text-gray-400">INCLUDES</p>
           <ul className="space-y-3 text-sm text-gray-300">
             {offer.benefits.slice(0, 5).map((feature) => (
-              <li
-                className="flex items-start gap-x-3"
-                key={feature}
-              >
+              <li className="flex items-start gap-x-3" key={feature}>
                 <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-blue-800 bg-blue-950">
                   <Icons.check className="size-3.5 text-blue-400" />
                 </div>
@@ -151,7 +136,6 @@ export function PricingCards({
               </li>
             ))}
           </ul>
-
           {offer.benefits.length > 5 && (
             <details className="mt-5 border-t border-gray-800/80 pt-4">
               <summary className="cursor-pointer list-none text-center text-sm font-semibold text-blue-400 transition hover:text-blue-300">
@@ -180,24 +164,18 @@ export function PricingCards({
         <HeaderSection
           label="Pricing"
           title="Choose your AI employee"
-          subtitle="Start with customer service, add AI voice and booking, or unlock advanced controls."
+          subtitle={demoMode
+            ? "Demo mode is active. Select a plan to continue. No payment or card is required."
+            : "Start with customer service, add AI voice and booking, or unlock advanced controls."}
         />
-
         <div className="grid w-full max-w-7xl items-stretch gap-8 bg-inherit py-10 lg:grid-cols-3">
           {pricingData.map((offer) => (
-            <PricingCard
-              offer={offer}
-              key={offer.title}
-            />
+            <PricingCard offer={offer} key={offer.title} />
           ))}
         </div>
-
         <p className="mt-6 text-center text-base text-gray-400">
           Email{" "}
-          <a
-            className="font-medium text-blue-400 hover:underline"
-            href="mailto:supportsmartcleaningdesk@gmail.com"
-          >
+          <a className="font-medium text-blue-400 hover:underline" href="mailto:supportsmartcleaningdesk@gmail.com">
             supportsmartcleaningdesk@gmail.com
           </a>{" "}
           to contact our support team.
