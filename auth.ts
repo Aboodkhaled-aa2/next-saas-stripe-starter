@@ -35,6 +35,9 @@ export const {
     (value): value is string => Boolean(value),
   ),
   trustHost: true,
+  // Use non-secure cookie names only for local HTTP development.
+  // Vercel Preview/Production runs with NODE_ENV=production and keeps Secure cookies.
+  useSecureCookies: process.env.NODE_ENV === "production",
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   pages: {
