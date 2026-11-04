@@ -4,6 +4,7 @@ import { pricingData } from "@/config/subscriptions";
 import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { UserSubscriptionPlan } from "types";
+import { isDemoMode } from "@/lib/demo-mode";
 
 const META_REVIEW_EMAIL = "meta-review@smartcleaningdesk.com";
 
@@ -33,6 +34,22 @@ export async function getUserSubscriptionPlan(
 
   if (!user) {
     throw new Error("User not found");
+  }
+
+  if (isDemoMode) {
+    const demoPlan =
+      pricingData.find((plan) => plan.title.toUpperCase() === user.plan) ||
+      pricingData[0];
+
+    return {
+      ...demoPlan,
+      ...user,
+      stripeCurrentPeriodEnd: Date.now() + 365 * 86_400_000,
+      isPaid: true,
+      isTrial: false,
+      interval: "year",
+      isCanceled: false,
+    };
   }
 
   // Legacy accounts without trial dates remain without a trial.
