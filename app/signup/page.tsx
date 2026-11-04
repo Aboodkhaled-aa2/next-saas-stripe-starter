@@ -106,6 +106,7 @@ function SignupForm() {
         error?: string;
         message?: string;
         success?: boolean;
+        demoMode?: boolean;
       } = {};
 
       try {
@@ -123,6 +124,26 @@ function SignupForm() {
 
         setErrorMsg(serverMessage);
         setLoading(false);
+        return;
+      }
+
+      if (data.demoMode) {
+        const signInResult = await signIn("credentials", {
+          email: email.trim().toLowerCase(),
+          password,
+          redirect: false,
+          callbackUrl: "/pricing?choose=1",
+        });
+
+        if (!signInResult?.ok) {
+          setErrorMsg(
+            signInResult?.error || "Demo account was created, but automatic sign-in failed. Please log in."
+          );
+          setLoading(false);
+          return;
+        }
+
+        window.location.assign("/pricing?choose=1");
         return;
       }
 
