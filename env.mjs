@@ -3,6 +3,7 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
+    DEMO_MODE: z.enum(["true", "false"]).optional(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -12,8 +13,8 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: z.string().min(1),
     RESEND_API_KEY: z.string().min(1),
     EMAIL_FROM: z.string().min(1),
-    STRIPE_API_KEY: z.string().min(1),
-    STRIPE_WEBHOOK_SECRET: z.string().min(1),
+    STRIPE_API_KEY: z.string().optional(),
+    STRIPE_WEBHOOK_SECRET: z.string().optional(),
     OPENAI_API_KEY: z.string().min(1),
     VAPI_PRIVATE_API_KEY: z.string().optional(),
     VAPI_SIGNALWIRE_CREDENTIAL_ID: z.string().optional(),
@@ -44,6 +45,7 @@ export const env = createEnv({
   },
 
   runtimeEnv: {
+    DEMO_MODE: process.env.DEMO_MODE,
     NODE_ENV: process.env.NODE_ENV,
     AUTH_SECRET: process.env.AUTH_SECRET,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
