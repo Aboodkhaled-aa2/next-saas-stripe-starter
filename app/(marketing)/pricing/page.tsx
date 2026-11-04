@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { getCurrentUser } from "@/lib/session";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
+import { isDemoMode } from "@/lib/demo-mode";
 import { constructMetadata } from "@/lib/utils";
 import { ComparePlans } from "@/components/pricing/compare-plans";
 import { PricingCards } from "@/components/pricing/pricing-cards";
@@ -20,7 +21,6 @@ export default async function PricingPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#020617] text-white">
         <h1 className="text-5xl font-bold">Seriously?</h1>
-
         <Image
           src="/_static/illustrations/call-waiting.svg"
           alt="403"
@@ -28,7 +28,6 @@ export default async function PricingPage() {
           height={560}
           className="pointer-events-none -my-20"
         />
-
         <p className="text-balance px-4 text-center text-2xl font-medium text-slate-200">
           You are an {user.role}. Back to{" "}
           <Link
@@ -53,10 +52,9 @@ export default async function PricingPage() {
       <PricingCards
         userId={user?.id}
         subscriptionPlan={subscriptionPlan ?? undefined}
+        demoMode={isDemoMode}
       />
-
       <hr className="container border-slate-800" />
-
       <details className="group container">
         <summary className="mx-auto flex max-w-3xl cursor-pointer list-none items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/50 px-6 py-5 text-left transition hover:border-slate-700">
           <div>
@@ -75,7 +73,6 @@ export default async function PricingPage() {
           <ComparePlans />
         </div>
       </details>
-
       <PricingFaq />
     </div>
   );
