@@ -50,6 +50,22 @@ function LoginForm() {
   const [errorMsg, setErrorMsg] = useState("");
 
   async function continueAfterLogin() {
+    // Resolve the mode on the server. Fail closed: never start checkout unless
+    // the server explicitly confirms this is not a Demo deployment.
+    const modeResponse = await fetch("/api/demo/status", {
+      method: "GET",
+      cache: "no-store",
+    });
+    if (!modeResponse.ok) {
+      throw new Error("Unable to verify Demo mode. No payment was started. Please refresh and try again.");
+    }
+
+    const mode = await modeResponse.json();
+    if (mode.demoMode === true) {
+      window.location.assign("/pricing?choose=1");
+      return;
+    }
+
     const response = await fetch("/api/stripe/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
