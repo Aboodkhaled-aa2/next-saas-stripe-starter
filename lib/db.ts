@@ -7,42 +7,27 @@ declare global {
 }
 
 /**
- * Supabase's pooled PostgreSQL connections may route consecutive Prisma
- * queries through different backend connections. Disable prepared statements
- * for the isolated Demo pooler connection to avoid PgBouncer statement errors.
- * Production keeps its existing DATABASE_URL behavior unchanged.
+ * Supabase transaction-pooler connections can move queries between backend
+ * connections. PgBouncer compatibility disables Prisma prepared statements
+ * for the isolated Demo database connection only.
  */
-function getPrismaOptions() {
-  if (process.env.DEMO_MODE !== "true" || !process.env.DATABASE_URL) {
-    return {};
-  }
-
+if (process.env.DEMO_MODE === "true" && process.env.DATABASE_URL) {
   try {
-    const databaseUrl = new URL(process.env.DATABASE_URL);
-    databaseUrl.searchParams.set("pgbouncer", "true");
-
-    return {
-      datasources: {
-        db: {
-          url: databaseUrl.toString(),
-        },
-      },
-    };
+    const demoDatabaseUrl = new URL(process.env.DATABASE_URL);
+    demoDatabaseUrl.searchParams.set("pgbouncer", "true");
+    process.env.DATABASE_URL = demoDatabaseUrl.toString();
   } catch {
-    // Let Prisma report malformed connection URLs through its normal error path.
-    return {};
+    // Keep the original value so Prisma can report malformed URLs normally.
   }
 }
-
-const prismaOptions = getPrismaOptions();
 
 export let prisma: PrismaClient;
 
 if (process.env.NODE_ENV === "production") {
-  prisma = new PrismaClient(prismaOptions);
+  prisma = new PrismaClient();
 } else {
   if (!global.cachedPrisma) {
-    global.cachedPrisma = new PrismaClient(prismaOptions);
+    global.cachedPrisma = new PrismaClient();
   }
   prisma = global.cachedPrisma;
 }
