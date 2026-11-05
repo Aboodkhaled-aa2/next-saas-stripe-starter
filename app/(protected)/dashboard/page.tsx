@@ -267,10 +267,10 @@ export default async function DashboardPage() {
     ? 100
     : paidActive
       ? billingUser?.plan === "PRO"
-        ? 5000
+        ? 15000
         : billingUser?.plan === "BUSINESS"
-          ? 2000
-          : 500
+          ? 6000
+          : 3000
       : 0;
 
   const messagingPeriodFilter =
@@ -315,9 +315,7 @@ export default async function DashboardPage() {
   const usedMessagingMessages = trialActive
     ? facebookMessagingUsed + instagramMessagingUsed
     : facebookMessagingUsed + instagramMessagingUsed + whatsappMessagingUsed;
-  const messagingLimit = trialActive
-    ? messagingChannelLimit
-    : messagingChannelLimit * 3;
+  const messagingLimit = messagingChannelLimit;
   const remainingMessagingMessages = Math.max(
     messagingLimit - usedMessagingMessages,
     0,
@@ -327,11 +325,8 @@ export default async function DashboardPage() {
       ? Math.min((usedMessagingMessages / messagingLimit) * 100, 100)
       : 0;
 
-  const messagingLimitReached = trialActive
-    ? usedMessagingMessages >= messagingChannelLimit
-    : facebookMessagingUsed >= messagingChannelLimit ||
-      instagramMessagingUsed >= messagingChannelLimit ||
-      whatsappMessagingUsed >= messagingChannelLimit;
+  const messagingLimitReached =
+    messagingLimit > 0 && usedMessagingMessages >= messagingLimit;
 
   const extraVoicePackages = [
     { minutes: 100, price: 15 },
@@ -709,7 +704,9 @@ export default async function DashboardPage() {
               AI Message Usage
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Track successful outgoing AI replies only. Incoming customer messages are not deducted.
+              {trialActive
+                ? "Your trial includes 100 AI replies shared by Facebook and Instagram. WhatsApp is available after subscribing. Incoming customer messages are not deducted."
+                : "Your plan includes one shared monthly allowance across Facebook, Instagram, and WhatsApp. Only outgoing AI replies count; incoming customer messages are not deducted."}
             </p>
           </div>
 
@@ -762,19 +759,24 @@ export default async function DashboardPage() {
                   </div>
                 )}
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                {[
-                  { label: "Facebook", used: facebookMessagingUsed, limit: messagingChannelLimit, visible: true },
-                  { label: "Instagram", used: instagramMessagingUsed, limit: messagingChannelLimit, visible: true },
-                  { label: "WhatsApp", used: whatsappMessagingUsed, limit: messagingChannelLimit, visible: !trialActive },
-                ].filter((item) => item.visible).map((item) => (
-                  <div key={item.label} className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
-                    <p className="text-xs text-slate-400">{item.label}</p>
-                    <p className="mt-1 text-lg font-semibold text-white">
-                      {item.used.toLocaleString()} <span className="text-xs font-normal text-slate-500">/ {item.limit.toLocaleString()}</span>
-                    </p>
-                  </div>
-                ))}
+              <div className="mt-5">
+                <p className="mb-3 text-xs text-slate-500">
+                  Channel breakdown — each reply uses part of the same shared allowance.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {[
+                    { label: "Facebook", used: facebookMessagingUsed, visible: true },
+                    { label: "Instagram", used: instagramMessagingUsed, visible: true },
+                    { label: "WhatsApp", used: whatsappMessagingUsed, visible: !trialActive },
+                  ].filter((item) => item.visible).map((item) => (
+                    <div key={item.label} className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+                      <p className="text-xs text-slate-400">{item.label}</p>
+                      <p className="mt-1 text-lg font-semibold text-white">
+                        {item.used.toLocaleString()} <span className="text-xs font-normal text-slate-500">AI replies</span>
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-2">

@@ -248,11 +248,11 @@ async function canUseMessaging(
 
     periodStart = new Date(subscription.current_period_start * 1000);
     periodEnd = new Date(subscription.current_period_end * 1000);
-    limit = user.plan === "PRO" ? 5000 : user.plan === "BUSINESS" ? 2000 : 500;
+    limit = user.plan === "PRO" ? 15000 : user.plan === "BUSINESS" ? 6000 : 3000;
   }
 
-  // Only successful AI replies are written as outbound messages with aiResponseId.
-  // Trial usage is one shared Facebook + Instagram pool; paid plans have a pool per channel.
+  // Only AI-generated outbound replies count. Incoming customer messages are never deducted.
+  // Trial usage is shared by Facebook + Instagram; paid usage is shared by all three channels.
   const usageWhere = {
     direction: "OUTBOUND",
     createdAt: { gte: periodStart, lt: periodEnd },
@@ -264,7 +264,7 @@ async function canUseMessaging(
       userId,
       ...(isTrial
         ? { channel: { in: ["FACEBOOK", "INSTAGRAM"] } }
-        : { channel }),
+        : { channel: { in: ["FACEBOOK", "INSTAGRAM", "WHATSAPP"] } }),
     },
   };
 
@@ -283,7 +283,7 @@ async function canUseMessaging(
     isTrial,
     reason:
       used >= limit && !hasExtraMessageCredits
-        ? "Your message limit for this channel and billing period has been reached. Purchase additional message credits to continue."
+        ? "Your shared monthly AI reply allowance across Facebook, Instagram, and WhatsApp has been reached. Purchase additional message credits to continue."
         : null,
   };
 }
@@ -298,7 +298,7 @@ async function reserveMessagingAllowance(
   conversationId: string,
   reply: string,
 ) {
-  const scope = isTrial ? "META_TRIAL_SHARED" : channel;
+  const scope = isTrial ? "META_TRIAL_SHARED" : "META_PAID_SHARED";
   const lockKey = userId + ":" + scope + ":" + periodStart.toISOString();
 
   return prisma.$transaction(async (tx) => {
@@ -316,7 +316,7 @@ async function reserveMessagingAllowance(
           userId,
           ...(isTrial
             ? { channel: { in: ["FACEBOOK", "INSTAGRAM"] } }
-            : { channel }),
+            : { channel: { in: ["FACEBOOK", "INSTAGRAM", "WHATSAPP"] } }),
         },
       },
     });

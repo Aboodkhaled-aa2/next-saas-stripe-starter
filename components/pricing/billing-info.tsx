@@ -43,6 +43,14 @@ export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
 
   const currentPrice =
     interval === "year" ? prices.yearly : interval === "month" ? prices.monthly : null;
+  const includedAiReplies =
+    title.toLowerCase() === "pro"
+      ? 15000
+      : title.toLowerCase() === "business"
+        ? 6000
+        : title.toLowerCase() === "starter"
+          ? 3000
+          : 0;
 
   const statusLabel = isPaid
     ? isCanceled
@@ -103,6 +111,17 @@ export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
                 </p>
                 <p className="mt-2 text-base font-semibold text-white">
                   {interval === "year" ? "Annual billing" : "Monthly billing"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-800 bg-slate-900/70 p-4 sm:col-span-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                  Included AI replies per month
+                </p>
+                <p className="mt-2 text-2xl font-bold text-white">
+                  {includedAiReplies.toLocaleString()}
+                </p>
+                <p className="mt-1 text-xs text-slate-400">
+                  One shared allowance across Facebook, Instagram, and WhatsApp. Only outgoing AI replies count.
                 </p>
               </div>
             </>
