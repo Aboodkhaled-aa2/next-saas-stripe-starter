@@ -10,6 +10,8 @@ import {
   Zap,
 } from "lucide-react";
 
+import Link from "next/link";
+
 import { DashboardHeader } from "@/components/dashboard/header";
 
 export const dynamic = "force-dynamic";
@@ -87,13 +89,13 @@ export default function PhoneIntegrationPage() {
         </div>
 
         <div className="border-t border-slate-800 bg-slate-900/20 p-6">
-          <button
-            type="button"
+          <Link
+            href="/dashboard/phone"
             className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
           >
             <Phone className="h-4 w-4" />
-            Set Up AI Phone
-          </button>
+            Activate AI Phone
+          </Link>
 
           <p className="mt-3 text-xs leading-5 text-slate-600">
             Phone setup will connect your business number to the AI voice
