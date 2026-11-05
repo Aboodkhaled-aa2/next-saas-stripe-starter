@@ -6,18 +6,9 @@ import { env } from "@/env.mjs";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
 
 const messagePackages = {
-  "100": {
-    conversations: 100,
-    priceId: env.STRIPE_MESSAGES_1000_PRICE_ID,
-  },
-  "500": {
-    conversations: 500,
-    priceId: env.STRIPE_MESSAGES_5000_PRICE_ID,
-  },
-  "1000": {
-    conversations: 1000,
-    priceId: env.STRIPE_MESSAGES_10000_PRICE_ID,
-  },
+  "1000": { messages: 1000, priceId: env.STRIPE_MESSAGES_1000_PRICE_ID },
+  "5000": { messages: 5000, priceId: env.STRIPE_MESSAGES_5000_PRICE_ID },
+  "10000": { messages: 10000, priceId: env.STRIPE_MESSAGES_10000_PRICE_ID },
 } as const;
 
 export async function POST(req: Request) {
@@ -37,7 +28,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const packageKey = String(body.conversations ?? "");
+    const packageKey = String(body.messages ?? "");
 
     if (!(packageKey in messagePackages)) {
       return NextResponse.json(
@@ -78,7 +69,7 @@ export async function POST(req: Request) {
       metadata: {
         type: "message_credits",
         userId: user.id,
-        messages: String(selected.conversations),
+        messages: String(selected.messages),
         package: packageKey,
       },
       success_url: `${baseUrl}/dashboard?message_purchase=success`,

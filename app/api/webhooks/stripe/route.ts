@@ -32,9 +32,9 @@ const voicePackages = {
 } as const;
 
 const messagePackages = {
-  "100": { conversations: 100, amountCents: 1000 },
-  "500": { conversations: 500, amountCents: 4000 },
-  "1000": { conversations: 1000, amountCents: 7000 },
+  "1000": { messages: 1000, amountCents: 1000 },
+  "5000": { messages: 5000, amountCents: 4000 },
+  "10000": { messages: 10000, amountCents: 7000 },
 } as const;
 
 export async function POST(req: Request) {
@@ -168,6 +168,15 @@ export async function POST(req: Request) {
           return new Response("Unknown message package", { status: 400 });
         }
 
+        if (Number(session.metadata.messages) !== selected.messages) {
+          console.error("Stripe webhook error: Message package quantity mismatch", {
+            sessionId: session.id,
+            expected: selected.messages,
+            received: session.metadata.messages,
+          });
+          return new Response("Message package quantity mismatch", { status: 400 });
+        }
+
         if (
           session.amount_total !== null &&
           session.amount_total !== selected.amountCents
@@ -201,7 +210,7 @@ export async function POST(req: Request) {
               data: {
                 userId,
                 stripeSessionId: session.id,
-                messages: selected.conversations,
+                messages: selected.messages,
                 amountCents: selected.amountCents,
                 status: "PAID",
               },
@@ -211,7 +220,7 @@ export async function POST(req: Request) {
               where: { id: userId },
               data: {
                 extraMessageCredits: {
-                  increment: selected.conversations,
+                  increment: selected.messages,
                 },
               },
             });

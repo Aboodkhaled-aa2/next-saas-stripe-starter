@@ -706,10 +706,10 @@ export default async function DashboardPage() {
           <section>
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-white">
-              Messaging Usage
+              AI Message Usage
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Track successful AI replies for the current period.
+              Track successful outgoing AI replies only. Incoming customer messages are not deducted.
             </p>
           </div>
 
@@ -789,7 +789,7 @@ export default async function DashboardPage() {
                 </div>
 
                 <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
-                  <p className="text-xs text-slate-500">Extra Message Balance</p>
+                  <p className="text-xs text-slate-500">Extra AI Messages Balance</p>
                   <p className="mt-1 text-2xl font-bold text-blue-400">
                     {(billingUser?.extraMessageCredits ?? 0).toLocaleString()}
                   </p>
@@ -804,10 +804,10 @@ export default async function DashboardPage() {
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 transition-colors hover:bg-slate-900 [&::-webkit-details-marker]:hidden">
                     <div>
                       <p className="text-sm font-semibold text-white">
-                        Buy Extra Messages
+                        Buy Extra AI Messages
                       </p>
                       <p className="mt-1 text-xs text-slate-500">
-                        One-time message credits that do not expire
+                        One-time AI message credits that do not expire
                       </p>
                     </div>
 
@@ -835,13 +835,13 @@ export default async function DashboardPage() {
                         className="rounded-lg border border-slate-800 bg-slate-950/70 p-4 transition-colors hover:border-blue-500/40 hover:bg-slate-900"
                       >
                         <p className="text-sm font-semibold text-white">
-                          {pack.messages.toLocaleString()} Messages
+                          {pack.messages.toLocaleString()} Extra AI Messages
                         </p>
                         <p className="mt-1 text-lg font-bold text-blue-400">
                           ${pack.price}
                         </p>
                         <p className="mt-2 text-xs text-slate-500">
-                          One-time credit package
+                          One-time AI message credit package
                         </p>
                       </Link>
                     ))}

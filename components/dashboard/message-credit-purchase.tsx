@@ -3,20 +3,20 @@
 import { useState } from "react";
 
 const packages = [
-  { conversations: 100, price: 10 },
-  { conversations: 500, price: 40 },
-  { conversations: 1000, price: 70 },
+  { messages: 1000, price: 10 },
+  { messages: 5000, price: 40 },
+  { messages: 10000, price: 70 },
 ];
 
 export default function MessageCreditPurchase({
   searchParams = {},
 }: {
-  searchParams?: { conversations?: string };
+  searchParams?: { messages?: string };
 }) {
   const [loading, setLoading] = useState<number | null>(null);
-  const selectedMessages = Number(searchParams.conversations);
+  const selectedMessages = Number(searchParams.messages);
   const selectedPackage = packages.find(
-    (pack) => pack.conversations === selectedMessages,
+    (pack) => pack.messages === selectedMessages,
   );
 
   const buy = async (messages: number) => {
@@ -25,7 +25,7 @@ export default function MessageCreditPurchase({
       const response = await fetch("/api/stripe/message-credits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversations: messages }),
+        body: JSON.stringify({ messages }),
       });
       const data = await response.json();
 
@@ -50,9 +50,9 @@ export default function MessageCreditPurchase({
       <div className="mx-auto max-w-3xl">
         <div className="mb-8">
           <p className="text-sm font-medium text-blue-400">SMART CLEANING DESK</p>
-          <h1 className="mt-2 text-3xl font-bold">Extra Customer Conversations</h1>
+          <h1 className="mt-2 text-3xl font-bold">Extra AI Messages</h1>
           <p className="mt-2 text-sm text-slate-400">
-            Buy additional AI-powered customer conversations when you reach your included monthly conversation limit.
+            Buy additional AI-generated replies. Only outgoing AI replies count toward your balance; incoming customer messages are not deducted.
           </p>
         </div>
 
@@ -60,7 +60,7 @@ export default function MessageCreditPurchase({
           <div className="mb-8 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-5">
             <p className="text-sm text-slate-300">Selected package</p>
             <p className="mt-1 text-2xl font-bold">
-              {selectedPackage.conversations.toLocaleString()} conversations — ${selectedPackage.price}
+              {selectedPackage.messages.toLocaleString()} AI messages — ${selectedPackage.price}
             </p>
           </div>
         ) : null}
@@ -68,14 +68,14 @@ export default function MessageCreditPurchase({
         <div className="grid gap-4 sm:grid-cols-3">
           {packages.map((pack) => (
             <button
-              key={pack.conversations}
+              key={pack.messages}
               type="button"
-              onClick={() => buy(pack.conversations)}
+              onClick={() => buy(pack.messages)}
               disabled={loading !== null}
               className="rounded-2xl border border-slate-800 bg-slate-950/80 p-6 text-left transition hover:border-blue-500/40 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <p className="text-sm font-semibold text-slate-300">
-                {pack.conversations.toLocaleString()} Extra Customer Conversations
+                {pack.messages.toLocaleString()} Extra AI Messages
               </p>
               <p className="mt-3 text-3xl font-bold text-blue-400">
                 ${pack.price}
@@ -84,9 +84,9 @@ export default function MessageCreditPurchase({
                 One-time purchase
               </p>
               <span className="mt-5 inline-flex text-sm font-semibold text-white">
-                {loading === pack.conversations
+                {loading === pack.messages
                   ? "Opening checkout..."
-                  : "Buy conversations"}
+                  : "Buy messages"}
               </span>
             </button>
           ))}

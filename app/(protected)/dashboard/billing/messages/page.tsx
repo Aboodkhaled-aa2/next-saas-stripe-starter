@@ -5,11 +5,15 @@ import { getUserSubscriptionPlan } from "@/lib/subscription";
 import MessageCreditPurchase from "@/components/dashboard/message-credit-purchase";
 
 export const metadata = {
-  title: "Extra Customer Conversations – Smart Cleaning Desk",
-  description: "Purchase additional AI-powered customer conversations.",
+  title: "Extra AI Messages – Smart Cleaning Desk",
+  description: "Purchase additional AI-generated replies for your customers.",
 };
 
-export default async function MessageCreditPurchasePage() {
+export default async function MessageCreditPurchasePage({
+  searchParams,
+}: {
+  searchParams?: { messages?: string };
+}) {
   const user = await getCurrentUser();
 
   if (!user?.id || user.role !== "USER") {
@@ -22,5 +26,5 @@ export default async function MessageCreditPurchasePage() {
     redirect("/dashboard/billing");
   }
 
-  return <MessageCreditPurchase />;
+  return <MessageCreditPurchase searchParams={searchParams} />;
 }
