@@ -49,8 +49,12 @@ export type SubscriptionPlan = {
   description: string;
   benefits: string[];
   limitations: string[];
-  prices: {\n    monthly: number;\n  };
-  stripeIds: {\n    monthly: string | null;\n  };
+  prices: {
+    monthly: number;
+  };
+  stripeIds: {
+    monthly: string | null;
+  };
 };
 
 export type UserSubscriptionPlan = SubscriptionPlan &
