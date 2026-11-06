@@ -100,6 +100,19 @@ export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   return (
     <main className="min-h-screen overflow-hidden bg-[#050918] text-slate-100 selection:bg-blue-500 selection:text-white">
+      <style jsx global>{`
+        @keyframes scd-float { 0%,100% { transform: translate3d(0,0,0) rotateY(-13deg) rotateX(5deg); } 50% { transform: translate3d(0,-16px,18px) rotateY(-9deg) rotateX(2deg); } }
+        @keyframes scd-robot { 0%,100% { transform: translate3d(0,0,0) rotateY(12deg) rotateX(-5deg); } 50% { transform: translate3d(0,-13px,22px) rotateY(18deg) rotateX(-1deg); } }
+        @keyframes scd-orbit { from { transform: rotate(0deg) translateX(8px) rotate(0deg); } to { transform: rotate(360deg) translateX(8px) rotate(-360deg); } }
+        @keyframes scd-pulse { 0%,100% { opacity:.45; filter:blur(32px); } 50% { opacity:.9; filter:blur(48px); } }
+        .scd-dashboard-float { animation: scd-float 7s ease-in-out infinite; transform-style:preserve-3d; will-change:transform; }
+        .scd-robot-float { animation: scd-robot 5.5s ease-in-out infinite; transform-style:preserve-3d; will-change:transform; }
+        .scd-glow-pulse { animation: scd-pulse 4s ease-in-out infinite; }
+        .scd-hero-scene { transform-style:preserve-3d; }
+        .scd-hero-scene:hover .scd-dashboard-float { animation-duration:3.5s; }
+        .scd-hero-scene:hover .scd-robot-float { animation-duration:3s; }
+        @media (prefers-reduced-motion: reduce) { .scd-dashboard-float,.scd-robot-float,.scd-glow-pulse { animation:none !important; } }
+      `}</style>
       <div className="pointer-events-none fixed inset-0 -z-0 bg-[radial-gradient(ellipse_at_75%_12%,rgba(30,100,255,0.20),transparent_34%),radial-gradient(ellipse_at_10%_50%,rgba(14,165,233,0.09),transparent_35%)]" />
       <header className="sticky top-0 z-50 border-b border-white/[0.07] bg-[#050918]/85 backdrop-blur-2xl">
         <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between px-5 sm:px-7 lg:px-8">
@@ -120,11 +133,11 @@ export default function LandingPage() {
             <div className="mt-7 flex flex-wrap gap-x-6 gap-y-3 text-xs font-semibold text-slate-400 sm:text-sm"><span className="flex items-center gap-2"><Check className="h-4 w-4 text-blue-400" />Secure subscription</span><span className="flex items-center gap-2"><Check className="h-4 w-4 text-blue-400" />Built for cleaning businesses</span><span className="flex items-center gap-2"><Check className="h-4 w-4 text-blue-400" />Customer management</span></div>
           </div>
 
-          <div className="relative mx-auto w-full max-w-[590px] [perspective:1400px]">
-            <div className="absolute left-1/2 top-1/2 h-[360px] w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/25 blur-[90px]" />
+          <div className="scd-hero-scene relative mx-auto w-full max-w-[590px] [perspective:1400px]">
+            <div className="scd-glow-pulse absolute left-1/2 top-1/2 h-[360px] w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/25 blur-[90px]" />
             <div className="absolute left-1/2 top-[58%] h-12 w-[75%] -translate-x-1/2 rounded-[50%] bg-blue-500/30 blur-2xl" />
             <div className="relative min-h-[420px] sm:min-h-[500px]">
-              <div className="absolute right-1 top-10 w-[78%] rotate-[7deg] rounded-[28px] border border-blue-300/60 bg-gradient-to-br from-blue-300/25 via-[#10234d]/95 to-[#080f25] p-3 shadow-[0_25px_90px_rgba(0,80,255,0.25)] [transform:rotateY(-13deg)_rotateX(5deg)] sm:right-0 sm:top-8 sm:p-4">
+              <div className="scd-dashboard-float absolute right-1 top-10 w-[78%] rotate-[7deg] rounded-[28px] border border-blue-300/60 bg-gradient-to-br from-blue-300/25 via-[#10234d]/95 to-[#080f25] p-3 shadow-[0_25px_90px_rgba(0,80,255,0.25)] [transform:rotateY(-13deg)_rotateX(5deg)] sm:right-0 sm:top-8 sm:p-4">
                 <div className="rounded-[20px] border border-white/10 bg-[#08132c]/95 p-4 sm:p-5">
                   <div className="flex items-center justify-between border-b border-white/10 pb-4"><div className="flex items-center gap-2.5"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 text-white"><Sparkles className="h-4 w-4" /></span><span className="text-xs font-extrabold text-white sm:text-sm">Smart Cleaning Desk</span></div><span className="h-2 w-12 rounded-full bg-blue-300/20" /></div>
                   <div className="mt-4 grid grid-cols-[42px_1fr] gap-3"><div className="flex flex-col gap-3 rounded-xl bg-white/[0.04] p-2 text-blue-300"><span className="rounded-lg bg-blue-500/25 p-2"><Users className="h-4 w-4" /></span><Calendar className="mx-auto h-4 w-4" /><MessageCircle className="mx-auto h-4 w-4" /><Phone className="mx-auto h-4 w-4" /></div><div className="space-y-3">
@@ -132,7 +145,7 @@ export default function LandingPage() {
                   </div></div>
                 </div>
               </div>
-              <div className="absolute bottom-8 left-0 z-20 flex h-[190px] w-[190px] items-center justify-center rounded-[42%] border border-cyan-200/60 bg-gradient-to-br from-white via-blue-100 to-blue-500 shadow-[0_0_45px_rgba(34,160,255,0.65),inset_-14px_-18px_35px_rgba(17,75,190,0.35)] [transform:rotateY(12deg)_rotateX(-5deg)] sm:bottom-9 sm:left-2 sm:h-[230px] sm:w-[230px]">
+              <div className="scd-robot-float absolute bottom-8 left-0 z-20 flex h-[190px] w-[190px] items-center justify-center rounded-[42%] border border-cyan-200/60 bg-gradient-to-br from-white via-blue-100 to-blue-500 shadow-[0_0_45px_rgba(34,160,255,0.65),inset_-14px_-18px_35px_rgba(17,75,190,0.35)] [transform:rotateY(12deg)_rotateX(-5deg)] sm:bottom-9 sm:left-2 sm:h-[230px] sm:w-[230px]">
                 <div className="absolute inset-[12%] rounded-[42%] border border-white/70 bg-gradient-to-br from-[#0c1a3d] via-[#07112a] to-[#020817] shadow-[inset_0_0_35px_rgba(30,130,255,0.55)]" />
                 <div className="relative z-10 flex flex-col items-center"><div className="mb-5 flex gap-5 sm:gap-7"><span className="h-5 w-7 rounded-full bg-cyan-300 shadow-[0_0_18px_#22d3ee] sm:h-7 sm:w-9" /><span className="h-5 w-7 rounded-full bg-cyan-300 shadow-[0_0_18px_#22d3ee] sm:h-7 sm:w-9" /></div><div className="h-3 w-9 rounded-b-full border-b-[4px] border-cyan-300 sm:w-12" /><span className="mt-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-blue-200/60 bg-gradient-to-br from-blue-400 to-blue-700 text-white shadow-[0_0_25px_rgba(37,99,235,0.8)] sm:h-14 sm:w-14"><Sparkles className="h-7 w-7" /></span></div>
                 <span className="absolute -right-4 top-12 h-12 w-5 rounded-full border border-cyan-100/80 bg-gradient-to-b from-blue-100 to-blue-500 shadow-lg sm:-right-6 sm:h-16 sm:w-7" /><span className="absolute -left-4 top-12 h-12 w-5 rounded-full border border-cyan-100/80 bg-gradient-to-b from-blue-100 to-blue-500 shadow-lg sm:-left-6 sm:h-16 sm:w-7" />
@@ -146,7 +159,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <WorkflowDemo />\n\n      <section className="relative z-10 border-y border-white/[0.07] bg-white/[0.02] py-7"><div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 px-5 sm:grid-cols-4 sm:px-7">{[{icon:Phone,label:"AI Phone",sub:"Answer calls 24/7"},{icon:MessageCircle,label:"AI Messaging",sub:"Reply across channels"},{icon:Calendar,label:"Smart Booking",sub:"Move leads to jobs"},{icon:Zap,label:"All-in-One",sub:"One connected workflow"}].map((x)=><div key={x.label} className="flex items-center justify-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300"><x.icon className="h-5 w-5" /></span><div><p className="text-xs font-extrabold text-white sm:text-sm">{x.label}</p><p className="mt-1 text-[10px] text-slate-500 sm:text-xs">{x.sub}</p></div></div>)}</div></section>
+      <WorkflowDemo />
+
+      <section className="relative z-10 border-y border-white/[0.07] bg-white/[0.02] py-7"><div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 px-5 sm:grid-cols-4 sm:px-7">{[{icon:Phone,label:"AI Phone",sub:"Answer calls 24/7"},{icon:MessageCircle,label:"AI Messaging",sub:"Reply across channels"},{icon:Calendar,label:"Smart Booking",sub:"Move leads to jobs"},{icon:Zap,label:"All-in-One",sub:"One connected workflow"}].map((x)=><div key={x.label} className="flex items-center justify-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300"><x.icon className="h-5 w-5" /></span><div><p className="text-xs font-extrabold text-white sm:text-sm">{x.label}</p><p className="mt-1 text-[10px] text-slate-500 sm:text-xs">{x.sub}</p></div></div>)}</div></section>
 
       <section id="features" className="relative z-10 py-24 sm:py-28"><div className="mx-auto max-w-7xl px-5 sm:px-7 lg:px-8"><SectionHeading eyebrow="Everything in One Place" title="Run customer communication smarter" description="Let AI help handle customer conversations, qualify leads, answer calls, collect job details, follow up, and move customers toward booked appointments." /><div className="mt-16 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{features.map((item)=><div key={item.title} className="group rounded-3xl border border-white/[0.09] bg-gradient-to-br from-white/[0.075] to-white/[0.018] p-7 shadow-[0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-blue-400/40 hover:shadow-[0_20px_60px_rgba(0,70,220,0.14)]"><div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-blue-300/20 bg-gradient-to-br from-blue-400/25 to-blue-700/10 text-blue-300 shadow-[0_0_25px_rgba(37,99,235,0.12)]"><item.icon className="h-6 w-6" /></div><h3 className="text-lg font-extrabold text-white">{item.title}</h3><p className="mt-3 text-sm leading-7 text-slate-400">{item.text}</p></div>)}</div><div className="mt-10 flex flex-wrap items-center justify-center gap-7 text-sm font-semibold text-slate-400"><span className="flex items-center gap-2"><Instagram className="h-5 w-5 text-pink-400" />Instagram</span><span className="flex items-center gap-2"><Facebook className="h-5 w-5 text-blue-400" />Facebook</span><span className="flex items-center gap-2"><MessageCircle className="h-5 w-5 text-emerald-400" />WhatsApp</span></div></div></section>
 
