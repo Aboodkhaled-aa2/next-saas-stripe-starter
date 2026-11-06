@@ -24,15 +24,11 @@ export const pricingData: SubscriptionPlan[] = [
     limitations: [],
     prices: {
       monthly: 49,
-      yearly: 490,
     },
     stripeIds: {
       monthly:
         env.NEXT_PUBLIC_STRIPE_STARTER_MONTHLY_PLAN_ID ||
         "price_placeholder_starter",
-      yearly:
-        env.NEXT_PUBLIC_STRIPE_STARTER_YEARLY_PLAN_ID ||
-        "price_placeholder_starter_yearly",
     },
   },
   {
@@ -58,15 +54,11 @@ export const pricingData: SubscriptionPlan[] = [
     limitations: [],
     prices: {
       monthly: 99,
-      yearly: 990,
     },
     stripeIds: {
       monthly:
         env.NEXT_PUBLIC_STRIPE_BUSINESS_MONTHLY_PLAN_ID ||
         "price_placeholder_business",
-      yearly:
-        env.NEXT_PUBLIC_STRIPE_BUSINESS_YEARLY_PLAN_ID ||
-        "price_placeholder_business_yearly",
     },
   },
   {
@@ -93,15 +85,11 @@ export const pricingData: SubscriptionPlan[] = [
     limitations: [],
     prices: {
       monthly: 249,
-      yearly: 2490,
     },
     stripeIds: {
       monthly:
         env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PLAN_ID ||
         "price_placeholder_pro",
-      yearly:
-        env.NEXT_PUBLIC_STRIPE_PRO_YEARLY_PLAN_ID ||
-        "price_placeholder_pro_yearly",
     },
   },
 ];
