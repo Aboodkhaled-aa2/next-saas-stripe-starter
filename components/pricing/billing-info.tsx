@@ -18,13 +18,9 @@ interface BillingInfoProps extends React.HTMLAttributes<HTMLDivElement> {
   userSubscriptionPlan: UserSubscriptionPlan;
 }
 
-function formatPrice(amount: number, interval: "month" | "year" | null) {
+function formatPrice(amount: number, interval: "month" | null) {
   if (!interval) return null;
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(amount) + (interval === "month" ? " / month" : " / year");
+  return new Intl.NumberFormat("en-US", {\n    style: "currency",\n    currency: "USD",\n    maximumFractionDigits: 0,\n  }).format(amount) + " / month";
 }
 
 export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
@@ -41,8 +37,7 @@ export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
     prices,
   } = userSubscriptionPlan;
 
-  const currentPrice =
-    interval === "year" ? prices.yearly : interval === "month" ? prices.monthly : null;
+  const currentPrice = interval === "month" ? prices.monthly : null;
   const includedAiReplies =
     title.toLowerCase() === "pro"
       ? 15000
@@ -110,7 +105,7 @@ export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
                   Billing interval
                 </p>
                 <p className="mt-2 text-base font-semibold text-white">
-                  {interval === "year" ? "Annual billing" : "Monthly billing"}
+                  Monthly billing
                 </p>
               </div>
               <div className="rounded-lg border border-slate-800 bg-slate-900/70 p-4 sm:col-span-2">
