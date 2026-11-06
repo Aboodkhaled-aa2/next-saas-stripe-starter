@@ -18,8 +18,8 @@ const faqs = [
 
 const plans = [
   { key: "starter", name: "Starter", subtitle: "AI Customer Messaging", price: "$49", description: "Essential AI messaging and lead management for growing cleaning teams.", icon: MessageCircle, features: ["AI Customer Messaging", "3,000 AI Replies / Month", "Instagram, Facebook & WhatsApp", "Lead Capture & Customer Inbox", "Business Knowledge, FAQs & Conversation History"] },
-  { key: "business", name: "Business", subtitle: "AI Voice Receptionist", price: "$99", description: "Full AI automation with voice reception and advanced booking workflows.", icon: Phone, popular: true, features: ["Everything in Starter", "AI Voice Receptionist", "6,000 AI Replies / Month", "200 Voice Minutes / Month", "Appointment Booking, Calendar & Automated Follow-Ups"] },
-  { key: "pro", name: "Pro", subtitle: "Advanced AI Receptionist", price: "$249", description: "Advanced AI automation with higher voice usage and advanced controls.", icon: Sparkles, features: ["Everything in Business", "15,000 AI Replies / Month", "500 Voice Minutes / Month", "Advanced Call Handling & Call Transfer", "Custom Booking Rules & AI Knowledge Base", "Dedicated Business Phone Number Included at No Extra Cost"] },
+  { key: "business", name: "Business", subtitle: "AI Voice Receptionist", price: "$99", description: "Full AI automation with voice reception and advanced booking workflows.", icon: Phone, popular: true, features: ["Everything in Starter", "AI Voice Receptionist", "Dedicated Business Phone Number Included", "6,000 AI Replies / Month", "200 Voice Minutes / Month", "Appointment Booking, Calendar & Automated Follow-Ups"] },
+  { key: "pro", name: "Pro", subtitle: "Advanced AI Receptionist", price: "$249", description: "Advanced AI automation with a dedicated business phone number, higher voice usage, and advanced controls.", icon: Sparkles, features: ["Everything in Business", "15,000 AI Replies / Month", "500 Voice Minutes / Month", "Advanced Call Handling & Call Transfer", "Custom Booking Rules & AI Knowledge Base", "Dedicated Business Phone Number Included at No Extra Cost"] },
 ];
 
 const features = [
