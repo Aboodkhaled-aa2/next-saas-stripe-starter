@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { getCurrentUser } from "@/lib/session";
+import { prisma } from "@/lib/db";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
 import { constructMetadata } from "@/lib/utils";
 import { ComparePlans } from "@/components/pricing/compare-plans";
@@ -43,6 +44,20 @@ export default async function PricingPage() {
     );
   }
 
+  const trialState = user?.id
+    ? await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { trialEndsAt: true, hasSelectedPlan: true },
+      })
+    : null;
+
+  const isTrialPlanSelection = Boolean(
+    trialState &&
+      !trialState.hasSelectedPlan &&
+      trialState.trialEndsAt &&
+      trialState.trialEndsAt > new Date(),
+  );
+
   const subscriptionPlan =
     user && user.id
       ? await getUserSubscriptionPlan(user.id).catch(() => null)
@@ -53,6 +68,7 @@ export default async function PricingPage() {
       <PricingCards
         userId={user?.id}
         subscriptionPlan={subscriptionPlan ?? undefined}
+        isTrialPlanSelection={isTrialPlanSelection}
       />
 
       <hr className="container border-slate-800" />
