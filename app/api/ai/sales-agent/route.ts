@@ -23,9 +23,7 @@ function buildSalesKnowledge() {
           plan.title +
           ": $" +
           plan.prices.monthly +
-          "/month or $" +
-          plan.prices.yearly +
-          "/year.",
+          "/month.",
       )
       .join("\n"),
     trial:
