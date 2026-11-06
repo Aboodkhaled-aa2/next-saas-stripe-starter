@@ -17,15 +17,17 @@ import MaxWidthWrapper from "@/components/shared/max-width-wrapper";
 interface PricingCardsProps {
   userId?: string;
   subscriptionPlan?: UserSubscriptionPlan;
+  isTrialPlanSelection?: boolean;
 }
 
 export function PricingCards({
   userId,
   subscriptionPlan,
+  isTrialPlanSelection = false,
 }: PricingCardsProps) {
   const { setShowSignInModal } = useContext(ModalContext);
   const searchParams = useSearchParams();
-  const choosingTrialPlan = searchParams.get("choose") === "1";
+  const choosingTrialPlan = isTrialPlanSelection || searchParams.get("choose") === "1";
   const [selectingPlan, setSelectingPlan] = useState<string | null>(null);
   const [planError, setPlanError] = useState<string | null>(null);
 
