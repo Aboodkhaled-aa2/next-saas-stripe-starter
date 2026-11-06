@@ -81,13 +81,30 @@ export const {
         googleProfile?.email_verified === true &&
         user.id
       ) {
-        // Do not reject a valid Google OAuth sign-in if the user row is
-        // temporarily unavailable during the adapter callback sequence.
-        // updateMany is non-throwing when no matching row exists.
+        const now = new Date();
+        const trialStartedAt = now;
+        const trialEndsAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+        // Verify the Google email and grant the one-time trial only when
+        // this account has never had trial dates. Existing or expired trials
+        // are preserved and are never restarted by signing in again.
         await prisma.user.updateMany({
           where: { id: user.id },
           data: {
-            emailVerified: user.email ? new Date() : undefined,
+            emailVerified: user.email ? now : undefined,
+          },
+        });
+
+        await prisma.user.updateMany({
+          where: {
+            id: user.id,
+            trialStartedAt: null,
+            trialEndsAt: null,
+          },
+          data: {
+            trialStartedAt,
+            trialEndsAt,
+            hasSelectedPlan: false,
           },
         });
       }
