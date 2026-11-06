@@ -248,7 +248,7 @@ async function canUseMessaging(
 
     periodStart = new Date(subscription.current_period_start * 1000);
     periodEnd = new Date(subscription.current_period_end * 1000);
-    limit = user.plan === "PRO" ? 15000 : user.plan === "BUSINESS" ? 6000 : 3000;
+    limit = user.plan === "PRO" ? 15000 : user.plan === "BUSINESS" ? 6000 : 2000;
   }
 
   // Only AI-generated outbound replies count. Incoming customer messages are never deducted.
