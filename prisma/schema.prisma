@@ -160,7 +160,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   role          UserRole  @default(USER)
   plan          Plan      @default(STARTER)
-  hasSelectedPlan Boolean @default(true) @map("has_selected_plan")
+  hasSelectedPlan Boolean @default(false) @map("has_selected_plan")
 
   accounts Account[]
   sessions Session[]
