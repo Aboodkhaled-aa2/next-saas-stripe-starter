@@ -60,13 +60,17 @@ export async function getUserSubscriptionPlan(
     Boolean(user.stripePriceId) &&
     currentPeriodEnd + 86_400_000 > Date.now();
 
-  const userPlan = pricingData.find(\n    (plan) => plan.stripeIds.monthly === user.stripePriceId,\n  );
+  const userPlan = pricingData.find(
+    (plan) => plan.stripeIds.monthly === user.stripePriceId,
+  );
 
   const plan = isPaid && userPlan ? userPlan : pricingData[0];
 
   let interval: "month" | null = null;
 
-  if (isPaid && userPlan && userPlan.stripeIds.monthly === user.stripePriceId) {\n    interval = "month";\n  }
+  if (isPaid && userPlan && userPlan.stripeIds.monthly === user.stripePriceId) {
+    interval = "month";
+  }
 
   let isCanceled = false;
 
