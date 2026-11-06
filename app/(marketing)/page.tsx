@@ -18,7 +18,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const faqs = [
   {
@@ -119,7 +119,22 @@ export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 selection:bg-blue-500 selection:text-white">
+    <main className="min-h-screen overflow-hidden bg-[#050918] text-slate-100 selection:bg-blue-500 selection:text-white">
+      <style jsx global>{`
+        @keyframes scd-float { 0%,100% { transform:translate3d(0,0,0) rotateY(-12deg) rotateX(4deg); } 50% { transform:translate3d(0,-17px,18px) rotateY(-7deg) rotateX(1deg); } }
+        @keyframes scd-bob { 0%,100% { transform:translate3d(0,0,0) rotateY(10deg); } 50% { transform:translate3d(0,-13px,20px) rotateY(16deg); } }
+        @keyframes scd-glow { 0%,100% { opacity:.45; transform:scale(.92); } 50% { opacity:.85; transform:scale(1.08); } }
+        @keyframes scd-orbit { from { transform:rotate(0deg) translateX(10px) rotate(0deg); } to { transform:rotate(360deg) translateX(10px) rotate(-360deg); } }
+        .scd-float { animation:scd-float 7s ease-in-out infinite; transform-style:preserve-3d; will-change:transform; }
+        .scd-bob { animation:scd-bob 5.5s ease-in-out infinite; transform-style:preserve-3d; will-change:transform; }
+        .scd-glow { animation:scd-glow 4s ease-in-out infinite; }
+        .scd-orbit { animation:scd-orbit 18s linear infinite; }
+        .scd-scene { perspective:1300px; transform-style:preserve-3d; }
+        .scd-scene:hover .scd-float { animation-duration:3.8s; }
+        .scd-scene:hover .scd-bob { animation-duration:3s; }
+        @media(prefers-reduced-motion:reduce){.scd-float,.scd-bob,.scd-glow,.scd-orbit{animation:none!important}}
+      `}</style>
+
       {/* Navbar */}
       <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-6 lg:px-8">
@@ -182,85 +197,39 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-slate-950">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.25),transparent_40%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.12),transparent_35%)]" />
-
-        <div className="relative mx-auto max-w-7xl px-5 py-24 sm:px-6 sm:py-28 lg:px-8 lg:py-32">
-          <div className="mx-auto max-w-4xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-500/35 bg-blue-500/10 px-4 py-2 text-sm font-semibold text-blue-300">
-              <Sparkles className="h-4 w-4" />
-              24/7 AI Customer Service for Your Cleaning Business
+      <section className="relative isolate overflow-hidden bg-[#050918]">
+        <div className="pointer-events-none absolute -right-32 top-0 h-[620px] w-[620px] rounded-full bg-blue-600/20 blur-[120px] scd-glow"/>
+        <div className="pointer-events-none absolute -left-40 bottom-0 h-[420px] w-[420px] rounded-full bg-cyan-500/10 blur-[110px]"/>
+        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 py-20 sm:px-6 sm:py-24 lg:grid-cols-[1fr_1fr] lg:px-8 lg:py-28">
+          <div className="relative z-10">
+            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-4 py-2.5 text-xs font-bold text-blue-200 sm:text-sm"><Sparkles className="h-4 w-4"/>24/7 AI Customer Service for Cleaning Businesses</div>
+            <h1 className="max-w-2xl text-5xl font-black leading-[1.04] tracking-[-0.05em] text-white sm:text-6xl lg:text-[4.4rem]">Your Cleaning Business,<span className="mt-2 block bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-500 bg-clip-text text-transparent">Powered by AI. 24/7.</span></h1>
+            <p className="mt-7 max-w-xl text-base leading-8 text-slate-300 sm:text-lg">Answer every customer. Capture every lead. Book more jobs — even while you are busy cleaning. One AI employee for calls, messages, follow-ups, and bookings.</p>
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <Link href="/signup?plan=starter" className="inline-flex min-h-14 items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-cyan-400 via-blue-500 to-blue-600 px-7 py-4 text-sm font-extrabold text-white shadow-[0_12px_38px_rgba(37,99,235,.4)] transition hover:-translate-y-1 hover:shadow-[0_16px_45px_rgba(37,99,235,.55)]">Start Your AI Employee <ArrowRight className="h-4 w-4"/></Link>
+              <a href="#how-it-works" className="inline-flex min-h-14 items-center justify-center rounded-2xl border border-white/15 bg-white/[.04] px-7 py-4 text-sm font-bold text-white transition hover:border-blue-300/50 hover:bg-white/[.08]">See How It Works</a>
             </div>
-
-            <h1 className="text-4xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">
-              Your Cleaning Business,
-              <span className="block text-blue-400">
-                Powered by AI. 24/7.
-              </span>
-            </h1>
-
-            <p className="mx-auto mt-7 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
-              Answer every customer. Capture every lead. Book more jobs — even while you are busy cleaning.
-              Smart Cleaning Desk brings customer service, AI phone, lead capture,
-              follow-ups, and smart booking into one AI employee.
-            </p>
-
-            <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
-              <Link
-                href="/signup?plan=starter"
-                className="inline-flex h-13 items-center justify-center rounded-xl bg-blue-600 px-7 py-3.5 text-sm font-bold text-white shadow-xl shadow-blue-600/30 transition hover:bg-blue-500"
-              >
-                Start Your AI Employee
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-
-              <a
-                href="#pricing"
-                className="inline-flex h-13 items-center justify-center rounded-xl border border-slate-700 bg-slate-900/60 px-7 py-3.5 text-sm font-bold text-white transition hover:bg-slate-800"
-              >
-                View Pricing
-              </a>
-            </div>
-
-            <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-slate-800 bg-slate-900/80 p-4 text-left shadow-2xl shadow-black/20 sm:p-5">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600">
-                    <Sparkles className="h-4 w-4 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-white">AI Customer Service</p>
-                    <p className="text-xs text-emerald-400">Available 24/7</p>
-                  </div>
-                </div>
-                <MessageCircle className="h-5 w-5 text-slate-500" />
-              </div>
-              <div className="grid gap-3 pt-4 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-                <div className="rounded-2xl bg-blue-600 px-4 py-3 text-sm text-white">
-                  I need a deep cleaning for a 3-bedroom home this Saturday.
-                </div>
-                <ArrowRight className="hidden h-5 w-5 text-slate-600 sm:block" />
-                <div className="rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-slate-200">
-                  AI collects the details, checks your rules, and moves the customer toward booking.
+            <div className="mt-7 flex flex-wrap gap-x-6 gap-y-3 text-xs font-semibold text-slate-400 sm:text-sm"><span className="flex items-center gap-2"><Check className="h-4 w-4 text-blue-400"/>7-day free trial</span><span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-blue-400"/>No card at signup</span><span className="flex items-center gap-2"><Zap className="h-4 w-4 text-blue-400"/>Built for cleaning teams</span></div>
+          </div>
+          <div className="scd-scene relative mx-auto w-full max-w-[590px]">
+            <div className="scd-glow absolute left-1/2 top-1/2 h-[340px] w-[340px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/30 blur-[85px]"/>
+            <div className="absolute left-1/2 top-1/2 h-[390px] w-[390px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-blue-300/10"/>
+            <div className="scd-orbit absolute left-1/2 top-1/2 h-3 w-3 rounded-full bg-cyan-200 shadow-[0_0_24px_8px_rgba(34,211,238,.45)]"/>
+            <div className="relative min-h-[430px] sm:min-h-[510px]">
+              <div className="scd-float absolute right-0 top-8 z-10 w-[78%] rounded-[28px] border border-blue-200/30 bg-gradient-to-br from-blue-300/20 via-[#10234d]/95 to-[#080f25] p-3 shadow-[0_30px_90px_rgba(0,80,255,.28)] sm:p-4">
+                <div className="rounded-[20px] border border-white/10 bg-[#08132c]/95 p-4 sm:p-5">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-4"><div className="flex items-center gap-2.5"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white"><Sparkles className="h-4 w-4"/></span><div><p className="text-xs font-extrabold text-white">Business Overview</p><p className="text-[10px] text-emerald-300">AI employee active</p></div></div><span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-[9px] font-bold text-emerald-300">LIVE</span></div>
+                  <div className="mt-4 grid grid-cols-2 gap-3">{[{label:"New Leads",value:"24",icon:Users},{label:"Bookings",value:"18",icon:Calendar},{label:"Messages",value:"67",icon:MessageCircle},{label:"Calls Answered",value:"32",icon:Phone}].map((item)=><div key={item.label} className="rounded-xl border border-white/10 bg-white/[.045] p-3"><div className="flex items-center justify-between"><span className="text-[10px] text-slate-400">{item.label}</span><item.icon className="h-3.5 w-3.5 text-blue-300"/></div><p className="mt-2 text-2xl font-black text-white">{item.value}</p><p className="mt-1 text-[9px] text-emerald-300">↑ Active workflow</p></div>)}</div>
+                  <div className="mt-3 rounded-xl border border-blue-300/15 bg-blue-500/[.08] p-3"><div className="flex items-center gap-2 text-[10px] font-bold text-blue-200"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"/>AI is handling a new inquiry</div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full w-3/4 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500"/></div></div>
                 </div>
               </div>
-            </div>
-
-            <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3 text-sm text-slate-400">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-blue-400" />
-                Secure subscription
+              <div className="scd-bob absolute bottom-7 left-0 z-20 flex h-[190px] w-[190px] items-center justify-center rounded-[42%] border border-cyan-100/70 bg-gradient-to-br from-white via-blue-100 to-blue-500 shadow-[0_0_55px_rgba(34,160,255,.55),inset_-14px_-18px_35px_rgba(17,75,190,.35)] sm:bottom-8 sm:left-2 sm:h-[230px] sm:w-[230px]">
+                <div className="absolute inset-[12%] rounded-[42%] border border-white/60 bg-gradient-to-br from-[#10234d] via-[#07112a] to-[#020817] shadow-[inset_0_0_35px_rgba(30,130,255,.55)]"/>
+                <div className="relative z-10 flex flex-col items-center"><div className="mb-5 flex gap-5 sm:gap-7"><span className="h-5 w-7 rounded-full bg-cyan-300 shadow-[0_0_18px_#22d3ee] sm:h-7 sm:w-9"/><span className="h-5 w-7 rounded-full bg-cyan-300 shadow-[0_0_18px_#22d3ee] sm:h-7 sm:w-9"/></div><div className="h-3 w-10 rounded-b-full border-b-[4px] border-cyan-300"/><span className="mt-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-400 to-blue-700 text-white shadow-[0_0_25px_rgba(37,99,235,.8)]"><Sparkles className="h-7 w-7"/></span></div>
+                <span className="absolute -right-4 top-12 h-14 w-5 rounded-full border border-cyan-100/80 bg-gradient-to-b from-blue-100 to-blue-500"/><span className="absolute -left-4 top-12 h-14 w-5 rounded-full border border-cyan-100/80 bg-gradient-to-b from-blue-100 to-blue-500"/>
               </div>
-
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-blue-400" />
-                Built for cleaning businesses
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-blue-400" />
-                Customer management
-              </div>
+              <div className="absolute bottom-0 left-[18%] h-7 w-[55%] rounded-[50%] border border-cyan-200/80 bg-gradient-to-r from-blue-900 via-cyan-400 to-blue-900 shadow-[0_0_35px_rgba(34,211,238,.65)]"/>
+              <div className="absolute bottom-[42%] left-[3%] rounded-2xl border border-blue-200/20 bg-[#0b1731]/90 px-3 py-2 text-[10px] font-bold text-white shadow-xl backdrop-blur-xl"><span className="mr-2 inline-block h-2 w-2 rounded-full bg-emerald-400"/>AI Receptionist Online</div>
             </div>
           </div>
         </div>
