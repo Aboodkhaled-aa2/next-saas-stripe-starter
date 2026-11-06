@@ -84,7 +84,6 @@ export async function executeSalesAgentTool(
         plans: pricingData.map((plan) => ({
           name: plan.title,
           monthlyPrice: plan.prices.monthly,
-          yearlyPrice: plan.prices.yearly,
           description: plan.description,
           benefits: plan.benefits,
         })),
