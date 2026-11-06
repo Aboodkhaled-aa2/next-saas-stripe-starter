@@ -5,7 +5,7 @@ import {
   ArrowRight, Calendar, Check, ChevronDown, Clock, Facebook, Headphones,
   Instagram, MessageCircle, Phone, ShieldCheck, Sparkles, Star, Users, Zap,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const faqs = [
   { question: "Is there a free trial?", answer: "Yes. Every plan includes a 3-day free trial. Your subscription begins billing after the trial period ends." },
@@ -33,6 +33,67 @@ const features = [
 
 function SectionHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
   return <div className="mx-auto max-w-3xl text-center"><div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-400/25 bg-blue-400/[0.08] px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-300"><Sparkles className="h-3.5 w-3.5" />{eyebrow}</div><h2 className="text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl">{title}</h2><p className="mt-5 text-base leading-8 text-slate-400 sm:text-lg">{description}</p></div>;
+}
+
+
+const demoSteps = [
+  { label: "New customer message", title: "A customer needs a deep clean", detail: "A new conversation arrives through your connected channel.", status: "New inquiry", message: "Hi! I need a deep cleaning for my 3-bedroom home this Saturday.", action: "AI detects a new lead", icon: MessageCircle },
+  { label: "AI replies instantly", title: "The AI employee starts the conversation", detail: "It responds, asks the right questions, and keeps the customer engaged.", status: "Reply sent", message: "Absolutely! I can help with that. May I confirm your ZIP code and preferred time?", action: "Customer conversation active", icon: Sparkles },
+  { label: "Details collected", title: "The job details are organized", detail: "Service type, home size, location, and preferred date are captured.", status: "Details collected", message: "Deep cleaning · 3 bedrooms · Saturday · Preferred time: 10:00 AM", action: "Lead profile updated", icon: Check },
+  { label: "Availability checked", title: "The schedule is checked", detail: "The requested time is checked against the business availability.", status: "Slot available", message: "Saturday · 10:00 AM is available for this service area.", action: "Available time found", icon: Calendar },
+  { label: "Booking created", title: "The booking is added to the business", detail: "The customer and job details appear in the business workflow.", status: "Booking created", message: "Deep Cleaning · 3-bedroom home · Saturday at 10:00 AM", action: "Ready for the team", icon: Calendar },
+];
+
+function WorkflowDemo() {
+  const [step, setStep] = useState(0);
+  const [paused, setPaused] = useState(false);
+  useEffect(() => {
+    if (paused) return;
+    const timer = window.setInterval(() => setStep((current) => (current + 1) % demoSteps.length), 3200);
+    return () => window.clearInterval(timer);
+  }, [paused]);
+  const current = demoSteps[step];
+  const StepIcon = current.icon;
+  return (
+    <section className="relative z-10 px-5 pb-24 sm:px-7 lg:px-8 lg:pb-32">
+      <div className="mx-auto max-w-7xl overflow-hidden rounded-[30px] border border-white/10 bg-[#080f20] shadow-[0_35px_100px_rgba(0,0,0,0.42)] sm:rounded-[38px]">
+        <div className="grid lg:grid-cols-[0.78fr_1.22fr]">
+          <div className="flex flex-col justify-between border-b border-white/10 p-7 sm:p-10 lg:border-b-0 lg:border-r lg:p-12">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/25 bg-blue-400/[0.08] px-3.5 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-blue-300"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"/> Live product walkthrough</div>
+              <h2 className="mt-7 max-w-lg text-3xl font-black leading-tight tracking-[-0.04em] text-white sm:text-4xl">From the first message to a booked cleaning job.</h2>
+              <p className="mt-5 max-w-md text-sm leading-7 text-slate-400 sm:text-base">See how Smart Cleaning Desk helps your business respond, collect job details, check availability, and organize bookings — while you focus on the work.</p>
+            </div>
+            <div className="mt-9">
+              <div className="mb-4 flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500"><span>Customer journey</span><span className="text-blue-300">{String(step + 1).padStart(2,"0")} / 05</span></div>
+              <div className="flex gap-2">{demoSteps.map((item,index)=><button key={item.label} type="button" aria-label={item.label} onClick={()=>setStep(index)} className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${index<=step?"bg-blue-400 shadow-[0_0_12px_rgba(96,165,250,0.65)]":"bg-white/10"}`}/>)}</div>
+              <div className="mt-5 flex items-center justify-between gap-3"><button type="button" onClick={()=>setPaused(!paused)} className="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-2.5 text-xs font-bold text-slate-300 transition hover:border-blue-300/40 hover:text-white">{paused?"Play demo":"Pause demo"}</button><button type="button" onClick={()=>setStep((step+1)%demoSteps.length)} className="inline-flex items-center gap-2 text-xs font-bold text-blue-300 transition hover:text-white">Next step <ArrowRight className="h-3.5 w-3.5"/></button></div>
+            </div>
+          </div>
+          <div className="relative min-h-[470px] overflow-hidden bg-[radial-gradient(ellipse_at_70%_20%,rgba(37,99,235,0.19),transparent_42%),linear-gradient(145deg,#0c1730,#080e1d_70%)] p-5 sm:p-9 lg:min-h-[570px] lg:p-12">
+            <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full border border-blue-300/10"/><div className="pointer-events-none absolute -right-8 -top-12 h-52 w-52 rounded-full border border-blue-300/[0.07]"/>
+            <div className="relative mx-auto max-w-xl">
+              <div className="mb-5 flex items-center justify-between"><div className="flex items-center gap-2.5"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-400 to-blue-700 text-white shadow-lg shadow-blue-500/20"><Sparkles className="h-4 w-4"/></span><div><p className="text-xs font-extrabold text-white">Smart Cleaning Desk</p><p className="mt-0.5 text-[10px] text-slate-500">AI employee workspace</p></div></div><span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-3 py-1.5 text-[10px] font-bold text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400"/> Active</span></div>
+              <div className="rounded-[24px] border border-white/10 bg-[#0b1428]/90 p-4 shadow-[0_25px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-6">
+                <div className="flex items-center justify-between border-b border-white/[0.08] pb-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">Customer conversation</p><p className="mt-1 text-sm font-bold text-white">New cleaning inquiry</p></div><span className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[10px] text-slate-400">Demo</span></div>
+                <div className="min-h-[150px] space-y-4 py-5">
+                  <div className="flex justify-start"><div className="max-w-[88%] rounded-2xl rounded-tl-sm border border-white/10 bg-white/[0.055] px-4 py-3"><p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">Customer</p><p className="text-xs leading-6 text-slate-200 sm:text-sm">{step===0?current.message:demoSteps[0].message}</p></div></div>
+                  <div className="flex justify-end"><div className="max-w-[91%] rounded-2xl rounded-tr-sm border border-blue-300/20 bg-gradient-to-br from-blue-600 to-blue-700 px-4 py-3 shadow-lg shadow-blue-950/40"><p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-blue-100/70">AI employee</p><p className="text-xs leading-6 text-white sm:text-sm">{step===0?"Your AI employee is ready to respond.":demoSteps[Math.min(step,1)].message}</p></div></div>
+                </div>
+                <div className="rounded-2xl border border-white/[0.08] bg-[#070d1a] p-4">
+                  <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/15 text-blue-300"><StepIcon className="h-4 w-4"/></span><div><p className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-500">Workflow status</p><p className="mt-0.5 text-xs font-extrabold text-white">{current.title}</p></div></div><span className="whitespace-nowrap rounded-full border border-blue-300/20 bg-blue-400/10 px-2.5 py-1 text-[9px] font-bold text-blue-200">{current.status}</span></div>
+                  <p className="mt-3 text-[11px] leading-6 text-slate-400">{current.detail}</p>
+                  <div className="mt-4 flex items-center gap-2 border-t border-white/[0.07] pt-3 text-[10px] font-semibold text-emerald-300"><Check className="h-3.5 w-3.5"/>{current.action}</div>
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-2.5">{[{label:"Lead",value:step>=2?"Captured":"Incoming"},{label:"Schedule",value:step>=3?"Checked":"Pending"},{label:"Booking",value:step>=4?"Created":"Pending"}].map((item)=><div key={item.label} className="rounded-xl border border-white/[0.08] bg-white/[0.035] px-3 py-3"><p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{item.label}</p><p className={`mt-1.5 text-[10px] font-extrabold sm:text-xs ${item.value==="Pending"||item.value==="Incoming"?"text-slate-400":"text-emerald-300"}`}>{item.value}</p></div>)}</div>
+              <p className="mt-3 text-center text-[9px] text-slate-600">Illustrative product walkthrough · Not a live customer booking</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export default function LandingPage() {
@@ -85,7 +146,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="relative z-10 border-y border-white/[0.07] bg-white/[0.02] py-7"><div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 px-5 sm:grid-cols-4 sm:px-7">{[{icon:Phone,label:"AI Phone",sub:"Answer calls 24/7"},{icon:MessageCircle,label:"AI Messaging",sub:"Reply across channels"},{icon:Calendar,label:"Smart Booking",sub:"Move leads to jobs"},{icon:Zap,label:"All-in-One",sub:"One connected workflow"}].map((x)=><div key={x.label} className="flex items-center justify-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300"><x.icon className="h-5 w-5" /></span><div><p className="text-xs font-extrabold text-white sm:text-sm">{x.label}</p><p className="mt-1 text-[10px] text-slate-500 sm:text-xs">{x.sub}</p></div></div>)}</div></section>
+      <WorkflowDemo />\n\n      <section className="relative z-10 border-y border-white/[0.07] bg-white/[0.02] py-7"><div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 px-5 sm:grid-cols-4 sm:px-7">{[{icon:Phone,label:"AI Phone",sub:"Answer calls 24/7"},{icon:MessageCircle,label:"AI Messaging",sub:"Reply across channels"},{icon:Calendar,label:"Smart Booking",sub:"Move leads to jobs"},{icon:Zap,label:"All-in-One",sub:"One connected workflow"}].map((x)=><div key={x.label} className="flex items-center justify-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300"><x.icon className="h-5 w-5" /></span><div><p className="text-xs font-extrabold text-white sm:text-sm">{x.label}</p><p className="mt-1 text-[10px] text-slate-500 sm:text-xs">{x.sub}</p></div></div>)}</div></section>
 
       <section id="features" className="relative z-10 py-24 sm:py-28"><div className="mx-auto max-w-7xl px-5 sm:px-7 lg:px-8"><SectionHeading eyebrow="Everything in One Place" title="Run customer communication smarter" description="Let AI help handle customer conversations, qualify leads, answer calls, collect job details, follow up, and move customers toward booked appointments." /><div className="mt-16 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{features.map((item)=><div key={item.title} className="group rounded-3xl border border-white/[0.09] bg-gradient-to-br from-white/[0.075] to-white/[0.018] p-7 shadow-[0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-blue-400/40 hover:shadow-[0_20px_60px_rgba(0,70,220,0.14)]"><div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-blue-300/20 bg-gradient-to-br from-blue-400/25 to-blue-700/10 text-blue-300 shadow-[0_0_25px_rgba(37,99,235,0.12)]"><item.icon className="h-6 w-6" /></div><h3 className="text-lg font-extrabold text-white">{item.title}</h3><p className="mt-3 text-sm leading-7 text-slate-400">{item.text}</p></div>)}</div><div className="mt-10 flex flex-wrap items-center justify-center gap-7 text-sm font-semibold text-slate-400"><span className="flex items-center gap-2"><Instagram className="h-5 w-5 text-pink-400" />Instagram</span><span className="flex items-center gap-2"><Facebook className="h-5 w-5 text-blue-400" />Facebook</span><span className="flex items-center gap-2"><MessageCircle className="h-5 w-5 text-emerald-400" />WhatsApp</span></div></div></section>
 
