@@ -34,10 +34,11 @@ export const pricingData: SubscriptionPlan[] = [
   {
     title: "Business",
     description:
-      "Full AI automation with voice reception and advanced booking workflows.",
+      "Full AI automation with a dedicated business phone number, voice reception, and advanced booking workflows.",
     benefits: [
       "Everything in Starter",
       "AI Voice Receptionist",
+      "Dedicated Business Phone Number Included",
       "6,000 AI Replies / Month",
       "200 Voice Minutes / Month — Additional minutes available as add-ons",
       "Appointment Booking",
@@ -64,10 +65,10 @@ export const pricingData: SubscriptionPlan[] = [
   {
     title: "Pro",
     description:
-      "Advanced AI automation with higher voice usage, dedicated phone service, and advanced controls.",
+      "Advanced AI automation with a dedicated business phone number, higher voice usage, and advanced controls.",
     benefits: [
       "Everything in Business",
-      "Dedicated Business Phone Number Available as an Add-on",
+      "Dedicated Business Phone Number Included at No Extra Cost",
       "15,000 AI Replies / Month",
       "500 Voice Minutes / Month — Additional minutes available as add-ons",
       "Advanced Call Handling",
@@ -156,8 +157,8 @@ export const comparePlans: PlansRow[] = [
   {
     feature: "Dedicated Business Phone Number",
     starter: false,
-    business: "Available as Add-on",
-    pro: "Available as Add-on",
+    business: "Included",
+    pro: "Included",
   },
   {
     feature: "Advanced Call Handling & Transfer",
