@@ -8,7 +8,7 @@ export const pricingData: SubscriptionPlan[] = [
       "Essential AI messaging and lead management for growing cleaning teams.",
     benefits: [
       "AI Customer Messaging",
-      "3,000 AI Replies / Month",
+      "2,000 AI Replies / Month",
       "Instagram",
       "Facebook",
       "WhatsApp",
@@ -111,7 +111,7 @@ export const plansColumns = ["starter", "business", "pro"] as const;
 export const comparePlans: PlansRow[] = [
   {
     feature: "AI Replies / Month",
-    starter: "3,000",
+    starter: "2,000",
     business: "6,000",
     pro: "15,000",
   },
