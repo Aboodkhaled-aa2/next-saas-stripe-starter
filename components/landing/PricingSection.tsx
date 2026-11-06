@@ -74,6 +74,7 @@ export default function PricingSection() {
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>Calendar Integration</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>Review Requests</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>Customer Management</span></div>
+                <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>Dedicated Business Phone Number Included</span></div>
               </div>
             </div>
 
@@ -98,7 +99,7 @@ export default function PricingSection() {
 
               <div className="space-y-3 text-sm border-t border-white/10 pt-6">
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-cyan-400" /><span>Everything in Business</span></div>
-                <div className="flex items-center gap-3 font-medium text-white"><Check className="w-4 h-4 text-cyan-400" /><span>Dedicated Phone Number</span></div>
+                <div className="flex items-center gap-3 font-medium text-white"><Check className="w-4 h-4 text-cyan-400" /><span>Dedicated Business Phone Number Included</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-cyan-400" /><span>AI Messaging — 15,000 replies/month</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-cyan-400" /><span>AI Voice — 500 min/month</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-cyan-400" /><span>Advanced Lead Management</span></div>
@@ -124,7 +125,7 @@ export default function PricingSection() {
           </div>
           <div className="text-left">
             <h4 className="font-bold text-base">Get Your Own Business Phone Number</h4>
-            <p className="text-zinc-400 text-sm">A dedicated number for your cleaning business. Customers can call and talk to your AI receptionist 24/7.</p>
+            <p className="text-zinc-400 text-sm">A dedicated business phone number is included at no extra cost with Business and Pro plans.</p>
           </div>
         </div>
 
