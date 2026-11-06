@@ -8,7 +8,7 @@ import {
 import { useEffect, useState } from "react";
 
 const faqs = [
-  { question: "Is there a free trial?", answer: "Yes. Every plan includes a 3-day free trial. Your subscription begins billing after the trial period ends." },
+  { question: "Is there a free trial?", answer: "Yes. Every plan includes a 7-day free trial with no credit card required at signup. Your subscription begins after the trial period ends." },
   { question: "What happens after I subscribe?", answer: "After your payment is successfully verified, your subscription becomes active. You can then complete your business setup and configure the AI employee using your company information, services, rules, and customer workflow." },
   { question: "What are Voice AI minutes?", answer: "Voice AI minutes are the monthly calling minutes included with Business and Pro plans. Starter does not include Voice AI. Additional voice minutes can be purchased when your included balance is used." },
   { question: "Can I upgrade my plan?", answer: "Yes. You can move to a higher plan when your business needs more automation, voice minutes, calling features, or advanced AI capabilities." },
