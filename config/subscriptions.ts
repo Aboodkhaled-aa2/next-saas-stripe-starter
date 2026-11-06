@@ -8,6 +8,7 @@ export const pricingData: SubscriptionPlan[] = [
       "Essential AI messaging and lead management for growing cleaning teams.",
     benefits: [
       "AI Customer Messaging",
+      "3,000 AI Replies / Month",
       "Instagram",
       "Facebook",
       "WhatsApp",
@@ -41,6 +42,7 @@ export const pricingData: SubscriptionPlan[] = [
     benefits: [
       "Everything in Starter",
       "AI Voice Receptionist",
+      "6,000 AI Replies / Month",
       "200 Voice Minutes / Month — Additional minutes available as add-ons",
       "Appointment Booking",
       "Calendar Integration",
@@ -74,6 +76,7 @@ export const pricingData: SubscriptionPlan[] = [
     benefits: [
       "Everything in Business",
       "Dedicated Business Phone Number Available as an Add-on",
+      "15,000 AI Replies / Month",
       "500 Voice Minutes / Month — Additional minutes available as add-ons",
       "Advanced Call Handling",
       "Call Transfer",
@@ -106,6 +109,12 @@ export const pricingData: SubscriptionPlan[] = [
 export const plansColumns = ["starter", "business", "pro"] as const;
 
 export const comparePlans: PlansRow[] = [
+  {
+    feature: "AI Replies / Month",
+    starter: "3,000",
+    business: "6,000",
+    pro: "15,000",
+  },
   {
     feature: "AI Customer Messaging",
     starter: true,
