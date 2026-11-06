@@ -24,7 +24,7 @@ const faqs = [
   {
     question: "Is there a free trial?",
     answer:
-      "Yes. Every plan includes a 3-day free trial. Your subscription begins billing after the trial period ends.",
+      "Yes. Every plan includes a 7-day free trial. Your subscription begins billing after the trial period ends.",
   },
   {
     question: "What happens after I subscribe?",
