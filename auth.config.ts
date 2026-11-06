@@ -11,6 +11,9 @@ export default {
     Google({
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
+      // Google verifies email ownership; allow linking to an existing account
+      // with the same verified email instead of failing with OAuthAccountNotLinked.
+      allowDangerousEmailAccountLinking: true,
     }),
 
     Resend({
