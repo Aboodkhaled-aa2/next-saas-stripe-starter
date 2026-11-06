@@ -133,6 +133,26 @@ export function PricingCards({
           )}
         </div>
 
+        <div className="mb-6 grid grid-cols-1 gap-3 rounded-xl border border-blue-500/20 bg-blue-950/20 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm text-gray-300">AI Messages / Month</span>
+            <span className="text-sm font-bold text-white">
+              {offer.title === "Pro" ? "15,000" : offer.title === "Business" ? "6,000" : "3,000"}
+            </span>
+          </div>
+          {offer.title !== "Starter" && (
+            <div className="flex items-center justify-between gap-3 border-t border-gray-800 pt-3">
+              <span className="text-sm text-gray-300">AI Voice Minutes / Month</span>
+              <span className="text-sm font-bold text-white">
+                {offer.title === "Pro" ? "500" : "200"}
+              </span>
+            </div>
+          )}
+          <p className="text-xs leading-5 text-gray-500">
+            One shared message allowance across Facebook, Instagram, and WhatsApp. Incoming messages and outgoing AI replies both count.
+          </p>
+        </div>
+
         <div className="mt-auto border-t border-gray-800/80 pt-6">
           <p className="mb-4 text-xs font-bold uppercase tracking-wider text-gray-400">
             INCLUDES
