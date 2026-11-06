@@ -196,15 +196,7 @@ async function canUseMessaging(
   const isTrial = !user.stripeSubscriptionId &&
     Boolean(user.trialStartedAt && user.trialEndsAt && user.trialEndsAt > now);
 
-  // WhatsApp is paid-only. The free trial allowance is shared by Facebook + Instagram.
-  if (isTrial && channel === "WHATSAPP") {
-    return {
-      allowed: false,
-      remaining: 0,
-      usesExtraCredit: false,
-      reason: "WhatsApp messaging is available after activating a paid subscription.",
-    };
-  }
+  // Trial and paid allowances are shared across Facebook, Instagram, and WhatsApp.
 
   let periodStart: Date;
   let periodEnd: Date;
@@ -251,20 +243,12 @@ async function canUseMessaging(
     limit = user.plan === "PRO" ? 15000 : user.plan === "BUSINESS" ? 6000 : 3000;
   }
 
-  // Only AI-generated outbound replies count. Incoming customer messages are never deducted.
-  // Trial usage is shared by Facebook + Instagram; paid usage is shared by all three channels.
+  // Count every customer message received and every AI reply sent across all channels.
   const usageWhere = {
-    direction: "OUTBOUND",
     createdAt: { gte: periodStart, lt: periodEnd },
-    OR: [
-      { metadata: { path: ["aiResponseId"], not: "" } },
-      { metadata: { path: ["quotaReservationId"], not: "" } },
-    ],
     conversation: {
       userId,
-      ...(isTrial
-        ? { channel: { in: ["FACEBOOK", "INSTAGRAM"] } }
-        : { channel: { in: ["FACEBOOK", "INSTAGRAM", "WHATSAPP"] } }),
+      channel: { in: ["FACEBOOK", "INSTAGRAM", "WHATSAPP"] },
     },
   };
 
@@ -306,17 +290,10 @@ async function reserveMessagingAllowance(
 
     const used = await tx.message.count({
       where: {
-        direction: "OUTBOUND",
         createdAt: { gte: periodStart, lt: periodEnd },
-        OR: [
-          { metadata: { path: ["aiResponseId"], not: "" } },
-          { metadata: { path: ["quotaReservationId"], not: "" } },
-        ],
         conversation: {
           userId,
-          ...(isTrial
-            ? { channel: { in: ["FACEBOOK", "INSTAGRAM"] } }
-            : { channel: { in: ["FACEBOOK", "INSTAGRAM", "WHATSAPP"] } }),
+          channel: { in: ["FACEBOOK", "INSTAGRAM", "WHATSAPP"] },
         },
       },
     });
