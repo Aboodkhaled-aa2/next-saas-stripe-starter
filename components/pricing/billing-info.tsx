@@ -20,7 +20,11 @@ interface BillingInfoProps extends React.HTMLAttributes<HTMLDivElement> {
 
 function formatPrice(amount: number, interval: "month" | null) {
   if (!interval) return null;
-  return new Intl.NumberFormat("en-US", {\n    style: "currency",\n    currency: "USD",\n    maximumFractionDigits: 0,\n  }).format(amount) + " / month";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(amount) + " / month";
 }
 
 export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
