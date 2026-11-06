@@ -150,7 +150,7 @@ function SignupForm() {
 
     try {
       await signIn("google", {
-        callbackUrl: selectedPlan
+        redirectTo: selectedPlan
           ? `/api/trial/select-plan?plan=${selectedPlan}`
           : "/pricing?choose=1",
       });
