@@ -284,9 +284,7 @@ export default async function DashboardPage() {
       : { id: "__NO_CURRENT_BILLING_PERIOD__" };
 
   const messagingBaseWhere = {
-    direction: "OUTBOUND",
     ...messagingPeriodFilter,
-    metadata: { path: ["aiResponseId"], not: "" },
     conversation: { userId: user?.id ?? "" },
   };
 
@@ -705,8 +703,8 @@ export default async function DashboardPage() {
             </h2>
             <p className="mt-1 text-sm text-slate-500">
               {trialActive
-                ? "Your trial includes 100 AI replies shared by Facebook and Instagram. WhatsApp is available after subscribing. Incoming customer messages are not deducted."
-                : "Your plan includes one shared monthly allowance across Facebook, Instagram, and WhatsApp. Only outgoing AI replies count; incoming customer messages are not deducted."}
+                ? "Your trial includes 100 total messages and AI replies shared across Facebook, Instagram, and WhatsApp."
+                : "Your plan includes one shared monthly allowance across Facebook, Instagram, and WhatsApp. Both incoming customer messages and outgoing AI replies count."}
             </p>
           </div>
 
@@ -715,7 +713,7 @@ export default async function DashboardPage() {
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                    AI Replies
+                    Messages + AI Replies
                   </p>
                   <p className="mt-1 text-3xl font-bold tracking-tight text-white">
                     {usedMessagingMessages.toLocaleString()}
@@ -761,18 +759,18 @@ export default async function DashboardPage() {
 
               <div className="mt-5">
                 <p className="mb-3 text-xs text-slate-500">
-                  Channel breakdown — each reply uses part of the same shared allowance.
+                  Channel breakdown — incoming messages and outgoing AI replies both use the same shared allowance.
                 </p>
                 <div className="grid gap-3 sm:grid-cols-3">
                   {[
                     { label: "Facebook", used: facebookMessagingUsed, visible: true },
                     { label: "Instagram", used: instagramMessagingUsed, visible: true },
-                    { label: "WhatsApp", used: whatsappMessagingUsed, visible: !trialActive },
+                    { label: "WhatsApp", used: whatsappMessagingUsed, visible: true },
                   ].filter((item) => item.visible).map((item) => (
                     <div key={item.label} className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
                       <p className="text-xs text-slate-400">{item.label}</p>
                       <p className="mt-1 text-lg font-semibold text-white">
-                        {item.used.toLocaleString()} <span className="text-xs font-normal text-slate-500">AI replies</span>
+                        {item.used.toLocaleString()} <span className="text-xs font-normal text-slate-500">counted messages</span>
                       </p>
                     </div>
                   ))}
@@ -786,7 +784,7 @@ export default async function DashboardPage() {
                     {usedMessagingMessages.toLocaleString()}
                   </p>
                   <p className="mt-1 text-[11px] text-slate-600">
-                    Outbound AI replies this billing period
+                    Incoming messages + outgoing AI replies this period
                   </p>
                 </div>
 
