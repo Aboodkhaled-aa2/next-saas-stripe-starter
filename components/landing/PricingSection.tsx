@@ -32,7 +32,7 @@ export default function PricingSection() {
               </p>
 
               <div className="space-y-3 text-sm border-t border-white/10 pt-6">
-                <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>AI Messaging</span></div>
+                <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>AI Messaging — 3,000 replies/month</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>Facebook & Instagram</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>Lead Capture</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>Customer Inbox</span></div>
@@ -67,7 +67,8 @@ export default function PricingSection() {
 
               <div className="space-y-3 text-sm border-t border-white/10 pt-6">
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>Everything in Starter</span></div>
-                <div className="flex items-center gap-3 font-medium text-white"><Check className="w-4 h-4 text-emerald-400" /><span>AI Voice — 100 min/month</span></div>
+                <div className="flex items-center gap-3 font-medium text-white"><Check className="w-4 h-4 text-emerald-400" /><span>AI Messaging — 6,000 replies/month</span></div>
+                <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>AI Voice — 200 min/month</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>Appointment Booking</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>Automated Follow-Ups</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-emerald-400" /><span>Calendar Integration</span></div>
@@ -98,6 +99,7 @@ export default function PricingSection() {
               <div className="space-y-3 text-sm border-t border-white/10 pt-6">
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-cyan-400" /><span>Everything in Business</span></div>
                 <div className="flex items-center gap-3 font-medium text-white"><Check className="w-4 h-4 text-cyan-400" /><span>Dedicated Phone Number</span></div>
+                <div className="flex items-center gap-3"><Check className="w-4 h-4 text-cyan-400" /><span>AI Messaging — 15,000 replies/month</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-cyan-400" /><span>AI Voice — 500 min/month</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-cyan-400" /><span>Advanced Lead Management</span></div>
                 <div className="flex items-center gap-3"><Check className="w-4 h-4 text-cyan-400" /><span>Advanced Automations</span></div>
