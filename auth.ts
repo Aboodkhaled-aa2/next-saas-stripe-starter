@@ -35,6 +35,21 @@ export const {
     (value): value is string => Boolean(value),
   ),
   trustHost: true,
+  // Keep the OAuth PKCE verifier available across the apex and www hosts.
+  // The canonical redirect sends www traffic to smartcleaningdesk.com.
+  cookies: {
+    pkceCodeVerifier: {
+      name: "__Secure-authjs.pkce.code_verifier",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: true,
+        domain: ".smartcleaningdesk.com",
+        maxAge: 15 * 60,
+      },
+    },
+  },
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   pages: {
