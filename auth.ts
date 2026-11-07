@@ -56,32 +56,6 @@ export const {
     signIn: "/login",
     // error: "/auth/error",
   },
-  events: {
-    async createUser({ user }) {
-      // Grant the 7-day trial once, only when Auth.js creates a brand-new user.
-      // Existing Google sign-ins never reset or extend a trial.
-      if (!user.id) return;
-
-      const existing = await prisma.user.findUnique({
-        where: { id: user.id },
-        select: { trialStartedAt: true, trialEndsAt: true },
-      });
-
-      if (!existing?.trialStartedAt && !existing?.trialEndsAt) {
-        const trialStartedAt = new Date();
-        const trialEndsAt = new Date(
-          trialStartedAt.getTime() + 7 * 24 * 60 * 60 * 1000,
-        );
-
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { trialStartedAt, trialEndsAt, hasSelectedPlan: false },
-        });
-      } else {
-        await prisma.user.update({ where: { id: user.id }, data: { hasSelectedPlan: false } });
-      }
-    },
-  },
   callbacks: {
     async signIn({ user, account, profile }) {
       // Google has already verified this address when email_verified is true.
@@ -97,29 +71,13 @@ export const {
         user.id
       ) {
         const now = new Date();
-        const trialStartedAt = now;
-        const trialEndsAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-        // Verify the Google email and grant the one-time trial only when
-        // this account has never had trial dates. Existing or expired trials
-        // are preserved and are never restarted by signing in again.
+        // Google verifies the email address. The free trial starts only after
+        // the user explicitly chooses a plan on the pricing page.
         await prisma.user.updateMany({
           where: { id: user.id },
           data: {
             emailVerified: user.email ? now : undefined,
-          },
-        });
-
-        await prisma.user.updateMany({
-          where: {
-            id: user.id,
-            trialStartedAt: null,
-            trialEndsAt: null,
-          },
-          data: {
-            trialStartedAt,
-            trialEndsAt,
-            hasSelectedPlan: false,
           },
         });
       }
