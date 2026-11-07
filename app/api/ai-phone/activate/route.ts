@@ -219,7 +219,7 @@ export async function POST(request: Request) {
     const provisioning = await prisma.$transaction(
       async (tx) => {
         // Serialize activation attempts for this account while provisioning.
-        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${userId}))`;
+        await tx.$queryRaw`SELECT 1 WHERE pg_advisory_xact_lock(hashtext(${userId})) IS NULL`;
 
         let phone = await tx.phoneNumber.findFirst({
           where: {
