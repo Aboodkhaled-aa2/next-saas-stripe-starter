@@ -35,6 +35,20 @@ export const {
     (value): value is string => Boolean(value),
   ),
   trustHost: true,
+  // Use a fresh host-only PKCE cookie name to avoid stale cookies left by the
+  // previous domain-scoped cookie configuration on smartcleaningdesk.com.
+  cookies: {
+    pkceCodeVerifier: {
+      name: "__Secure-authjs.pkce.code_verifier.v2",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: true,
+        maxAge: 15 * 60,
+      },
+    },
+  },
   // Use Auth.js default OAuth cookies. The site redirects www traffic to the
   // canonical apex host, so a host-only PKCE cookie is sufficient and avoids
   // cross-host cookie parsing or persistence issues.
