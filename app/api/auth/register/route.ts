@@ -87,8 +87,6 @@ export async function POST(request: Request) {
 
     const selectedPlan = plan ? planMap[plan as Plan] : undefined;
     const isMetaReviewAccount = email === META_REVIEW_EMAIL;
-    const trialStartedAt = new Date();
-    const trialEndsAt = new Date(trialStartedAt.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -128,7 +126,6 @@ export async function POST(request: Request) {
           emailVerified: isMetaReviewAccount ? new Date() : undefined,
           ...(selectedPlan ? { plan: selectedPlan } : {}),
           hasSelectedPlan: false,
-          ...(!isMetaReviewAccount ? { trialStartedAt, trialEndsAt } : {}),
         },
       });
     }
