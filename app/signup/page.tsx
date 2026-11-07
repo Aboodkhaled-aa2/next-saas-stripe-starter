@@ -150,9 +150,7 @@ function SignupForm() {
 
     try {
       await signIn("google", {
-        redirectTo: selectedPlan
-          ? `/api/trial/select-plan?plan=${selectedPlan}`
-          : "/pricing?choose=1",
+        redirectTo: "/pricing?choose=1",
       });
     } catch {
       setErrorMsg("Unable to continue with Google.");
