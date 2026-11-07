@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+
 import {
   CheckCircle2,
   MessageCircle,
@@ -18,6 +20,10 @@ export const dynamic = "force-dynamic";
 
 export default async function WhatsAppIntegrationPage() {
   const user = await getCurrentUser();
+
+  if (user?.role !== "ADMIN") {
+    redirect("/dashboard");
+  }
 
   const subscription = user?.id && user.role !== "ADMIN"
     ? await getUserSubscriptionPlan(user.id)
