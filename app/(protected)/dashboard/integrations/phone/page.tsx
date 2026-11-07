@@ -11,12 +11,20 @@ import {
 } from "lucide-react";
 
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/session";
 
 import { DashboardHeader } from "@/components/dashboard/header";
 
 export const dynamic = "force-dynamic";
 
-export default function PhoneIntegrationPage() {
+export default async function PhoneIntegrationPage() {
+  const user = await getCurrentUser();
+
+  if (user?.role !== "ADMIN") {
+    redirect("/dashboard");
+  }
+
   return (
     <div className="space-y-6">
       <DashboardHeader
