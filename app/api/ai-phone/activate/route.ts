@@ -3,8 +3,6 @@ import { NextResponse } from "next/server";
 import { env } from "@/env.mjs";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
-import { getUserSubscriptionPlan } from "@/lib/subscription";
-import { stripe } from "@/lib/stripe";
 
 export const maxDuration = 60;
 
@@ -251,7 +249,7 @@ export async function POST(request: Request) {
             ? searchPayload.data.filter(
                 (item: unknown) =>
                   isRecord(item) &&
-                  hasVoiceCapability(item.capabilities) &&
+                  /^\+1\d{10}$/.test(getString(item.number)),
                   /^\\+1\\d{10}$/.test(getString(item.number)),
               )
             : [];
