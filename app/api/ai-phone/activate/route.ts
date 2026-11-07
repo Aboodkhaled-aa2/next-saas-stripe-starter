@@ -329,9 +329,49 @@ export async function POST(request: Request) {
 
         resources.signalWirePhoneId = signalWirePhoneId;
 
+        // Persist ownership immediately after SignalWire confirms the purchase.
+        // Later Vapi/SWML failures must never cause a second number purchase on retry.
+        const purchasedPhone = await tx.phoneNumber.create({
+          data: {
+            userId,
+            provider: "SIGNALWIRE",
+            providerId: signalWirePhoneId,
+            phoneNumber: number,
+            countryCode: "US",
+            region: getString(selected.region) || null,
+            city: getString(selected.city) || null,
+            status: "PENDING",
+            monthlyPriceCents: 0,
+            metadata: {
+              provisioningStatus: "PURCHASED",
+              vapiPhoneNumberId: null,
+              swmlScriptId: null,
+              callRelayScriptUrl: null,
+              vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
+            },
+          },
+        });
+
+        await tx.aIPhoneSettings.upsert({
+          where: { businessProfileId: appProfile.id },
+          create: {
+            businessProfileId: appProfile.id,
+            status: "READY",
+            provider: "Vapi",
+            phoneNumber: number,
+            assistantName: `${appProfile.businessName || "AI"} Receptionist`.slice(0, 80),
+            enabled: false,
+          },
+          update: {
+            status: "READY",
+            provider: "Vapi",
+            phoneNumber: number,
+            enabled: false,
+          },
+        });
+
         const swmlPayload = await providerRequest(
-          `${signalWire.baseUrl}/api/fabric/resources/swml_scripts`,
-          {
+          `${signalWire.baseUrl}/api/fabric/resources/swml_scripts`,          {
             method: "POST",
             headers: {
               ...signalWire.headers,
@@ -399,17 +439,9 @@ export async function POST(request: Request) {
 
         resources.vapiPhoneId = vapiPhoneId;
 
-        const phone = await tx.phoneNumber.create({
+        const phone = await tx.phoneNumber.update({
+          where: { id: purchasedPhone.id },
           data: {
-            userId: userId,
-            provider: "SIGNALWIRE",
-            providerId: signalWirePhoneId,
-            phoneNumber: number,
-            countryCode: "US",
-            region: getString(selected.region) || null,
-            city: getString(selected.city) || null,
-            status: "PENDING",
-            monthlyPriceCents: 0,
             metadata: {
               vapiPhoneNumberId: vapiPhoneId,
               swmlScriptId,
@@ -419,25 +451,6 @@ export async function POST(request: Request) {
             },
           },
         });
-
-        await tx.aIPhoneSettings.upsert({
-          where: { businessProfileId: appProfile.id },
-          create: {
-            businessProfileId: appProfile.id,
-            status: "READY",
-            provider: "Vapi",
-            phoneNumber: number,
-            assistantName: `${appProfile.businessName || "AI"} Receptionist`.slice(0, 80),
-            enabled: false,
-          },
-          update: {
-            status: "READY",
-            provider: "Vapi",
-            phoneNumber: number,
-            enabled: false,
-          },
-        });
-
         return {
           phone: phone as ProvisionedPhone,
           isExisting: false,
@@ -524,48 +537,8 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[AI PHONE ACTIVATION ERROR]", error);
 
-    // If provider resources were created but the database transaction did not commit, undo them.
-    // Persisted PENDING records are intentionally retained so the next activation attempt can finish routing.
-    if (!resourcesPersisted && (resources.vapiPhoneId || resources.signalWirePhoneId || resources.swmlScriptId)) {
-      const vapiHeaders = {
-        Authorization: `Bearer ${env.VAPI_PRIVATE_API_KEY || ""}`,
-        Accept: "application/json",
-      };
-
-      if (resources.vapiPhoneId && env.VAPI_PRIVATE_API_KEY) {
-        await deleteProviderResource(
-          `${VAPI_BASE_URL}/phone-number/${resources.vapiPhoneId}`,
-          vapiHeaders,
-          "Vapi",
-        );
-      }
-
-      if (resources.swmlScriptId) {
-        try {
-          const signalWire = getSignalWireAuth();
-          await deleteProviderResource(
-            `${signalWire.baseUrl}/api/fabric/resources/swml_scripts/${resources.swmlScriptId}`,
-            signalWire.headers,
-            "SignalWire",
-          );
-        } catch (cleanupError) {
-          console.error("[SIGNALWIRE SWML CLEANUP CONFIGURATION ERROR]", cleanupError);
-        }
-      }
-
-      if (resources.signalWirePhoneId) {
-        try {
-          const signalWire = getSignalWireAuth();
-          await deleteProviderResource(
-            `${signalWire.baseUrl}/api/relay/rest/phone_numbers/${resources.signalWirePhoneId}`,
-            signalWire.headers,
-            "SignalWire",
-          );
-        } catch (cleanupError) {
-          console.error("[SIGNALWIRE CLEANUP CONFIGURATION ERROR]", cleanupError);
-        }
-      }
-    }
+    // Purchased numbers are intentionally not deleted on downstream failures.
+    // They remain recorded as PENDING so retries can resume without buying a replacement.
 
     const message =
       error instanceof ProviderError
