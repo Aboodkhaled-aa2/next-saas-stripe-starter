@@ -13,9 +13,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const isTestAccount = user.email?.toLowerCase() === "tawilabood8@gmail.com";
-
-  if (user.role !== "ADMIN" && !isTestAccount) {
+  if (user.role !== "ADMIN") {
     const subscription = await getUserSubscriptionPlan(user.id);
     if (!subscription.isPaid) {
       return NextResponse.json(
