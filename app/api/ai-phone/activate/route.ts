@@ -159,12 +159,7 @@ export async function POST(request: Request) {
 
     const userId = user.id;
 
-    // Temporary test-branch access: only ADMIN accounts may provision a
-    // dedicated test number without a paid subscription. This branch is
-    // isolated from main and must never be promoted to production.
-    const isTestAccount = user.email?.toLowerCase() === "tawilabood8@gmail.com";
-
-    if (user.role !== "ADMIN" && !isTestAccount) {
+    if (user.role !== "ADMIN") {
       const subscriptionPlan = await getUserSubscriptionPlan(userId);
       const supportsAIPhone =
         subscriptionPlan.title === "Business" || subscriptionPlan.title === "Pro";
