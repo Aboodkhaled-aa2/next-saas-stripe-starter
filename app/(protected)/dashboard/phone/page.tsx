@@ -56,7 +56,7 @@ export default function PhoneNumberPage() {
     if (activating) return;
 
     const confirmed = window.confirm(
-      "Activate a dedicated US reception number for this Business or Pro account? The system will automatically purchase an available local number and connect it to your AI receptionist.",
+      "TEST MODE: Purchase a dedicated US reception number and connect it to your AI receptionist? SignalWire may charge for the number and Vapi may charge for call usage. This test bypass is available only to ADMIN accounts on the isolated test branch.",
     );
 
     if (!confirmed) return;
@@ -225,7 +225,7 @@ export default function PhoneNumberPage() {
                     : "Activate AI Phone"}
               </button>
               <p className="mt-3 text-xs leading-5 text-slate-500">
-                Available to active paid Business and Pro subscriptions. No number is purchased until you confirm activation.
+                Temporary admin-only test access on this isolated branch. A real number is purchased only after you confirm; provider and call usage fees may apply.
               </p>
             </div>
           ) : null}
