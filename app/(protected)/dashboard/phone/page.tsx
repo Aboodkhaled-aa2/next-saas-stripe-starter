@@ -55,12 +55,6 @@ export default function PhoneNumberPage() {
   async function activatePhone() {
     if (activating) return;
 
-    const confirmed = window.confirm(
-      "TEST MODE: Purchase a dedicated US reception number and connect it to your AI receptionist? SignalWire may charge for the number and Vapi may charge for call usage. This test bypass is available only to ADMIN accounts on the isolated test branch.",
-    );
-
-    if (!confirmed) return;
-
     setActivating(true);
     setError("");
     setNotice("");
@@ -177,7 +171,7 @@ export default function PhoneNumberPage() {
                     No reception number has been assigned to your account yet.
                   </p>
                   <p className="mt-2 text-sm leading-6 text-slate-400">
-                    Activate AI Phone to automatically purchase and connect a dedicated US number.
+                    Get a dedicated US reception number connected to your AI receptionist. No separate number purchase is required from you.
                   </p>
                 </>
               )}
@@ -222,10 +216,10 @@ export default function PhoneNumberPage() {
                   ? "Connecting your number..."
                   : hasNumber
                     ? "Finish AI Phone Setup"
-                    : "Activate AI Phone"}
+                    : "Get My Free AI Phone Number"}
               </button>
               <p className="mt-3 text-xs leading-5 text-slate-500">
-                Temporary admin-only test access on this isolated branch. A real number is purchased only after you confirm; provider and call usage fees may apply.
+                Your dedicated US number is included with eligible plans. Smart Cleaning Desk provisions it automatically; provider and call usage costs are covered by the service.
               </p>
             </div>
           ) : null}
