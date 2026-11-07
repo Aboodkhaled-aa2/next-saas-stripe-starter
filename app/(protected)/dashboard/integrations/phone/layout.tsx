@@ -14,9 +14,7 @@ export default async function PhoneLayout({
     redirect("/login");
   }
 
-  const isTestAccount = user.email?.toLowerCase() === "tawilabood8@gmail.com";
-
-  if (user.role !== "ADMIN" && !isTestAccount) {
+  if (user.role !== "ADMIN") {
     if (!user.id) {
       redirect("/login");
     }
