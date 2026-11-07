@@ -6,6 +6,8 @@ import {
   LayoutDashboard,
   Lock,
   LogOut,
+  MessageCircle,
+  PhoneCall,
   Settings,
   User,
 } from "lucide-react";
@@ -75,6 +77,27 @@ export function UserAccountNav() {
             <div className="sticky top-0 z-20 flex w-full items-center justify-center bg-[#020617]">
               <div className="my-3 h-1.5 w-16 rounded-full bg-slate-700" />
             </div>
+
+            {user.role === "ADMIN" ? (
+              <div className="mb-3 grid grid-cols-2 gap-2">
+                <Link
+                  href="/dashboard/integrations/whatsapp"
+                  onClick={closeDrawer}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-3 text-sm font-medium text-emerald-300 transition-colors hover:bg-emerald-500/20"
+                >
+                  <MessageCircle className="size-4" />
+                  WhatsApp
+                </Link>
+                <Link
+                  href="/dashboard/integrations/phone"
+                  onClick={closeDrawer}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-3 py-3 text-sm font-medium text-blue-300 transition-colors hover:bg-blue-500/20"
+                >
+                  <PhoneCall className="size-4" />
+                  SignalWire + Vapi
+                </Link>
+              </div>
+            ) : null}
 
             <div className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/70 p-3">
               <AccountCircle />
@@ -171,6 +194,29 @@ export function UserAccountNav() {
         sideOffset={8}
         className="w-60 rounded-xl border-slate-800 bg-slate-950 p-1.5 text-white shadow-2xl"
       >
+        {user.role === "ADMIN" ? (
+          <div className="grid grid-cols-2 gap-2 p-2">
+            <DropdownMenuItem
+              asChild
+              className="cursor-pointer rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 focus:bg-emerald-500/20 focus:text-emerald-200"
+            >
+              <Link href="/dashboard/integrations/whatsapp" className="flex items-center gap-2">
+                <MessageCircle className="size-4" />
+                <span>WhatsApp</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              asChild
+              className="cursor-pointer rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-300 focus:bg-blue-500/20 focus:text-blue-200"
+            >
+              <Link href="/dashboard/integrations/phone" className="flex items-center gap-2">
+                <PhoneCall className="size-4" />
+                <span>SignalWire + Vapi</span>
+              </Link>
+            </DropdownMenuItem>
+          </div>
+        ) : null}
+
         <div className="flex items-center gap-3 rounded-lg p-2.5">
           <UserAvatar
             user={{ name: user.name || null, image: user.image || null }}
