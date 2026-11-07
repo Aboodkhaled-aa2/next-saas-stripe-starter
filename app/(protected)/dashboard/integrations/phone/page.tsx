@@ -15,6 +15,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 
 import { DashboardHeader } from "@/components/dashboard/header";
+import PhoneNumberPage from "../../phone/page";
 
 export const dynamic = "force-dynamic";
 
@@ -32,85 +33,7 @@ export default async function PhoneIntegrationPage() {
         text="Give your cleaning business an AI receptionist that answers calls, qualifies customers, and helps book appointments."
       />
 
-      <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/70 shadow-xl">
-        <div className="border-b border-slate-800 p-6">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-500/10">
-              <Phone className="h-7 w-7 text-blue-400" />
-            </div>
-
-            <div className="flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-semibold text-white">
-                  AI Voice Receptionist
-                </h2>
-
-                <span className="rounded-full border border-slate-800 bg-slate-900 px-2.5 py-1 text-[11px] font-medium text-slate-500">
-                  Not connected
-                </span>
-              </div>
-
-              <p className="mt-1 text-sm leading-6 text-slate-500">
-                Let your AI employee answer incoming calls, understand what
-                customers need, provide quotes, and help schedule appointments.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3">
-          <FeatureCard
-            icon={<PhoneCall className="h-4 w-4" />}
-            title="Answer Every Call"
-            text="Your AI receptionist can answer calls while your team is working."
-          />
-
-          <FeatureCard
-            icon={<Bot className="h-4 w-4" />}
-            title="AI Conversations"
-            text="Have natural conversations based on your business information and rules."
-          />
-
-          <FeatureCard
-            icon={<Sparkles className="h-4 w-4" />}
-            title="Lead Qualification"
-            text="Collect customer details and understand their cleaning needs."
-          />
-
-          <FeatureCard
-            icon={<Clock3 className="h-4 w-4" />}
-            title="24/7 Availability"
-            text="Keep your phone line available outside normal business hours."
-          />
-
-          <FeatureCard
-            icon={<Zap className="h-4 w-4" />}
-            title="Appointment Booking"
-            text="Help customers find available times and request appointments."
-          />
-
-          <FeatureCard
-            icon={<UserRound className="h-4 w-4" />}
-            title="Human Handoff"
-            text="Escalate conversations to your team when human help is needed."
-          />
-        </div>
-
-        <div className="border-t border-slate-800 bg-slate-900/20 p-6">
-          <Link
-            href="/dashboard/phone"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
-          >
-            <Phone className="h-4 w-4" />
-            Activate AI Phone
-          </Link>
-
-          <p className="mt-3 text-xs leading-5 text-slate-600">
-            Phone setup will connect your business number to the AI voice
-            system and configure your receptionist behavior.
-          </p>
-        </div>
-      </section>
+      <PhoneNumberPage />
 
       <section className="grid gap-4 sm:grid-cols-2">
         <InfoCard
