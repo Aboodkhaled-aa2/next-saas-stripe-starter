@@ -12,6 +12,13 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
+    if (user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "AI Phone settings are currently available to Admin accounts during testing." },
+        { status: 403 },
+      );
+    }
+
     const businessProfile = await prisma.businessProfile.findUnique({
       where: {
         userId: user.id,
@@ -54,6 +61,13 @@ export async function POST(request: Request) {
 
     if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    }
+
+    if (user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "AI Phone settings are currently available to Admin accounts during testing." },
+        { status: 403 },
+      );
     }
 
     const subscriptionPlan = await getUserSubscriptionPlan(user.id);
