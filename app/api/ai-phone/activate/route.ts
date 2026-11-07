@@ -160,42 +160,10 @@ export async function POST(request: Request) {
     const userId = user.id;
 
     if (user.role !== "ADMIN") {
-      const subscriptionPlan = await getUserSubscriptionPlan(userId);
-      const supportsAIPhone =
-        subscriptionPlan.title === "Business" || subscriptionPlan.title === "Pro";
-
-      if (!subscriptionPlan.isPaid || !supportsAIPhone) {
-        return NextResponse.json(
-          {
-            error:
-              "Automatic AI Phone activation requires an active paid Business or Pro subscription.",
-          },
-          { status: 403 },
-        );
-      }
-
-      const billingAccount = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { stripeSubscriptionId: true },
-      });
-
-      if (!billingAccount?.stripeSubscriptionId) {
-        return NextResponse.json(
-          { error: "An active paid Stripe subscription is required." },
-          { status: 403 },
-        );
-      }
-
-      const stripeSubscription = await stripe.subscriptions.retrieve(
-        billingAccount.stripeSubscriptionId,
+      return NextResponse.json(
+        { error: "AI Phone provisioning is currently available to Admin accounts during testing." },
+        { status: 403 },
       );
-
-      if (stripeSubscription.status !== "active") {
-        return NextResponse.json(
-          { error: "Your Stripe subscription is not active. Update billing before activating AI Phone." },
-          { status: 403 },
-        );
-      }
     }
 
     if (
