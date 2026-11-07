@@ -250,7 +250,6 @@ export async function POST(request: Request) {
                 (item: unknown) =>
                   isRecord(item) &&
                   /^\+1\d{10}$/.test(getString(item.number)),
-                  /^\\+1\\d{10}$/.test(getString(item.number)),
               )
             : [];
           const selected = candidates[0] as JsonRecord | undefined;
