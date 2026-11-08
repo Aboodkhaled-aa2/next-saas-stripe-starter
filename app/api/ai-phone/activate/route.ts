@@ -246,11 +246,20 @@ export async function POST(request: Request) {
           );
 
           const candidates = Array.isArray(searchPayload?.data)
-            ? searchPayload.data.filter(
-                (item: unknown) =>
-                  isRecord(item) &&
-                  /^\+1\d{10}$/.test(getString(item.number)),
-              )
+            ? searchPayload.data.filter((item: unknown) => {
+                if (!isRecord(item)) return false;
+
+                const candidateNumber =
+                  getString(item.number) || getString(item.e164);
+                const capabilities = item.capabilities;
+                const supportsVoice =
+                  capabilities === undefined ||
+                  (Array.isArray(capabilities)
+                    ? capabilities.includes("voice")
+                    : isRecord(capabilities) && capabilities.voice === true);
+
+                return /^\+1\d{10}$/.test(candidateNumber) && supportsVoice;
+              })
             : [];
           const selected = candidates[0] as JsonRecord | undefined;
 
@@ -262,7 +271,7 @@ export async function POST(request: Request) {
             );
           }
 
-          const number = getString(selected.number);
+          const number = getString(selected.number) || getString(selected.e164);
           const purchased = await providerRequest(
             `${signalWire.baseUrl}/api/relay/rest/phone_numbers`,
             {
