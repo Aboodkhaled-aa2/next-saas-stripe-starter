@@ -336,18 +336,25 @@ export async function POST(request: Request) {
         // Each successful provider step is saved immediately. If a later step fails,
         // the transaction commits the PENDING phone and the next request resumes it.
         try {
+          // Reuse the one shared SignalWire inbound resource for every customer number.
+          // Update its SWML to route dynamically using the called number, never a
+          // number hardcoded into the shared script.
+          const sharedSwmlScriptId = "42fdecb8-f4fb-4c1e-8e8b-1a19a273e926";
+          const sharedSwmlRequestUrl =
+            "https://gearnest-llc.signalwire.com/relay-bins/4882d3a4-79f0-4daf-b033-f734ee6061c1";
+
           if (
-            !metadata.swmlScriptId ||
-            !metadata.callRelayScriptUrl ||
+            metadata.swmlScriptId !== sharedSwmlScriptId ||
+            metadata.callRelayScriptUrl !== sharedSwmlRequestUrl ||
             metadata.vapiCredentialId !== env.VAPI_SIGNALWIRE_CREDENTIAL_ID
           ) {
-            const swmlPayload = await providerRequest(
-              `${signalWire.baseUrl}/api/fabric/resources/swml_scripts`,
+            await providerRequest(
+              `${signalWire.baseUrl}/api/fabric/resources/swml_scripts/${sharedSwmlScriptId}`,
               {
-                method: "POST",
+                method: "PUT",
                 headers: { ...signalWire.headers, "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  name: `SCD Inbound ${phone.phoneNumber.slice(-4)}`,
+                  display_name: "Smart Cleaning Desk Inbound",
                   script_type: "calling",
                   contents: {
                     version: "1.0.0",
@@ -364,20 +371,10 @@ export async function POST(request: Request) {
               "SignalWire",
             );
 
-            const swmlScriptId =
-              getString(swmlPayload?.swml_script?.id) || getString(swmlPayload?.id);
-            const scriptUrl =
-              getString(swmlPayload?.swml_script?.request_url) ||
-              (swmlScriptId ? `${signalWire.baseUrl}/relay-bins/${swmlScriptId}` : "");
-
-            if (!swmlScriptId || !scriptUrl) {
-              throw new Error("SignalWire did not return a usable inbound SWML script URL.");
-            }
-
             metadata = {
               ...metadata,
-              swmlScriptId,
-              callRelayScriptUrl: scriptUrl,
+              swmlScriptId: sharedSwmlScriptId,
+              callRelayScriptUrl: sharedSwmlRequestUrl,
             };
             phone = await tx.phoneNumber.update({
               where: { id: phone.id },
@@ -386,7 +383,7 @@ export async function POST(request: Request) {
                   ...metadata,
                   vapiPhoneNumberId: metadata.vapiPhoneNumberId || null,
                   vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
-                  provisioningStatus: "SWML_CREATED",
+                  provisioningStatus: "SHARED_SWML_CONFIGURED",
                 },
               },
             });
