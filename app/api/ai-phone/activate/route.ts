@@ -120,6 +120,7 @@ function readProvisioningMetadata(value: unknown) {
     vapiPhoneNumberId: getString(metadata.vapiPhoneNumberId),
     swmlScriptId: getString(metadata.swmlScriptId),
     callRelayScriptUrl: getString(metadata.callRelayScriptUrl),
+    vapiCredentialId: getString(metadata.vapiCredentialId),
   };
 }
 
@@ -335,7 +336,11 @@ export async function POST(request: Request) {
         // Each successful provider step is saved immediately. If a later step fails,
         // the transaction commits the PENDING phone and the next request resumes it.
         try {
-          if (!metadata.swmlScriptId || !metadata.callRelayScriptUrl) {
+          if (
+            !metadata.swmlScriptId ||
+            !metadata.callRelayScriptUrl ||
+            metadata.vapiCredentialId !== env.VAPI_SIGNALWIRE_CREDENTIAL_ID
+          ) {
             const swmlPayload = await providerRequest(
               `${signalWire.baseUrl}/api/fabric/resources/swml_scripts`,
               {
@@ -435,7 +440,8 @@ export async function POST(request: Request) {
             phoneNumber: phone.phoneNumber,
             stage: metadata.vapiPhoneNumberId
               ? "ROUTING"
-              : metadata.swmlScriptId
+              : metadata.swmlScriptId &&
+                  metadata.vapiCredentialId === env.VAPI_SIGNALWIRE_CREDENTIAL_ID
                 ? "VAPI_IMPORT"
                 : "SWML_CREATION",
             error: setupError,
