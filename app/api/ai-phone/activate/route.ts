@@ -339,7 +339,7 @@ export async function POST(request: Request) {
           // Reuse the one shared SignalWire inbound resource for every customer number.
           // Update its SWML to route dynamically using the called number, never a
           // number hardcoded into the shared script.
-          const sharedSwmlScriptId = "42fdecb8-f4fb-4c1e-8e8b-1a19a273e926";
+          const sharedSwmlScriptId = "4882d3a4-79f0-4daf-b033-f734ee6061c1";
           const sharedSwmlRequestUrl =
             "https://gearnest-llc.signalwire.com/relay-bins/4882d3a4-79f0-4daf-b033-f734ee6061c1";
 
@@ -400,14 +400,12 @@ export async function POST(request: Request) {
                 body: JSON.stringify({
                   provider: "byo-phone-number",
                   number: phone.phoneNumber,
+                  numberE164CheckEnabled: false,
                   credentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
                   assistantId: null,
                   squadId: null,
                   name: `${appProfile.businessName || "Smart Cleaning Desk"} Phone`.slice(0, 40),
-                  server: {
-                    url: VAPI_WEBHOOK_URL,
-                    timeoutSeconds: 20,
-                  },
+                  serverUrl: VAPI_WEBHOOK_URL,
                 }),
               },
               "Vapi",
