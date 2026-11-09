@@ -405,10 +405,7 @@ export async function POST(request: Request) {
                   assistantId: null,
                   squadId: null,
                   name: `${appProfile.businessName || "Smart Cleaning Desk"} Phone`.slice(0, 40),
-                  server: {
-                    url: VAPI_WEBHOOK_URL,
-                    timeoutSeconds: 20,
-                  },
+                  serverUrl: VAPI_WEBHOOK_URL,
                 }),
               },
               "Vapi",
