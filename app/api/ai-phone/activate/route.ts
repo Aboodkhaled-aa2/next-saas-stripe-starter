@@ -336,9 +336,9 @@ export async function POST(request: Request) {
         // Each successful provider step is saved immediately. If a later step fails,
         // the transaction commits the PENDING phone and the next request resumes it.
         try {
-          // Reuse the one shared SignalWire inbound resource for every customer number.
-          // Update its SWML to route dynamically using the called number, never a
-          // number hardcoded into the shared script.
+          // Reuse the existing shared SignalWire Relay Bin URL for every number.
+          // The Relay Bin is managed in SignalWire; do not call the Fabric swml_scripts
+          // endpoint with a Relay Bin ID (they are different resource types).
           const sharedSwmlScriptId = "4882d3a4-79f0-4daf-b033-f734ee6061c1";
           const sharedSwmlRequestUrl =
             "https://gearnest-llc.signalwire.com/relay-bins/4882d3a4-79f0-4daf-b033-f734ee6061c1";
@@ -348,33 +348,11 @@ export async function POST(request: Request) {
             metadata.callRelayScriptUrl !== sharedSwmlRequestUrl ||
             metadata.vapiCredentialId !== env.VAPI_SIGNALWIRE_CREDENTIAL_ID
           ) {
-            await providerRequest(
-              `${signalWire.baseUrl}/api/fabric/resources/swml_scripts/${sharedSwmlScriptId}`,
-              {
-                method: "PUT",
-                headers: { ...signalWire.headers, "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  display_name: "Smart Cleaning Desk Inbound",
-                  script_type: "calling",
-                  contents: {
-                    version: "1.0.0",
-                    sections: {
-                      main: [{
-                        connect: {
-                          to: `sip:%{call.to}@${env.VAPI_SIGNALWIRE_CREDENTIAL_ID}.sip.vapi.ai`,
-                        },
-                      }],
-                    },
-                  },
-                }),
-              },
-              "SignalWire",
-            );
-
             metadata = {
               ...metadata,
               swmlScriptId: sharedSwmlScriptId,
               callRelayScriptUrl: sharedSwmlRequestUrl,
+              vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
             };
             phone = await tx.phoneNumber.update({
               where: { id: phone.id },
@@ -382,7 +360,6 @@ export async function POST(request: Request) {
                 metadata: {
                   ...metadata,
                   vapiPhoneNumberId: metadata.vapiPhoneNumberId || null,
-                  vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
                   provisioningStatus: "SHARED_SWML_CONFIGURED",
                 },
               },
