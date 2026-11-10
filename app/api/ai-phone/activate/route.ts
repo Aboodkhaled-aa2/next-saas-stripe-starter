@@ -384,6 +384,9 @@ export async function POST(request: Request) {
               server: {
                 url: VAPI_WEBHOOK_URL,
                 timeoutSeconds: 20,
+                headers: env.VAPI_WEBHOOK_SECRET
+                  ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
+                  : undefined,
               },
             }),
           },
