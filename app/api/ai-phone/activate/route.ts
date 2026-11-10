@@ -9,7 +9,13 @@ import { stripe } from "@/lib/stripe";
 export const maxDuration = 60;
 
 const VAPI_BASE_URL = env.VAPI_API_BASE_URL || "https://api.vapi.ai";
-const VAPI_WEBHOOK_URL = "https://www.smartcleaningdesk.com/api/ai-phone/vapi";
+const APP_BASE_URL =
+  process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : env.NEXT_PUBLIC_APP_URL || "https://www.smartcleaningdesk.com";
+const VAPI_WEBHOOK_URL = `${APP_BASE_URL}/api/ai-phone/vapi`;
 
 type JsonRecord = Record<string, unknown>;
 
