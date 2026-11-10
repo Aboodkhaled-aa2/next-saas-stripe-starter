@@ -450,12 +450,24 @@ export async function POST(request: Request) {
     resourcesPersisted = true;
     const metadata = readProvisioningMetadata(provisioning.phone.metadata);
 
-    if (!metadata.callRelayScriptUrl) {
+    if (
+      !metadata.vapiPhoneNumberId ||
+      !metadata.swmlScriptId ||
+      !metadata.callRelayScriptUrl
+    ) {
+      console.error("[AI PHONE ACTIVATION] Existing number has incomplete provider metadata.", {
+        phoneNumberId: provisioning.phone.id,
+        hasVapiPhoneNumberId: Boolean(metadata.vapiPhoneNumberId),
+        hasSwmlScriptId: Boolean(metadata.swmlScriptId),
+        hasCallRelayScriptUrl: Boolean(metadata.callRelayScriptUrl),
+      });
+
       return NextResponse.json(
         {
           error:
-            "This phone number has no saved SignalWire routing script. Contact support so the existing number can be safely reconnected without purchasing a replacement.",
+            "This existing phone number is missing required Vapi or SignalWire connection details. It was not marked active. Contact support to repair the existing connection safely without purchasing another number.",
           phoneNumber: provisioning.phone.phoneNumber,
+          status: "PENDING",
         },
         { status: 409 },
       );
