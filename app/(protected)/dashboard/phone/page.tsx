@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/session";
-import { getUserSubscriptionPlan } from "@/lib/subscription";
 
 import PhoneNumberClient from "./page-client";
 
@@ -15,14 +14,7 @@ export default async function PhoneNumberPage() {
   }
 
   if (user.role !== "ADMIN") {
-    const plan = await getUserSubscriptionPlan(user.id);
-    const eligible =
-      plan.isPaid &&
-      (plan.title === "Business" || plan.title === "Pro");
-
-    if (!eligible) {
-      redirect("/dashboard/integrations/phone");
-    }
+    redirect("/dashboard/integrations/phone");
   }
 
   return <PhoneNumberClient />;
