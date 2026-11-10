@@ -378,10 +378,13 @@ export async function POST(request: Request) {
           "SignalWire",
         );
 
+        const swmlScript = isRecord(swmlPayload.swml_script)
+          ? swmlPayload.swml_script
+          : {};
         const swmlScriptId =
-          getString(swmlPayload?.swml_script?.id) || getString(swmlPayload?.id);
+          getString(swmlScript.id) || getString(swmlPayload.id);
         const scriptUrl =
-          getString(swmlPayload?.swml_script?.request_url) ||
+          getString(swmlScript.request_url) ||
           (swmlScriptId
             ? `${signalWire.baseUrl}/relay-bins/${swmlScriptId}`
             : "");
