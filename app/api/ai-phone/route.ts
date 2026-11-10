@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
+import { stripe } from "@/lib/stripe";
 
 export async function GET() {
   try {
@@ -61,9 +62,32 @@ export async function POST(request: Request) {
       subscriptionPlan.title === "Business" ||
       subscriptionPlan.title === "Pro";
 
-    if (!hasVoice) {
+    if (!subscriptionPlan.isPaid || !hasVoice) {
       return NextResponse.json(
-        { error: "AI Phone requires a Business or Pro plan." },
+        { error: "AI Phone settings require an active paid Business or Pro subscription." },
+        { status: 403 },
+      );
+    }
+
+    const billingAccount = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { stripeSubscriptionId: true },
+    });
+
+    if (!billingAccount?.stripeSubscriptionId) {
+      return NextResponse.json(
+        { error: "An active paid Stripe subscription is required." },
+        { status: 403 },
+      );
+    }
+
+    const stripeSubscription = await stripe.subscriptions.retrieve(
+      billingAccount.stripeSubscriptionId,
+    );
+
+    if (stripeSubscription.status !== "active") {
+      return NextResponse.json(
+        { error: "Your Stripe subscription is not active." },
         { status: 403 },
       );
     }
