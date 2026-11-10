@@ -90,9 +90,20 @@ async function providerRequest(
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
-    console.error(`[${provider} PHONE PROVISIONING]`, response.status);
+    const providerMessage = isRecord(payload)
+      ? getString(payload.message) ||
+        getString(payload.error) ||
+        getString(payload.details)
+      : "";
+    // Log the provider's response detail (never request headers or credentials)
+    // so a 400 can be diagnosed without exposing secrets.
+    console.error(`[${provider} PHONE PROVISIONING]`, {
+      status: response.status,
+      message: providerMessage.slice(0, 1000),
+      response: payload,
+    });
     throw new ProviderError(
-      `${provider} request failed with status ${response.status}.`,
+      `${provider} request failed with status ${response.status}.${providerMessage ? ` ${providerMessage.slice(0, 300)}` : ""}`,
       response.status,
     );
   }
@@ -177,31 +188,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const billingAccount = isAdmin
-      ? null
-      : await prisma.user.findUnique({
-          where: { id: userId },
-          select: { stripeSubscriptionId: true },
-        });
-
-    if (!isAdmin && !billingAccount?.stripeSubscriptionId) {
-      return NextResponse.json(
-        { error: "An active paid Stripe subscription is required." },
-        { status: 403 },
-      );
-    }
-
-    const stripeSubscription = !isAdmin && billingAccount?.stripeSubscriptionId
-      ? await stripe.subscriptions.retrieve(billingAccount.stripeSubscriptionId)
-      : null;
-
-    if (!isAdmin && stripeSubscription?.status !== "active") {
-      return NextResponse.json(
-        { error: "Your Stripe subscription is not active. Update billing before activating AI Phone." },
-        { status: 403 },
-      );
-    }
-
     if (
       !env.SIGNALWIRE_SPACE_URL ||
       !env.SIGNALWIRE_PROJECT_ID ||
@@ -222,7 +208,9 @@ export async function POST(request: Request) {
       const body = await request.json();
       requestedAreaCode =
         typeof body?.areaCode === "string" ? body.areaCode.trim() : "";
-      retryExistingOnly = body?.action === "retry-existing";
+      // Admin testing must only resume an already-purchased number.
+      // Never allow this temporary admin-only flow to buy a replacement number.
+      retryExistingOnly = isAdmin || body?.action === "retry-existing";
     } catch {
       requestedAreaCode = "";
     }
