@@ -14,41 +14,10 @@ export async function GET() {
     }
 
     if (user.role !== "ADMIN") {
-      const subscriptionPlan = await getUserSubscriptionPlan(user.id);
-      const eligible =
-        subscriptionPlan.isPaid &&
-        (subscriptionPlan.title === "Business" ||
-          subscriptionPlan.title === "Pro");
-
-      if (!eligible) {
-        return NextResponse.json(
-          { error: "AI Phone settings are available only to active paid Business and Pro subscribers." },
-          { status: 403 },
-        );
-      }
-
-      const billingAccount = await prisma.user.findUnique({
-        where: { id: user.id },
-        select: { stripeSubscriptionId: true },
-      });
-
-      if (!billingAccount?.stripeSubscriptionId) {
-        return NextResponse.json(
-          { error: "An active paid Stripe subscription is required." },
-          { status: 403 },
-        );
-      }
-
-      const stripeSubscription = await stripe.subscriptions.retrieve(
-        billingAccount.stripeSubscriptionId,
+      return NextResponse.json(
+        { error: "AI Phone is currently restricted to admin testing." },
+        { status: 403 },
       );
-
-      if (stripeSubscription.status !== "active") {
-        return NextResponse.json(
-          { error: "Your Stripe subscription is not active." },
-          { status: 403 },
-        );
-      }
     }
 
     const businessProfile = await prisma.businessProfile.findUnique({
@@ -95,41 +64,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
-    const subscriptionPlan = await getUserSubscriptionPlan(user.id);
-    const hasVoice =
-      subscriptionPlan.title === "Business" ||
-      subscriptionPlan.title === "Pro";
-
-    const isAdmin = user.role === "ADMIN";
-
-    if (!isAdmin && (!subscriptionPlan.isPaid || !hasVoice)) {
+    if (user.role !== "ADMIN") {
       return NextResponse.json(
-        { error: "AI Phone settings require an active paid Business or Pro subscription." },
-        { status: 403 },
-      );
-    }
-
-    const billingAccount = isAdmin
-      ? null
-      : await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { stripeSubscriptionId: true },
-        });
-
-    if (!isAdmin && !billingAccount?.stripeSubscriptionId) {
-      return NextResponse.json(
-        { error: "An active paid Stripe subscription is required." },
-        { status: 403 },
-      );
-    }
-
-    const stripeSubscription = !isAdmin && billingAccount?.stripeSubscriptionId
-      ? await stripe.subscriptions.retrieve(billingAccount.stripeSubscriptionId)
-      : null;
-
-    if (!isAdmin && stripeSubscription?.status !== "active") {
-      return NextResponse.json(
-        { error: "Your Stripe subscription is not active." },
+        { error: "AI Phone is currently restricted to admin testing." },
         { status: 403 },
       );
     }
