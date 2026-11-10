@@ -16,7 +16,7 @@ import { redirect } from "next/navigation";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { getCurrentUser } from "@/lib/session";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
-import PhoneNumberPage from "../../phone/page";
+import PhoneNumberClient from "../../phone/page-client";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +27,9 @@ export default async function PhoneIntegrationPage() {
     redirect("/login");
   }
 
-  const isAdmin = user.role === "ADMIN";
+  const isAdmin =
+    user.role === "ADMIN" &&
+    user.email?.toLowerCase() === "tawilabood11@gmail.com";
   const subscriptionPlan = isAdmin
     ? null
     : await getUserSubscriptionPlan(user.id);
@@ -44,7 +46,7 @@ export default async function PhoneIntegrationPage() {
           heading="AI Phone"
           text="Give your cleaning business an AI receptionist that answers calls, qualifies customers, and helps book appointments."
         />
-        <PhoneNumberPage />
+        <PhoneNumberClient />
         <section className="grid gap-4 sm:grid-cols-2">
           <InfoCard
             icon={<ShieldCheck className="h-5 w-5" />}
