@@ -11,12 +11,56 @@ import {
 } from "lucide-react";
 
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { DashboardHeader } from "@/components/dashboard/header";
+import { getCurrentUser } from "@/lib/session";
+import { getUserSubscriptionPlan } from "@/lib/subscription";
+import PhoneNumberPage from "../../phone/page";
 
 export const dynamic = "force-dynamic";
 
-export default function PhoneIntegrationPage() {
+export default async function PhoneIntegrationPage() {
+  const user = await getCurrentUser();
+
+  if (!user?.id) {
+    redirect("/login");
+  }
+
+  const isAdmin = user.role === "ADMIN";
+  const subscriptionPlan = isAdmin
+    ? null
+    : await getUserSubscriptionPlan(user.id);
+  const isEligiblePaidCustomer = Boolean(
+    subscriptionPlan?.isPaid &&
+      (subscriptionPlan.title === "Business" ||
+        subscriptionPlan.title === "Pro"),
+  );
+
+  if (isAdmin || isEligiblePaidCustomer) {
+    return (
+      <div className="space-y-6">
+        <DashboardHeader
+          heading="AI Phone"
+          text="Give your cleaning business an AI receptionist that answers calls, qualifies customers, and helps book appointments."
+        />
+        <PhoneNumberPage />
+        <section className="grid gap-4 sm:grid-cols-2">
+          <InfoCard
+            icon={<ShieldCheck className="h-5 w-5" />}
+            title="Business-Aware AI"
+            text="Your AI receptionist can use your services, pricing, business hours, service areas, policies, and custom AI instructions."
+          />
+          <InfoCard
+            icon={<CheckCircle2 className="h-5 w-5" />}
+            title="Built for Cleaning Businesses"
+            text="The voice experience is designed around cleaning inquiries, quotes, lead qualification, and appointment requests."
+          />
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <DashboardHeader
