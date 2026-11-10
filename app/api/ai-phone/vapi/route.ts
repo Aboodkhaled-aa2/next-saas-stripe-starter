@@ -37,6 +37,9 @@ const toolSchemas = [
       headers: env.VAPI_WEBHOOK_SECRET
         ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
         : undefined,
+      headers: env.VAPI_WEBHOOK_SECRET
+        ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
+        : undefined,
     },
   },
   {
@@ -59,6 +62,9 @@ const toolSchemas = [
     },
     server: {
       url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
+      headers: env.VAPI_WEBHOOK_SECRET
+        ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
+        : undefined,
     },
   },
   {
@@ -80,6 +86,9 @@ const toolSchemas = [
     },
     server: {
       url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
+      headers: env.VAPI_WEBHOOK_SECRET
+        ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
+        : undefined,
     },
   },
   {
@@ -114,6 +123,9 @@ const toolSchemas = [
     },
     server: {
       url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
+      headers: env.VAPI_WEBHOOK_SECRET
+        ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
+        : undefined,
     },
   },
   {
@@ -162,6 +174,9 @@ const toolSchemas = [
     },
     server: {
       url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
+      headers: env.VAPI_WEBHOOK_SECRET
+        ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
+        : undefined,
     },
   },
   {
@@ -185,6 +200,9 @@ const toolSchemas = [
     },
     server: {
       url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
+      headers: env.VAPI_WEBHOOK_SECRET
+        ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
+        : undefined,
     },
   },
   {
@@ -207,6 +225,9 @@ const toolSchemas = [
     },
     server: {
       url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
+      headers: env.VAPI_WEBHOOK_SECRET
+        ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
+        : undefined,
     },
   },
 ];
@@ -572,6 +593,9 @@ export async function POST(request: Request) {
           ],
           server: {
             url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
+            headers: env.VAPI_WEBHOOK_SECRET
+              ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
+              : undefined,
           },
         },
       });
