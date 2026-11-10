@@ -62,30 +62,34 @@ export async function POST(request: Request) {
       subscriptionPlan.title === "Business" ||
       subscriptionPlan.title === "Pro";
 
-    if (!subscriptionPlan.isPaid || !hasVoice) {
+    const isAdmin = user.role === "ADMIN";
+
+    if (!isAdmin && (!subscriptionPlan.isPaid || !hasVoice)) {
       return NextResponse.json(
         { error: "AI Phone settings require an active paid Business or Pro subscription." },
         { status: 403 },
       );
     }
 
-    const billingAccount = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { stripeSubscriptionId: true },
-    });
+    const billingAccount = isAdmin
+      ? null
+      : await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { stripeSubscriptionId: true },
+        });
 
-    if (!billingAccount?.stripeSubscriptionId) {
+    if (!isAdmin && !billingAccount?.stripeSubscriptionId) {
       return NextResponse.json(
         { error: "An active paid Stripe subscription is required." },
         { status: 403 },
       );
     }
 
-    const stripeSubscription = await stripe.subscriptions.retrieve(
-      billingAccount.stripeSubscriptionId,
-    );
+    const stripeSubscription = !isAdmin && billingAccount?.stripeSubscriptionId
+      ? await stripe.subscriptions.retrieve(billingAccount.stripeSubscriptionId)
+      : null;
 
-    if (stripeSubscription.status !== "active") {
+    if (!isAdmin && stripeSubscription?.status !== "active") {
       return NextResponse.json(
         { error: "Your Stripe subscription is not active." },
         { status: 403 },
