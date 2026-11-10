@@ -192,50 +192,16 @@ export default function PhoneNumberPage() {
 
           {!loading && !isEnabled ? (
             <div className="mt-6 border-t border-slate-800 pt-6">
-              {!hasNumber ? (
-              <div className="max-w-xs">
-                <label
-                  htmlFor="areaCode"
-                  className="text-sm font-medium text-slate-300"
-                >
-                  Preferred US area code (optional)
-                </label>
-                <input
-                  id="areaCode"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  maxLength={3}
-                  pattern="[0-9]{3}"
-                  value={areaCode}
-                  onChange={(event) =>
-                    setAreaCode(event.target.value.replace(/\D/g, "").slice(0, 3))
-                  }
-                  placeholder="e.g. 904"
-                  className="mt-2 h-11 w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-blue-500"
-                />
-                <p className="mt-2 text-xs leading-5 text-slate-500">
-                  Leave this blank to assign any available US local number.
-                </p>
-              </div>
-              ) : null}
-
               <button
                 type="button"
-                onClick={() => void activatePhone(hasNumber)}
+                onClick={() => void activatePhone(true)}
                 disabled={activating}
-                className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {activating
-                  ? "Connecting your number..."
-                  : hasNumber
-                    ? "Reconnect Existing Number"
-                    : "Activate AI Phone"}
+                {activating ? "Reconnecting your saved number..." : "Reconnect Existing Number"}
               </button>
               <p className="mt-3 text-xs leading-5 text-slate-500">
-                {hasNumber
-                  ? "Reconnect retries setup using your existing number only. It will not purchase another number."
-                  : "Available to active paid Business and Pro subscriptions. A new number is purchased only after you confirm activation."}
+                This admin-only action retries setup for the number already saved to your account. It will not purchase a new number.
               </p>
             </div>
           ) : null}
