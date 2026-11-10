@@ -166,7 +166,9 @@ export async function POST(request: Request) {
 
     const userId = user.id;
 
-    const isAdmin = user.role === "ADMIN";
+    const isAdmin =
+      user.role === "ADMIN" &&
+      user.email?.toLowerCase() === "tawilabood11@gmail.com";
 
     if (!isAdmin) {
       return NextResponse.json(
