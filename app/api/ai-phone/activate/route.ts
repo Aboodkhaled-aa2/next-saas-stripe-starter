@@ -87,12 +87,29 @@ async function providerRequest(
     cache: "no-store",
   });
 
-  const payload = await response.json().catch(() => null);
+  const responseText = await response.text();
+  let payload: unknown = null;
+  try {
+    payload = responseText ? JSON.parse(responseText) : null;
+  } catch {
+    payload = responseText.slice(0, 2000);
+  }
 
   if (!response.ok) {
-    console.error(`[${provider} PHONE PROVISIONING]`, response.status);
+    const details = isRecord(payload)
+      ? {
+          message: getString(payload.message) || getString(payload.error),
+          error: getString(payload.error),
+          type: getString(payload.type),
+          code: getString(payload.code),
+        }
+      : { message: typeof payload === "string" ? payload.slice(0, 500) : "No provider error details returned." };
+    console.error(`[${provider} PHONE PROVISIONING]`, {
+      status: response.status,
+      details,
+    });
     throw new ProviderError(
-      `${provider} request failed with status ${response.status}.`,
+      `${provider} request failed with status ${response.status}: ${details.message || details.error || "See server logs for safe provider error details."}`,
       response.status,
     );
   }
@@ -383,9 +400,9 @@ export async function POST(request: Request) {
             body: JSON.stringify({
               provider: "byo-phone-number",
               number,
+              numberE164CheckEnabled: false,
               credentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
-              assistantId: null,
-              squadId: null,
+              // Omit assistantId and squadId until a concrete resource is assigned.
               name: `${appProfile.businessName || "Smart Cleaning Desk"} Phone`.slice(0, 40),
               server: {
                 url: VAPI_WEBHOOK_URL,
