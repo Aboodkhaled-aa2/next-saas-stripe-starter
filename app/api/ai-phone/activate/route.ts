@@ -80,7 +80,7 @@ async function providerRequest(
   url: string,
   init: RequestInit,
   provider: "SignalWire" | "Vapi",
-) {
+): Promise<JsonRecord> {
   const response = await fetch(url, {
     ...init,
     signal: AbortSignal.timeout(8000),
@@ -114,7 +114,7 @@ async function providerRequest(
     );
   }
 
-  return payload;
+  return isRecord(payload) ? payload : {};
 }
 
 async function deleteProviderResource(
