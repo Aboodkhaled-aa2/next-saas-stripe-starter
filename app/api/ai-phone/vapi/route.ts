@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { env } from "@/env.mjs";
+
 import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import {
@@ -7,6 +9,14 @@ import {
   type CustomerAgentBusinessProfile,
 } from "@/lib/ai/customer-agent";
 import { executeCustomerAgentToolCall } from "@/lib/ai/customer-agent-runtime";
+
+const APP_BASE_URL =
+  process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : env.NEXT_PUBLIC_APP_URL || "https://www.smartcleaningdesk.com";
+const VAPI_WEBHOOK_URL = `${APP_BASE_URL}/api/ai-phone/vapi`;
 
 const toolSchemas = [
   {
@@ -31,7 +41,10 @@ const toolSchemas = [
       },
     },
     server: {
-      url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
+      url: VAPI_WEBHOOK_URL,
+      headers: env.VAPI_WEBHOOK_SECRET
+        ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
+        : undefined,
     },
   },
   {
@@ -53,7 +66,10 @@ const toolSchemas = [
       },
     },
     server: {
-      url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
+      url: VAPI_WEBHOOK_URL,
+      headers: env.VAPI_WEBHOOK_SECRET
+        ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
+        : undefined,
     },
   },
   {
@@ -74,7 +90,10 @@ const toolSchemas = [
       },
     },
     server: {
-      url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
+      url: VAPI_WEBHOOK_URL,
+      headers: env.VAPI_WEBHOOK_SECRET
+        ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
+        : undefined,
     },
   },
   {
@@ -108,7 +127,10 @@ const toolSchemas = [
       },
     },
     server: {
-      url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
+      url: VAPI_WEBHOOK_URL,
+      headers: env.VAPI_WEBHOOK_SECRET
+        ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
+        : undefined,
     },
   },
   {
@@ -156,7 +178,10 @@ const toolSchemas = [
       },
     },
     server: {
-      url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
+      url: VAPI_WEBHOOK_URL,
+      headers: env.VAPI_WEBHOOK_SECRET
+        ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
+        : undefined,
     },
   },
   {
@@ -179,7 +204,10 @@ const toolSchemas = [
       },
     },
     server: {
-      url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
+      url: VAPI_WEBHOOK_URL,
+      headers: env.VAPI_WEBHOOK_SECRET
+        ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
+        : undefined,
     },
   },
   {
@@ -201,7 +229,10 @@ const toolSchemas = [
       },
     },
     server: {
-      url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
+      url: VAPI_WEBHOOK_URL,
+      headers: env.VAPI_WEBHOOK_SECRET
+        ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
+        : undefined,
     },
   },
 ];
@@ -482,6 +513,24 @@ function safeJsonObject(value: string): Record<string, unknown> {
 
 export async function POST(request: Request) {
   try {
+    const webhookSecret = env.VAPI_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      return NextResponse.json(
+        { error: "Vapi webhook authentication is not configured." },
+        { status: 503 },
+      );
+    }
+
+    const authorization = request.headers.get("authorization");
+    const legacySecret = request.headers.get("x-vapi-secret");
+    const suppliedSecret = authorization?.startsWith("Bearer ")
+      ? authorization.slice(7).trim()
+      : legacySecret?.trim();
+
+    if (!suppliedSecret || suppliedSecret !== webhookSecret) {
+      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    }
+
     const body = (await request.json()) as { message?: VapiMessage };
     const message = body.message;
 
@@ -548,7 +597,10 @@ export async function POST(request: Request) {
             "tool-calls",
           ],
           server: {
-            url: "https://www.smartcleaningdesk.com/api/ai-phone/vapi",
+            url: VAPI_WEBHOOK_URL,
+            headers: env.VAPI_WEBHOOK_SECRET
+              ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
+              : undefined,
           },
         },
       });

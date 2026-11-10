@@ -9,7 +9,13 @@ import { stripe } from "@/lib/stripe";
 export const maxDuration = 60;
 
 const VAPI_BASE_URL = env.VAPI_API_BASE_URL || "https://api.vapi.ai";
-const VAPI_WEBHOOK_URL = "https://www.smartcleaningdesk.com/api/ai-phone/vapi";
+const APP_BASE_URL =
+  process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : env.NEXT_PUBLIC_APP_URL || "https://www.smartcleaningdesk.com";
+const VAPI_WEBHOOK_URL = `${APP_BASE_URL}/api/ai-phone/vapi`;
 
 type JsonRecord = Record<string, unknown>;
 
@@ -384,6 +390,9 @@ export async function POST(request: Request) {
               server: {
                 url: VAPI_WEBHOOK_URL,
                 timeoutSeconds: 20,
+                headers: env.VAPI_WEBHOOK_SECRET
+                  ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
+                  : undefined,
               },
             }),
           },
@@ -450,12 +459,24 @@ export async function POST(request: Request) {
     resourcesPersisted = true;
     const metadata = readProvisioningMetadata(provisioning.phone.metadata);
 
-    if (!metadata.callRelayScriptUrl) {
+    if (
+      !metadata.vapiPhoneNumberId ||
+      !metadata.swmlScriptId ||
+      !metadata.callRelayScriptUrl
+    ) {
+      console.error("[AI PHONE ACTIVATION] Existing number has incomplete provider metadata.", {
+        phoneNumberId: provisioning.phone.id,
+        hasVapiPhoneNumberId: Boolean(metadata.vapiPhoneNumberId),
+        hasSwmlScriptId: Boolean(metadata.swmlScriptId),
+        hasCallRelayScriptUrl: Boolean(metadata.callRelayScriptUrl),
+      });
+
       return NextResponse.json(
         {
           error:
-            "This phone number has no saved SignalWire routing script. Contact support so the existing number can be safely reconnected without purchasing a replacement.",
+            "This existing phone number is missing required Vapi or SignalWire connection details. It was not marked active. Contact support to repair the existing connection safely without purchasing another number.",
           phoneNumber: provisioning.phone.phoneNumber,
+          status: "PENDING",
         },
         { status: 409 },
       );
