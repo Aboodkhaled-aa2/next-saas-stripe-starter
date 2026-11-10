@@ -177,15 +177,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // This endpoint is intentionally restricted to the configured admin
-    // while the existing purchased number is being repaired and verified.
-    if (!isAdmin) {
-      return NextResponse.json(
-        { error: "AI Phone activation requires an active paid Business or Pro subscription. Free trials are not eligible." },
-        { status: 403 },
-      );
-    }
-
     const billingAccount = isAdmin
       ? null
       : await prisma.user.findUnique({
@@ -226,10 +217,12 @@ export async function POST(request: Request) {
     }
 
     let requestedAreaCode = "";
+    let retryExistingOnly = false;
     try {
       const body = await request.json();
       requestedAreaCode =
         typeof body?.areaCode === "string" ? body.areaCode.trim() : "";
+      retryExistingOnly = body?.action === "retry-existing";
     } catch {
       requestedAreaCode = "";
     }
@@ -277,6 +270,13 @@ export async function POST(request: Request) {
           orderBy: { purchasedAt: "desc" },
         });
         const isExisting = Boolean(phone);
+
+        if (!phone && retryExistingOnly) {
+          throw new ProviderError(
+            "No existing SignalWire number was found to reconnect. No number was purchased.",
+            404,
+          );
+        }
 
         if (!phone) {
           const searchParams = new URLSearchParams({
