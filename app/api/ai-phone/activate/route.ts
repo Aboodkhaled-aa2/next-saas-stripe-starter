@@ -177,16 +177,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const subscriptionPlan = null;
-    const supportsAIPhone =
-      isAdmin ||
-      Boolean(
-        subscriptionPlan?.isPaid &&
-          (subscriptionPlan.title === "Business" ||
-            subscriptionPlan.title === "Pro"),
-      );
-
-    if (!supportsAIPhone) {
+    // This endpoint is intentionally restricted to the configured admin
+    // while the existing purchased number is being repaired and verified.
+    if (!isAdmin) {
       return NextResponse.json(
         { error: "AI Phone activation requires an active paid Business or Pro subscription. Free trials are not eligible." },
         { status: 403 },
