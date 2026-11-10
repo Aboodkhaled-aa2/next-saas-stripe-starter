@@ -13,6 +13,44 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
+    if (user.role !== "ADMIN") {
+      const subscriptionPlan = await getUserSubscriptionPlan(user.id);
+      const eligible =
+        subscriptionPlan.isPaid &&
+        (subscriptionPlan.title === "Business" ||
+          subscriptionPlan.title === "Pro");
+
+      if (!eligible) {
+        return NextResponse.json(
+          { error: "AI Phone settings are available only to active paid Business and Pro subscribers." },
+          { status: 403 },
+        );
+      }
+
+      const billingAccount = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { stripeSubscriptionId: true },
+      });
+
+      if (!billingAccount?.stripeSubscriptionId) {
+        return NextResponse.json(
+          { error: "An active paid Stripe subscription is required." },
+          { status: 403 },
+        );
+      }
+
+      const stripeSubscription = await stripe.subscriptions.retrieve(
+        billingAccount.stripeSubscriptionId,
+      );
+
+      if (stripeSubscription.status !== "active") {
+        return NextResponse.json(
+          { error: "Your Stripe subscription is not active." },
+          { status: 403 },
+        );
+      }
+    }
+
     const businessProfile = await prisma.businessProfile.findUnique({
       where: {
         userId: user.id,
