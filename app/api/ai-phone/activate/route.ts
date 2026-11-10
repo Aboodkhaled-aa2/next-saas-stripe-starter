@@ -128,6 +128,7 @@ function readProvisioningMetadata(value: unknown) {
     vapiPhoneNumberId: getString(metadata.vapiPhoneNumberId),
     swmlScriptId: getString(metadata.swmlScriptId),
     callRelayScriptUrl: getString(metadata.callRelayScriptUrl),
+    vapiCredentialId: getString(metadata.vapiCredentialId),
   };
 }
 
@@ -171,10 +172,7 @@ export async function POST(request: Request) {
 
     if (!subscriptionPlan.isPaid || !supportsAIPhone) {
       return NextResponse.json(
-        {
-          error:
-            "Automatic AI Phone activation requires an active paid Business or Pro subscription. Free trials are not eligible for automatic number provisioning.",
-        },
+        { error: "AI Phone activation requires an active paid Business or Pro subscription. Free trials are not eligible." },
         { status: 403 },
       );
     }
@@ -207,7 +205,8 @@ export async function POST(request: Request) {
       !env.SIGNALWIRE_PROJECT_ID ||
       !(env.SIGNALWIRE_API_TOKEN_PHONE || env.SIGNALWIRE_API_TOKEN) ||
       !env.VAPI_PRIVATE_API_KEY ||
-      !env.VAPI_SIGNALWIRE_CREDENTIAL_ID
+      !env.VAPI_SIGNALWIRE_CREDENTIAL_ID ||
+      !env.VAPI_WEBHOOK_SECRET
     ) {
       return NextResponse.json(
         { error: "Phone provisioning providers are not fully configured." },
@@ -256,176 +255,98 @@ export async function POST(request: Request) {
 
     const provisioning = await prisma.$transaction(
       async (tx) => {
-        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${userId}))`;
+        // Serialize activation attempts for this account while provisioning.
+        await tx.$queryRaw`SELECT 1 WHERE pg_advisory_xact_lock(hashtext(${userId})) IS NULL`;
 
-        const existing = await tx.phoneNumber.findFirst({
+        let phone = await tx.phoneNumber.findFirst({
           where: {
-            userId: userId,
+            userId,
             status: { in: ["ACTIVE", "PENDING"] },
           },
           orderBy: { purchasedAt: "desc" },
         });
+        const isExisting = Boolean(phone);
 
-        if (existing) {
-          return {
-            phone: existing as ProvisionedPhone,
-            isExisting: true,
-          };
-        }
+        if (!phone) {
+          const searchParams = new URLSearchParams({
+            number_type: "local",
+            max_results: "30",
+          });
+          if (requestedAreaCode) {
+            searchParams.set("areacode", requestedAreaCode);
+          }
 
-        const searchParams = new URLSearchParams({
-          number_type: "local",
-          max_results: "30",
-        });
-        if (requestedAreaCode) {
-          searchParams.set("areacode", requestedAreaCode);
-        }
-
-        const searchPayload = await providerRequest(
-          `${signalWire.baseUrl}/api/relay/rest/phone_numbers/search?${searchParams.toString()}`,
-          {
-            method: "GET",
-            headers: signalWire.headers,
-          },
-          "SignalWire",
-        );
-
-        const candidates = Array.isArray(searchPayload?.data)
-          ? searchPayload.data.filter(
-              (item: unknown) =>
-                isRecord(item) &&
-                hasVoiceCapability(item.capabilities) &&
-                /^\+1\d{10}$/.test(getString(item.number)),
-            )
-          : [];
-
-        const selected = candidates[0] as JsonRecord | undefined;
-
-        if (!selected) {
-          throw new Error(
-            requestedAreaCode
-              ? "No available voice number was found for that area code. Try another area code."
-              : "No available US voice phone numbers were returned by SignalWire.",
+          const searchPayload = await providerRequest(
+            `${signalWire.baseUrl}/api/relay/rest/phone_numbers/search?${searchParams.toString()}`,
+            { method: "GET", headers: signalWire.headers },
+            "SignalWire",
           );
-        }
 
-        const number = getString(selected.number);
+          const candidates = Array.isArray(searchPayload?.data)
+            ? searchPayload.data.filter((item: unknown) => {
+                if (!isRecord(item)) return false;
 
-        const purchased = await providerRequest(
-          `${signalWire.baseUrl}/api/relay/rest/phone_numbers`,
-          {
-            method: "POST",
-            headers: {
-              ...signalWire.headers,
-              "Content-Type": "application/json",
+                const candidateNumber =
+                  getString(item.number) || getString(item.e164);
+                const capabilities = item.capabilities;
+                const supportsVoice =
+                  capabilities === undefined ||
+                  (Array.isArray(capabilities)
+                    ? capabilities.includes("voice")
+                    : isRecord(capabilities) && capabilities.voice === true);
+
+                return /^\+1\d{10}$/.test(candidateNumber) && supportsVoice;
+              })
+            : [];
+          const selected = candidates[0] as JsonRecord | undefined;
+
+          if (!selected) {
+            throw new Error(
+              requestedAreaCode
+                ? "No available voice number was found for that area code. Try another area code."
+                : "No available US voice phone numbers were returned by SignalWire.",
+            );
+          }
+
+          const number = getString(selected.number) || getString(selected.e164);
+          const purchased = await providerRequest(
+            `${signalWire.baseUrl}/api/relay/rest/phone_numbers`,
+            {
+              method: "POST",
+              headers: { ...signalWire.headers, "Content-Type": "application/json" },
+              body: JSON.stringify({ number }),
             },
-            body: JSON.stringify({ number }),
-          },
-          "SignalWire",
-        );
+            "SignalWire",
+          );
 
-        const signalWirePhoneId = getString(purchased?.id);
-        const purchasedNumber = getString(purchased?.number) || number;
+          const signalWirePhoneId = getString(purchased?.id);
+          const purchasedNumber = getString(purchased?.number) || number;
+          if (!signalWirePhoneId || purchasedNumber !== number) {
+            throw new Error("SignalWire did not confirm the purchased phone number.");
+          }
 
-        if (!signalWirePhoneId || purchasedNumber !== number) {
-          throw new Error("SignalWire did not confirm the purchased phone number.");
-        }
-
-        resources.signalWirePhoneId = signalWirePhoneId;
-
-        const swmlPayload = await providerRequest(
-          `${signalWire.baseUrl}/api/fabric/resources/swml_scripts`,
-          {
-            method: "POST",
-            headers: {
-              ...signalWire.headers,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              name: `SCD Inbound ${number.slice(-4)}`,
-              script_type: "calling",
-              contents: {
-                version: "1.0.0",
-                sections: {
-                  main: [
-                    {
-                      connect: {
-                        to: `sip:%{call.to}@${env.VAPI_SIGNALWIRE_CREDENTIAL_ID}.sip.vapi.ai`,
-                      },
-                    },
-                  ],
-                },
+          // Create the durable PENDING record before attempting any downstream integration.
+          // Keep the provider's actual purchase identifier so retries reuse this exact number.
+          phone = await tx.phoneNumber.create({
+            data: {
+              userId,
+              provider: "SIGNALWIRE",
+              providerId: signalWirePhoneId,
+              phoneNumber: number,
+              countryCode: "US",
+              region: getString(selected.region) || null,
+              city: getString(selected.city) || null,
+              status: "PENDING",
+              metadata: {
+                provisioningStatus: "PURCHASED",
+                vapiPhoneNumberId: null,
+                swmlScriptId: null,
+                callRelayScriptUrl: null,
+                vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
               },
-            }),
-          },
-          "SignalWire",
-        );
-
-        const swmlScriptId =
-          getString(swmlPayload?.swml_script?.id) || getString(swmlPayload?.id);
-        const scriptUrl =
-          getString(swmlPayload?.swml_script?.request_url) ||
-          (swmlScriptId
-            ? `${signalWire.baseUrl}/relay-bins/${swmlScriptId}`
-            : "");
-
-        if (!swmlScriptId || !scriptUrl) {
-          throw new Error("SignalWire did not return a usable inbound SWML script URL.");
-        }
-
-        resources.swmlScriptId = swmlScriptId;
-
-        const vapiPhone = await providerRequest(
-          `${VAPI_BASE_URL}/phone-number`,
-          {
-            method: "POST",
-            headers: vapiHeaders,
-            body: JSON.stringify({
-              provider: "byo-phone-number",
-              number,
-              credentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
-              assistantId: null,
-              squadId: null,
-              name: `${appProfile.businessName || "Smart Cleaning Desk"} Phone`.slice(0, 40),
-              server: {
-                url: VAPI_WEBHOOK_URL,
-                timeoutSeconds: 20,
-                headers: env.VAPI_WEBHOOK_SECRET
-                  ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
-                  : undefined,
-              },
-            }),
-          },
-          "Vapi",
-        );
-
-        const vapiPhoneId = getString(vapiPhone?.id);
-        if (!vapiPhoneId) {
-          throw new Error("Vapi did not confirm the imported phone number.");
-        }
-
-        resources.vapiPhoneId = vapiPhoneId;
-
-        const phone = await tx.phoneNumber.create({
-          data: {
-            userId: userId,
-            provider: "SIGNALWIRE",
-            providerId: signalWirePhoneId,
-            phoneNumber: number,
-            countryCode: "US",
-            region: getString(selected.region) || null,
-            city: getString(selected.city) || null,
-            status: "PENDING",
-            monthlyPriceCents: 0,
-            metadata: {
-              vapiPhoneNumberId: vapiPhoneId,
-              swmlScriptId,
-              callRelayScriptUrl: scriptUrl,
-              vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
-              provisioningStatus: "ROUTING_PENDING",
             },
-          },
-        });
+          });
+        }
 
         await tx.aIPhoneSettings.upsert({
           where: { businessProfileId: appProfile.id },
@@ -433,57 +354,144 @@ export async function POST(request: Request) {
             businessProfileId: appProfile.id,
             status: "READY",
             provider: "Vapi",
-            phoneNumber: number,
+            phoneNumber: phone.phoneNumber,
             assistantName: `${appProfile.businessName || "AI"} Receptionist`.slice(0, 80),
             enabled: false,
           },
           update: {
             status: "READY",
             provider: "Vapi",
-            phoneNumber: number,
+            phoneNumber: phone.phoneNumber,
             enabled: false,
           },
         });
 
+        let metadata = readProvisioningMetadata(phone.metadata);
+        let setupError: string | null = null;
+
+        // Each successful provider step is saved immediately. If a later step fails,
+        // the transaction commits the PENDING phone and the next request resumes it.
+        try {
+          // Reuse the existing shared SignalWire Relay Bin URL for every number.
+          // The Relay Bin is managed in SignalWire; do not call the Fabric swml_scripts
+          // endpoint with a Relay Bin ID (they are different resource types).
+          const sharedSwmlScriptId = "4882d3a4-79f0-4daf-b033-f734ee6061c1";
+          const sharedSwmlRequestUrl =
+            "https://gearnest-llc.signalwire.com/relay-bins/4882d3a4-79f0-4daf-b033-f734ee6061c1";
+
+          if (
+            metadata.swmlScriptId !== sharedSwmlScriptId ||
+            metadata.callRelayScriptUrl !== sharedSwmlRequestUrl ||
+            metadata.vapiCredentialId !== env.VAPI_SIGNALWIRE_CREDENTIAL_ID
+          ) {
+            metadata = {
+              ...metadata,
+              swmlScriptId: sharedSwmlScriptId,
+              callRelayScriptUrl: sharedSwmlRequestUrl,
+              vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
+            };
+            phone = await tx.phoneNumber.update({
+              where: { id: phone.id },
+              data: {
+                metadata: {
+                  ...metadata,
+                  vapiPhoneNumberId: metadata.vapiPhoneNumberId || null,
+                  provisioningStatus: "SHARED_SWML_CONFIGURED",
+                },
+              },
+            });
+          }
+
+          if (!metadata.vapiPhoneNumberId) {
+            // The webhook returns the company-specific assistant dynamically
+            // through Vapi's assistant-request event; no shared assistant is hardcoded.
+            const vapiPhone = await providerRequest(
+              `${VAPI_BASE_URL}/phone-number`,
+              {
+                method: "POST",
+                headers: vapiHeaders,
+                body: JSON.stringify({
+                  provider: "byo-phone-number",
+                  number: phone.phoneNumber,
+                  numberE164CheckEnabled: false,
+                  credentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
+                  assistantId: null,
+                  squadId: null,
+                  name: `${appProfile.businessName || "Smart Cleaning Desk"} Phone`.slice(0, 40),
+                  server: {
+                    url: VAPI_WEBHOOK_URL,
+                    timeoutSeconds: 20,
+                    headers: {
+                      Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}`,
+                    },
+                  },
+                }),
+              },
+              "Vapi",
+            );
+
+            const vapiPhoneNumberId = getString(vapiPhone?.id);
+            if (!vapiPhoneNumberId) {
+              throw new Error("Vapi did not confirm the imported phone number.");
+            }
+
+            metadata = { ...metadata, vapiPhoneNumberId };
+            phone = await tx.phoneNumber.update({
+              where: { id: phone.id },
+              data: {
+                metadata: {
+                  ...metadata,
+                  vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
+                  provisioningStatus: "VAPI_IMPORTED",
+                },
+              },
+            });
+          }
+        } catch (error) {
+          setupError =
+            error instanceof Error ? error.message : "Provider setup is incomplete.";
+          console.error("[AI PHONE RESUMABLE PROVISIONING]", {
+            phoneNumber: phone.phoneNumber,
+            stage: metadata.vapiPhoneNumberId
+              ? "ROUTING"
+              : metadata.swmlScriptId &&
+                  metadata.vapiCredentialId === env.VAPI_SIGNALWIRE_CREDENTIAL_ID
+                ? "VAPI_IMPORT"
+                : "SWML_CREATION",
+            error: setupError,
+          });
+        }
+
         return {
           phone: phone as ProvisionedPhone,
-          isExisting: false,
+          isExisting,
+          setupError,
         };
       },
       {
         maxWait: 15000,
-        timeout: 45000,
+        timeout: 60000,
       },
     );
 
-    resourcesPersisted = true;
     const metadata = readProvisioningMetadata(provisioning.phone.metadata);
 
-    if (
-      !metadata.vapiPhoneNumberId ||
-      !metadata.swmlScriptId ||
-      !metadata.callRelayScriptUrl
-    ) {
-      console.error("[AI PHONE ACTIVATION] Existing number has incomplete provider metadata.", {
-        phoneNumberId: provisioning.phone.id,
-        hasVapiPhoneNumberId: Boolean(metadata.vapiPhoneNumberId),
-        hasSwmlScriptId: Boolean(metadata.swmlScriptId),
-        hasCallRelayScriptUrl: Boolean(metadata.callRelayScriptUrl),
-      });
-
+    if (!metadata.callRelayScriptUrl || !metadata.vapiPhoneNumberId) {
       return NextResponse.json(
         {
-          error:
-            "This existing phone number is missing required Vapi or SignalWire connection details. It was not marked active. Contact support to repair the existing connection safely without purchasing another number.",
-          phoneNumber: provisioning.phone.phoneNumber,
+          success: false,
           status: "PENDING",
+          existingNumber: provisioning.isExisting,
+          phoneNumber: provisioning.phone.phoneNumber,
+          message:
+            "Your number is safely saved. Setup is incomplete and can be resumed without purchasing another number.",
+          error: provisioning.setupError || "Phone setup is still pending.",
         },
-        { status: 409 },
+        { status: 202 },
       );
     }
 
-    // Reapply the saved route for both PENDING numbers and previously assigned
-    // numbers whose AI Phone service was disabled during subscription cancellation.
+    // Reapply routing on retries too; this operation is safe to repeat for the same number.
     await finishSignalWireRouting(
       provisioning.phone.providerId,
       metadata.callRelayScriptUrl,
@@ -495,9 +503,8 @@ export async function POST(request: Request) {
         data: {
           status: "ACTIVE",
           metadata: {
-            vapiPhoneNumberId: metadata.vapiPhoneNumberId,
-            swmlScriptId: metadata.swmlScriptId,
-            callRelayScriptUrl: metadata.callRelayScriptUrl,
+            ...metadata,
+            vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
             provisioningStatus: "ACTIVE",
           },
         },
@@ -543,48 +550,8 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[AI PHONE ACTIVATION ERROR]", error);
 
-    // If provider resources were created but the database transaction did not commit, undo them.
-    // Persisted PENDING records are intentionally retained so the next activation attempt can finish routing.
-    if (!resourcesPersisted && (resources.vapiPhoneId || resources.signalWirePhoneId || resources.swmlScriptId)) {
-      const vapiHeaders = {
-        Authorization: `Bearer ${env.VAPI_PRIVATE_API_KEY || ""}`,
-        Accept: "application/json",
-      };
-
-      if (resources.vapiPhoneId && env.VAPI_PRIVATE_API_KEY) {
-        await deleteProviderResource(
-          `${VAPI_BASE_URL}/phone-number/${resources.vapiPhoneId}`,
-          vapiHeaders,
-          "Vapi",
-        );
-      }
-
-      if (resources.swmlScriptId) {
-        try {
-          const signalWire = getSignalWireAuth();
-          await deleteProviderResource(
-            `${signalWire.baseUrl}/api/fabric/resources/swml_scripts/${resources.swmlScriptId}`,
-            signalWire.headers,
-            "SignalWire",
-          );
-        } catch (cleanupError) {
-          console.error("[SIGNALWIRE SWML CLEANUP CONFIGURATION ERROR]", cleanupError);
-        }
-      }
-
-      if (resources.signalWirePhoneId) {
-        try {
-          const signalWire = getSignalWireAuth();
-          await deleteProviderResource(
-            `${signalWire.baseUrl}/api/relay/rest/phone_numbers/${resources.signalWirePhoneId}`,
-            signalWire.headers,
-            "SignalWire",
-          );
-        } catch (cleanupError) {
-          console.error("[SIGNALWIRE CLEANUP CONFIGURATION ERROR]", cleanupError);
-        }
-      }
-    }
+    // Purchased numbers are intentionally not deleted on downstream failures.
+    // They remain recorded as PENDING so retries can resume without buying a replacement.
 
     const message =
       error instanceof ProviderError
