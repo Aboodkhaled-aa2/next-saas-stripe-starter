@@ -167,9 +167,15 @@ export async function POST(request: Request) {
     const userId = user.id;
 
     const isAdmin = user.role === "ADMIN";
-    const subscriptionPlan = isAdmin
-      ? null
-      : await getUserSubscriptionPlan(userId);
+
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: "AI Phone provisioning is currently restricted to admin testing." },
+        { status: 403 },
+      );
+    }
+
+    const subscriptionPlan = null;
     const supportsAIPhone =
       isAdmin ||
       Boolean(
