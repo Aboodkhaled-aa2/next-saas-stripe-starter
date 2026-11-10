@@ -45,9 +45,6 @@ const toolSchemas = [
       headers: env.VAPI_WEBHOOK_SECRET
         ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
         : undefined,
-      headers: env.VAPI_WEBHOOK_SECRET
-        ? { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` }
-        : undefined,
     },
   },
   {
