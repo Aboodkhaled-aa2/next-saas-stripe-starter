@@ -166,34 +166,44 @@ export async function POST(request: Request) {
 
     const userId = user.id;
 
-    const subscriptionPlan = await getUserSubscriptionPlan(userId);
+    const isAdmin = user.role === "ADMIN";
+    const subscriptionPlan = isAdmin
+      ? null
+      : await getUserSubscriptionPlan(userId);
     const supportsAIPhone =
-      subscriptionPlan.title === "Business" || subscriptionPlan.title === "Pro";
+      isAdmin ||
+      Boolean(
+        subscriptionPlan?.isPaid &&
+          (subscriptionPlan.title === "Business" ||
+            subscriptionPlan.title === "Pro"),
+      );
 
-    if (!subscriptionPlan.isPaid || !supportsAIPhone) {
+    if (!supportsAIPhone) {
       return NextResponse.json(
         { error: "AI Phone activation requires an active paid Business or Pro subscription. Free trials are not eligible." },
         { status: 403 },
       );
     }
 
-    const billingAccount = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { stripeSubscriptionId: true },
-    });
+    const billingAccount = isAdmin
+      ? null
+      : await prisma.user.findUnique({
+          where: { id: userId },
+          select: { stripeSubscriptionId: true },
+        });
 
-    if (!billingAccount?.stripeSubscriptionId) {
+    if (!isAdmin && !billingAccount?.stripeSubscriptionId) {
       return NextResponse.json(
         { error: "An active paid Stripe subscription is required." },
         { status: 403 },
       );
     }
 
-    const stripeSubscription = await stripe.subscriptions.retrieve(
-      billingAccount.stripeSubscriptionId,
-    );
+    const stripeSubscription = !isAdmin && billingAccount?.stripeSubscriptionId
+      ? await stripe.subscriptions.retrieve(billingAccount.stripeSubscriptionId)
+      : null;
 
-    if (stripeSubscription.status !== "active") {
+    if (!isAdmin && stripeSubscription?.status !== "active") {
       return NextResponse.json(
         { error: "Your Stripe subscription is not active. Update billing before activating AI Phone." },
         { status: 403 },
