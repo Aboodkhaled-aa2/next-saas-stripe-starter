@@ -190,7 +190,7 @@ export default function PhoneNumberPage() {
             </div>
           </div>
 
-          {!loading && !isEnabled ? (
+          {!loading ? (
             <div className="mt-6 border-t border-slate-800 pt-6">
               <button
                 type="button"
