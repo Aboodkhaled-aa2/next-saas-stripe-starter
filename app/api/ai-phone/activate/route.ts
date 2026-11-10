@@ -3,8 +3,6 @@ import { NextResponse } from "next/server";
 import { env } from "@/env.mjs";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
-import { getUserSubscriptionPlan } from "@/lib/subscription";
-import { stripe } from "@/lib/stripe";
 
 export const maxDuration = 60;
 
