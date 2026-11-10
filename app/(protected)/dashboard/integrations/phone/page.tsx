@@ -27,9 +27,7 @@ export default async function PhoneIntegrationPage() {
     redirect("/login");
   }
 
-  const isAdmin =
-    user.role === "ADMIN" &&
-    user.email?.toLowerCase() === "tawilabood11@gmail.com";
+  const isAdmin = user.email?.toLowerCase() === "tawilabood11@gmail.com";
   const subscriptionPlan = isAdmin
     ? null
     : await getUserSubscriptionPlan(user.id);
