@@ -52,11 +52,13 @@ export default function PhoneNumberPage() {
     void loadSettings();
   }, []);
 
-  async function activatePhone() {
+  async function activatePhone(retryExisting = false) {
     if (activating) return;
 
     const confirmed = window.confirm(
-      "Activate a dedicated US reception number for this Business or Pro account? The system will automatically purchase an available local number and connect it to your AI receptionist.",
+      retryExisting
+        ? "Reconnect your existing reception number? No new number will be purchased."
+        : "Activate a dedicated US reception number? The system will purchase an available local number and connect it to your AI receptionist.",
     );
 
     if (!confirmed) return;
@@ -72,7 +74,11 @@ export default function PhoneNumberPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(
-          areaCode ? { areaCode } : {},
+          retryExisting
+            ? { action: "retry-existing" }
+            : areaCode
+              ? { areaCode }
+              : {},
         ),
       });
 
@@ -186,6 +192,7 @@ export default function PhoneNumberPage() {
 
           {!loading && !isEnabled ? (
             <div className="mt-6 border-t border-slate-800 pt-6">
+              {!hasNumber ? (
               <div className="max-w-xs">
                 <label
                   htmlFor="areaCode"
@@ -211,21 +218,24 @@ export default function PhoneNumberPage() {
                   Leave this blank to assign any available US local number.
                 </p>
               </div>
+              ) : null}
 
               <button
                 type="button"
-                onClick={activatePhone}
+                onClick={() => void activatePhone(hasNumber)}
                 disabled={activating}
                 className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {activating
                   ? "Connecting your number..."
                   : hasNumber
-                    ? "Finish AI Phone Setup"
+                    ? "Reconnect Existing Number"
                     : "Activate AI Phone"}
               </button>
               <p className="mt-3 text-xs leading-5 text-slate-500">
-                Available to active paid Business and Pro subscriptions. No number is purchased until you confirm activation.
+                {hasNumber
+                  ? "Reconnect retries setup using your existing number only. It will not purchase another number."
+                  : "Available to active paid Business and Pro subscriptions. A new number is purchased only after you confirm activation."}
               </p>
             </div>
           ) : null}
