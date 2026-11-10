@@ -13,7 +13,7 @@ export default async function PhoneNumberPage() {
     redirect("/login");
   }
 
-  if (user.email?.toLowerCase() !== "tawilabood11@gmail.com") {
+  if (user.role !== "ADMIN") {
     redirect("/dashboard/integrations/phone");
   }
 
