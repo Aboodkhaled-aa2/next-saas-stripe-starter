@@ -143,6 +143,44 @@ async function getSignalWireVapiCredentialId(headers: Record<string, string>) {
   return credentialId;
 }
 
+async function findExistingVapiPhoneNumber(
+  headers: Record<string, string>,
+  expectedNumber: string,
+  expectedCredentialId: string,
+) {
+  const payload = await providerRequest(
+    `${VAPI_BASE_URL}/phone-number?limit=1000`,
+    { method: "GET", headers },
+    "Vapi",
+  );
+  const phoneNumbers = Array.isArray(payload)
+    ? payload
+    : isRecord(payload) && Array.isArray(payload.data)
+      ? payload.data
+      : [];
+  const existing = phoneNumbers.find((item: unknown) =>
+    isRecord(item) && getString(item.number) === expectedNumber,
+  );
+  if (!isRecord(existing)) return null;
+
+  if (
+    getString(existing.provider) !== "byo-phone-number" ||
+    getString(existing.credentialId) !== expectedCredentialId ||
+    !getString(existing.id)
+  ) {
+    throw new ProviderError(
+      "This number already exists in Vapi but is connected to a different provider credential. It was not changed.",
+      409,
+    );
+  }
+
+  return {
+    id: getString(existing.id),
+    number: getString(existing.number),
+    credentialId: getString(existing.credentialId),
+  };
+}
+
 async function verifyVapiPhoneNumber(
   phoneNumberId: string,
   expectedNumber: string,
@@ -295,11 +333,49 @@ export async function POST(request: Request) {
           metadata = { ...metadata, swmlScriptId: sharedSwmlScriptId, callRelayScriptUrl: sharedSwmlRequestUrl, vapiCredentialId: vapiCredentialId };
           phone = await tx.phoneNumber.update({ where: { id: phone.id }, data: { metadata: { ...metadata, vapiPhoneNumberId: metadata.vapiPhoneNumberId || null, provisioningStatus: "SIGNALWIRE_RESOURCE_VERIFIED" } } });
           if (!metadata.vapiPhoneNumberId) {
-            const vapiPhone = await providerRequest(`${VAPI_BASE_URL}/phone-number`, { method: "POST", headers: vapiHeaders, body: JSON.stringify({ provider: "byo-phone-number", number: phone.phoneNumber, numberE164CheckEnabled: false, credentialId: vapiCredentialId, name: `${appProfile.businessName || "Smart Cleaning Desk"} Phone`.slice(0, 40), server: { url: VAPI_WEBHOOK_URL, timeoutSeconds: 20, headers: { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` } } }) }, "Vapi");
+            // Reuse an earlier successful Vapi import if a previous request stopped
+            // before its ID was saved in our database. Never create a duplicate.
+            const existingVapiPhone = await findExistingVapiPhoneNumber(
+              vapiHeaders,
+              phone.phoneNumber,
+              vapiCredentialId,
+            );
+            const vapiPhone = existingVapiPhone ?? await providerRequest(
+              `${VAPI_BASE_URL}/phone-number`,
+              {
+                method: "POST",
+                headers: vapiHeaders,
+                body: JSON.stringify({
+                  provider: "byo-phone-number",
+                  number: phone.phoneNumber,
+                  numberE164CheckEnabled: false,
+                  credentialId: vapiCredentialId,
+                  name: `${appProfile.businessName || "Smart Cleaning Desk"} Phone`.slice(0, 40),
+                  server: {
+                    url: VAPI_WEBHOOK_URL,
+                    timeoutSeconds: 20,
+                    headers: {
+                      Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}`,
+                    },
+                  },
+                }),
+              },
+              "Vapi",
+            );
             const vapiPhoneNumberId = getString(vapiPhone?.id);
-            if (!vapiPhoneNumberId) throw new Error("Vapi did not confirm the imported phone number.");
+            if (!vapiPhoneNumberId) {
+              throw new Error("Vapi did not confirm the imported phone number.");
+            }
             metadata = { ...metadata, vapiPhoneNumberId };
-            phone = await tx.phoneNumber.update({ where: { id: phone.id }, data: { metadata: { ...metadata, provisioningStatus: "VAPI_IMPORTED" } } });
+            phone = await tx.phoneNumber.update({
+              where: { id: phone.id },
+              data: {
+                metadata: {
+                  ...metadata,
+                  provisioningStatus: "VAPI_IMPORTED",
+                },
+              },
+            });
           }
         } catch (error) {
           setupError = error instanceof Error ? error.message : "Provider setup is incomplete.";
