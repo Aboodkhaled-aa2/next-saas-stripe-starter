@@ -363,10 +363,11 @@ export async function POST(request: Request) {
     const userId = user.id;
 
     const isAdmin = user.role === "ADMIN" && user.email?.toLowerCase() === "tawilabood8@gmail.com";
+    const canUseAIPhone = user.plan === "BUSINESS" || user.plan === "PRO";
 
-    if (!isAdmin) {
+    if (!isAdmin && !canUseAIPhone) {
       return NextResponse.json(
-        { error: "AI Phone provisioning is currently restricted to admin testing." },
+        { error: "AI Phone requires a Business or Pro plan." },
         { status: 403 },
       );
     }
@@ -384,7 +385,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // Admin Refresh ignores purchase options and only reconnects the saved number.
+    let requestedAreaCode = "";
+    let retryExistingOnly = false;
+    try {
+      const body = await request.json();
+      requestedAreaCode = typeof body?.areaCode === "string" ? body.areaCode.trim() : "";
+      retryExistingOnly = isAdmin && body?.action === "retry-existing";
+    } catch {
+      // Empty request body uses the default local-number search.
+    }
+
+    if (requestedAreaCode && !/^\d{3}$/.test(requestedAreaCode)) {
+      return NextResponse.json({ error: "Area code must be exactly 3 digits." }, { status: 400 });
+    }
 
     const appProfile = await prisma.businessProfile.findUnique({
       where: { userId: userId },
@@ -410,38 +423,148 @@ export async function POST(request: Request) {
     };
     const vapiCredentialId = await getSignalWireVapiCredentialId(vapiHeaders);
 
-    // Admin Refresh targets the exact number already purchased in SignalWire.
-    // It must never search for or purchase a replacement number.
-    const adminPhoneNumber = "+12024749177";
-    const adminSignalWirePhoneId = "468c1f1b-d3e5-4404-b95d-56233af0ed53";
+    let targetPhoneNumber = "";
+    let targetSignalWirePhoneId = "";
+    let isExistingNumber = false;
+
+    if (isAdmin) {
+      // Preserve the exact tested admin number; admin refresh never buys a replacement.
+      targetPhoneNumber = "+12024749177";
+      targetSignalWirePhoneId = "468c1f1b-d3e5-4404-b95d-56233af0ed53";
+      isExistingNumber = true;
+    } else {
+      // Serialize acquisition so simultaneous clicks cannot buy duplicate numbers.
+      const acquired = await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT 1 FROM (SELECT pg_advisory_xact_lock(hashtext(${userId}))) AS advisory_lock`;
+        const existing = await tx.phoneNumber.findFirst({
+          where: { userId, status: { in: ["ACTIVE", "PENDING"] } },
+          orderBy: { purchasedAt: "desc" },
+        });
+        if (existing) {
+          return { phoneNumber: existing.phoneNumber, providerId: existing.providerId, existing: true };
+        }
+
+        const searchParams = new URLSearchParams({ number_type: "local", max_results: "30" });
+        if (requestedAreaCode) searchParams.set("areacode", requestedAreaCode);
+        const searchPayload = await providerRequest(
+          `${signalWire.baseUrl}/api/relay/rest/phone_numbers/search?${searchParams.toString()}`,
+          { method: "GET", headers: signalWire.headers },
+          "SignalWire",
+        );
+        const candidates = Array.isArray(searchPayload?.data)
+          ? searchPayload.data.filter((item: unknown) => {
+              if (!isRecord(item)) return false;
+              const candidateNumber = getString(item.number) || getString(item.e164);
+              const capabilities = item.capabilities;
+              const supportsVoice =
+                capabilities === undefined ||
+                (Array.isArray(capabilities)
+                  ? capabilities.includes("voice")
+                  : isRecord(capabilities) && capabilities.voice === true);
+              return /^\+1\d{10}$/.test(candidateNumber) && supportsVoice;
+            })
+          : [];
+        const selected = candidates[0] as JsonRecord | undefined;
+        if (!selected) {
+          throw new ProviderError(
+            requestedAreaCode
+              ? "No available voice number was found for that area code. Try another area code."
+              : "No available US voice phone numbers were returned by SignalWire.",
+            404,
+          );
+        }
+
+        const number = getString(selected.number) || getString(selected.e164);
+        const purchased = await providerRequest(
+          `${signalWire.baseUrl}/api/relay/rest/phone_numbers`,
+          {
+            method: "POST",
+            headers: { ...signalWire.headers, "Content-Type": "application/json" },
+            body: JSON.stringify({ number }),
+          },
+          "SignalWire",
+        );
+        const purchasedId = getString(purchased?.id);
+        const purchasedNumber = getString(purchased?.number) || number;
+        if (!purchasedId || purchasedNumber !== number) {
+          throw new ProviderError("SignalWire did not confirm the purchased phone number.", 502);
+        }
+
+        await tx.phoneNumber.create({
+          data: {
+            userId,
+            provider: "SIGNALWIRE",
+            providerId: purchasedId,
+            phoneNumber: number,
+            countryCode: "US",
+            region: getString(selected.region) || null,
+            city: getString(selected.city) || null,
+            status: "PENDING",
+            metadata: {
+              provisioningStatus: "PURCHASED",
+              vapiPhoneNumberId: null,
+              swmlScriptId: null,
+              callRelayScriptUrl: null,
+              vapiCredentialId,
+            },
+          },
+        });
+        return { phoneNumber: number, providerId: purchasedId, existing: false };
+      }, { maxWait: 15000, timeout: 60000 });
+
+      targetPhoneNumber = acquired.phoneNumber;
+      targetSignalWirePhoneId = acquired.providerId;
+      isExistingNumber = acquired.existing;
+    }
 
     const signalWireResource = await providerRequest(
-      `${signalWire.baseUrl}/api/relay/rest/phone_numbers/${encodeURIComponent(adminSignalWirePhoneId)}`,
+      `${signalWire.baseUrl}/api/relay/rest/phone_numbers/${encodeURIComponent(targetSignalWirePhoneId)}`,
       { method: "GET", headers: signalWire.headers },
       "SignalWire",
     );
     const signalWireResourceNumber = getString(signalWireResource?.number) || getString(signalWireResource?.e164);
     const signalWireResourceId = getString(signalWireResource?.id);
-
-    if (signalWireResourceId !== adminSignalWirePhoneId || signalWireResourceNumber.replace(/[^\d+]/g, "") !== adminPhoneNumber) {
-      throw new ProviderError("SignalWire did not confirm the exact existing admin number. No changes were made.", 409);
+    if (
+      signalWireResourceId !== targetSignalWirePhoneId ||
+      signalWireResourceNumber.replace(/[^\d+]/g, "") !== targetPhoneNumber
+    ) {
+      throw new ProviderError("SignalWire did not confirm the exact purchased number and resource. The number remains pending.", 409);
     }
 
-    let savedPhone = await prisma.phoneNumber.findUnique({ where: { phoneNumber: adminPhoneNumber } });
-    if (savedPhone && (savedPhone.userId !== userId || savedPhone.providerId !== adminSignalWirePhoneId)) {
-      throw new ProviderError("The existing admin number is assigned to a different account or resource. Manual review is required.", 409);
+    let savedPhone = await prisma.phoneNumber.findUnique({ where: { phoneNumber: targetPhoneNumber } });
+    if (
+      savedPhone &&
+      (savedPhone.userId !== userId || savedPhone.providerId !== targetSignalWirePhoneId)
+    ) {
+      throw new ProviderError("This phone number is already assigned to a different account or provider resource.", 409);
     }
     if (!savedPhone) {
       savedPhone = await prisma.phoneNumber.create({
-        data: { userId, provider: "SIGNALWIRE", providerId: adminSignalWirePhoneId, phoneNumber: adminPhoneNumber, countryCode: "US", status: "PENDING", metadata: { provisioningStatus: "SIGNALWIRE_RESOURCE_VERIFIED", vapiPhoneNumberId: null, swmlScriptId: null, callRelayScriptUrl: null, vapiCredentialId: vapiCredentialId } },
+        data: {
+          userId,
+          provider: "SIGNALWIRE",
+          providerId: targetSignalWirePhoneId,
+          phoneNumber: targetPhoneNumber,
+          countryCode: "US",
+          status: "PENDING",
+          metadata: {
+            provisioningStatus: "SIGNALWIRE_RESOURCE_VERIFIED",
+            vapiPhoneNumberId: null,
+            swmlScriptId: null,
+            callRelayScriptUrl: null,
+            vapiCredentialId,
+          },
+        },
       });
     }
 
     const provisioning = await prisma.$transaction(
       async (tx) => {
         await tx.$queryRaw`SELECT 1 FROM (SELECT pg_advisory_xact_lock(hashtext(${userId}))) AS advisory_lock`;
-        let phone = await tx.phoneNumber.findUnique({ where: { phoneNumber: adminPhoneNumber } });
-        if (!phone || phone.userId !== userId || phone.providerId !== adminSignalWirePhoneId) throw new ProviderError("The verified admin number is not safely assigned to this account.", 409);
+        let phone = await tx.phoneNumber.findUnique({ where: { phoneNumber: targetPhoneNumber } });
+        if (!phone || phone.userId !== userId || phone.providerId !== targetSignalWirePhoneId) {
+          throw new ProviderError("The verified phone number is not safely assigned to this account.", 409);
+        }
         await tx.aIPhoneSettings.upsert({
           where: { businessProfileId: appProfile.id },
           create: { businessProfileId: appProfile.id, status: "READY", provider: "Vapi", phoneNumber: phone.phoneNumber, assistantName: `${appProfile.businessName || "AI"} Receptionist`.slice(0, 80), enabled: false },
@@ -516,7 +639,7 @@ export async function POST(request: Request) {
           setupError = error instanceof Error ? error.message : "Provider setup is incomplete.";
           console.error("[AI PHONE RESUMABLE PROVISIONING]", { phoneNumber: phone.phoneNumber, stage: metadata.vapiPhoneNumberId ? "ROUTING" : "VAPI_IMPORT", error: setupError });
         }
-        return { phone: phone as ProvisionedPhone, isExisting: true, setupError };
+        return { phone: phone as ProvisionedPhone, isExisting: isExistingNumber, setupError };
       },
       { maxWait: 15000, timeout: 60000 },
     );
