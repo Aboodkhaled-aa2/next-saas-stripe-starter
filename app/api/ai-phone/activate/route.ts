@@ -391,11 +391,9 @@ export async function POST(request: Request) {
     }
 
     let requestedAreaCode = "";
-    let retryExistingOnly = false;
     try {
       const body = await request.json();
       requestedAreaCode = typeof body?.areaCode === "string" ? body.areaCode.trim() : "";
-      retryExistingOnly = isAdmin && body?.action === "retry-existing";
     } catch {
       // Empty request body uses the default local-number search.
     }
