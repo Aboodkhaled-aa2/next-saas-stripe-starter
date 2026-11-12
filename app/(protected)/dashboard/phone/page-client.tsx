@@ -193,19 +193,41 @@ export default function PhoneNumberPage() {
             </div>
           </div>
 
-          {!loading && isAdmin ? (
+          {!loading && (isAdmin || !isEnabled) ? (
             <div className="mt-6 border-t border-slate-800 pt-6">
-              <button
-                type="button"
-                onClick={() => void activatePhone(true)}
-                disabled={activating}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {activating ? "Reconnecting your saved number..." : "Reconnect Existing Number"}
-              </button>
-              <p className="mt-3 text-xs leading-5 text-slate-500">
-                This admin-only action retries setup for the number already saved to your account. It will not purchase a new number.
-              </p>
+              {isAdmin ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void activatePhone(true)}
+                    disabled={activating}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {activating ? "Reconnecting your saved number..." : "Reconnect Existing Number"}
+                  </button>
+                  <p className="mt-3 text-xs leading-5 text-slate-500">
+                    Admin refresh reconnects the exact number already assigned to the admin account. It never purchases a replacement.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void activatePhone(false)}
+                    disabled={activating}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {activating
+                      ? "Connecting your AI Phone..."
+                      : hasNumber
+                        ? "Resume Number Connection"
+                        : "Purchase & Connect Number"}
+                  </button>
+                  <p className="mt-3 text-xs leading-5 text-slate-500">
+                    We will purchase one US voice number for your account and connect it to your AI receptionist. If setup needs a retry, the same number is reused.
+                  </p>
+                </>
+              )}
             </div>
           ) : null}
         </section>
