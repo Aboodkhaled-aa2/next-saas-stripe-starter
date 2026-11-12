@@ -128,6 +128,12 @@ function readProvisioningMetadata(value: unknown) {
 }
 
 async function getSignalWireVapiCredentialId(headers: Record<string, string>) {
+  // Prefer the credential already configured for the working SignalWire/Vapi setup.
+  // Fall back to discovering it by its explicit dashboard name only when unset.
+  if (env.VAPI_SIGNALWIRE_CREDENTIAL_ID) {
+    return env.VAPI_SIGNALWIRE_CREDENTIAL_ID;
+  }
+
   const payload = await providerRequest(`${VAPI_BASE_URL}/credential?limit=100`, { method: "GET", headers }, "Vapi");
   const credentials = Array.isArray(payload)
     ? payload
