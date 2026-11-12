@@ -25,12 +25,6 @@ type ProvisionedPhone = {
   metadata: unknown;
 };
 
-type ProviderResources = {
-  signalWirePhoneId?: string;
-  vapiPhoneId?: string;
-  swmlScriptId?: string;
-};
-
 class ProviderError extends Error {
   status: number;
 
@@ -46,14 +40,6 @@ function isRecord(value: unknown): value is JsonRecord {
 
 function getString(value: unknown) {
   return typeof value === "string" ? value : "";
-}
-
-function hasVoiceCapability(value: unknown) {
-  if (Array.isArray(value)) {
-    return value.includes("voice");
-  }
-
-  return isRecord(value) && value.voice === true;
 }
 
 function getSignalWireAuth() {
@@ -143,7 +129,11 @@ function readProvisioningMetadata(value: unknown) {
 
 async function getSignalWireVapiCredentialId(headers: Record<string, string>) {
   const payload = await providerRequest(`${VAPI_BASE_URL}/credential?limit=100`, { method: "GET", headers }, "Vapi");
-  const credentials = Array.isArray(payload) ? payload : [];
+  const credentials = Array.isArray(payload)
+    ? payload
+    : isRecord(payload) && Array.isArray(payload.data)
+      ? payload.data
+      : [];
   const match = credentials.find((item: unknown) => {
     if (!isRecord(item)) return false;
     return getString(item.name).trim().toLowerCase() === "signalwire inbound trunk" && getString(item.provider) === "byo-sip-trunk";
@@ -175,10 +165,7 @@ async function finishSignalWireRouting(phoneId: string, scriptUrl: string) {
 }
 
 export async function POST(request: Request) {
-  const resources: ProviderResources = {};
-  let resourcesPersisted = false;
-
-  try {
+    try {
     const user = await getCurrentUser();
 
     if (!user?.id) {
