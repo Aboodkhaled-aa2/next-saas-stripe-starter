@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { getUserSubscriptionPlan } from "@/lib/subscription";
 
 export async function GET() {
   try {
@@ -11,9 +12,16 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
-    if (user.role !== "ADMIN" || user.email?.toLowerCase() !== "tawilabood8@gmail.com") {
+    const isAdmin = user.role === "ADMIN" && user.email?.toLowerCase() === "tawilabood8@gmail.com";
+    const subscriptionPlan = isAdmin ? null : await getUserSubscriptionPlan(user.id);
+    const canUseAIPhone = Boolean(
+      subscriptionPlan?.isPaid &&
+        (subscriptionPlan.title === "Business" || subscriptionPlan.title === "Pro"),
+    );
+
+    if (!isAdmin && !canUseAIPhone) {
       return NextResponse.json(
-        { error: "AI Phone is currently restricted to admin testing." },
+        { error: "AI Phone requires an active Business or Pro subscription." },
         { status: 403 },
       );
     }
@@ -29,7 +37,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      isAdmin: true,
+      isAdmin,
       aiPhoneSettings: businessProfile?.aiPhoneSettings ?? null,
       businessProfile: businessProfile
         ? {
@@ -63,9 +71,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
-    if (user.role !== "ADMIN" || user.email?.toLowerCase() !== "tawilabood8@gmail.com") {
+    const isAdmin = user.role === "ADMIN" && user.email?.toLowerCase() === "tawilabood8@gmail.com";
+    const subscriptionPlan = isAdmin ? null : await getUserSubscriptionPlan(user.id);
+    const canUseAIPhone = Boolean(
+      subscriptionPlan?.isPaid &&
+        (subscriptionPlan.title === "Business" || subscriptionPlan.title === "Pro"),
+    );
+
+    if (!isAdmin && !canUseAIPhone) {
       return NextResponse.json(
-        { error: "AI Phone is currently restricted to admin testing." },
+        { error: "AI Phone requires an active Business or Pro subscription." },
         { status: 403 },
       );
     }
