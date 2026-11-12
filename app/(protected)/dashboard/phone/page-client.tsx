@@ -15,6 +15,7 @@ type AIPhoneResponse = {
   phoneNumber?: string;
   error?: string;
   message?: string;
+  isAdmin?: boolean;
 };
 
 export default function PhoneNumberPage() {
@@ -24,6 +25,7 @@ export default function PhoneNumberPage() {
   const [areaCode, setAreaCode] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   async function loadSettings() {
     try {
@@ -37,6 +39,7 @@ export default function PhoneNumberPage() {
       }
 
       setSettings(data.aiPhoneSettings ?? null);
+      setIsAdmin(data.isAdmin === true);
     } catch (err) {
       setError(
         err instanceof Error
@@ -190,7 +193,7 @@ export default function PhoneNumberPage() {
             </div>
           </div>
 
-          {!loading ? (
+          {!loading && isAdmin ? (
             <div className="mt-6 border-t border-slate-800 pt-6">
               <button
                 type="button"
