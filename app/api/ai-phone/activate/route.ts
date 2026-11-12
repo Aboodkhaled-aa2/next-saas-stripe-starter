@@ -215,25 +215,134 @@ async function verifyVapiPhoneNumber(
   }
 }
 
-async function finishSignalWireRouting(phoneId: string, scriptUrl: string) {
+async function ensureSignalWireSwmlScript(
+  credentialId: string,
+  existingScriptId: string,
+) {
   const signalWire = getSignalWireAuth();
+  const headers = {
+    ...signalWire.headers,
+    "Content-Type": "application/json",
+  };
 
-  await providerRequest(
-    `${signalWire.baseUrl}/api/relay/rest/phone_numbers/${encodeURIComponent(phoneId)}`,
+  if (existingScriptId) {
+    try {
+      const existing = await providerRequest(
+        `${signalWire.baseUrl}/api/fabric/resources/swml_scripts/${encodeURIComponent(existingScriptId)}`,
+        { method: "GET", headers: signalWire.headers },
+        "SignalWire",
+      );
+      const actualId = getString(existing?.id);
+      if (actualId === existingScriptId) return actualId;
+    } catch (error) {
+      if (!(error instanceof ProviderError) || error.status !== 404) throw error;
+    }
+  }
+
+  const created = await providerRequest(
+    `${signalWire.baseUrl}/api/fabric/resources/swml_scripts`,
     {
-      method: "PUT",
-      headers: {
-        ...signalWire.headers,
-        "Content-Type": "application/json",
-      },
+      method: "POST",
+      headers,
       body: JSON.stringify({
-        call_handler: "relay_script",
-        call_relay_script_url: scriptUrl,
-        call_receive_mode: "voice",
+        name: "Smart Cleaning Desk Vapi Inbound",
+        script_type: "calling",
+        contents: {
+          version: "1.0.0",
+          sections: {
+            main: [
+              {
+                connect: {
+                  to: `sip:%{call.to}@${credentialId}.sip.vapi.ai`,
+                },
+              },
+            ],
+          },
+        },
       }),
     },
     "SignalWire",
   );
+
+  const scriptId = getString(created?.id) || getString(created?.swml_script?.id);
+  if (!scriptId) {
+    throw new ProviderError("SignalWire did not return the created SWML Script ID.", 502);
+  }
+
+  const verified = await providerRequest(
+    `${signalWire.baseUrl}/api/fabric/resources/swml_scripts/${encodeURIComponent(scriptId)}`,
+    { method: "GET", headers: signalWire.headers },
+    "SignalWire",
+  );
+  if (getString(verified?.id) !== scriptId) {
+    throw new ProviderError("SignalWire did not verify the new SWML Script.", 502);
+  }
+  return scriptId;
+}
+
+async function finishSignalWireRouting(phoneNumber: string, scriptId: string) {
+  const signalWire = getSignalWireAuth();
+  const headers = {
+    ...signalWire.headers,
+    "Content-Type": "application/json",
+  };
+
+  const listing = await providerRequest(
+    `${signalWire.baseUrl}/api/fabric/phone_number_addresses?page_size=1000&page_number=0`,
+    { method: "GET", headers: signalWire.headers },
+    "SignalWire",
+  );
+  const addresses = Array.isArray(listing?.data) ? listing.data : [];
+  const address = addresses.find(
+    (item: unknown) =>
+      isRecord(item) &&
+      getString(item.phone_number) === phoneNumber &&
+      getString(item.handler_type) === "calling",
+  );
+
+  let assigned: unknown;
+  if (isRecord(address) && getString(address.id)) {
+    assigned = await providerRequest(
+      `${signalWire.baseUrl}/api/fabric/phone_number_addresses/${encodeURIComponent(getString(address.id))}`,
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ resource_id: scriptId }),
+      },
+      "SignalWire",
+    );
+  } else {
+    assigned = await providerRequest(
+      `${signalWire.baseUrl}/api/fabric/phone_number_addresses`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          number: phoneNumber,
+          handler_type: "calling",
+          resource_id: scriptId,
+        }),
+      },
+      "SignalWire",
+    );
+  }
+
+  if (!isRecord(assigned) || getString(assigned.resource_id) !== scriptId) {
+    throw new ProviderError("SignalWire did not confirm the SWML Script assignment to this number.", 502);
+  }
+
+  const verified = await providerRequest(
+    `${signalWire.baseUrl}/api/fabric/phone_number_addresses/${encodeURIComponent(getString(assigned.id))}`,
+    { method: "GET", headers: signalWire.headers },
+    "SignalWire",
+  );
+  if (
+    getString(verified?.phone_number) !== phoneNumber ||
+    getString(verified?.handler_type) !== "calling" ||
+    getString(verified?.resource_id) !== scriptId
+  ) {
+    throw new ProviderError("SignalWire could not verify inbound call routing for this number.", 502);
+  }
 }
 
 export async function POST(request: Request) {
@@ -334,9 +443,7 @@ export async function POST(request: Request) {
         let metadata = readProvisioningMetadata(phone.metadata);
         let setupError: string | null = null;
         try {
-          const sharedSwmlScriptId = "4882d3a4-79f0-4daf-b033-f734ee6061c1";
-          const sharedSwmlRequestUrl = "https://gearnest-llc.signalwire.com/relay-bins/4882d3a4-79f0-4daf-b033-f734ee6061c1";
-          metadata = { ...metadata, swmlScriptId: sharedSwmlScriptId, callRelayScriptUrl: sharedSwmlRequestUrl, vapiCredentialId: vapiCredentialId };
+          metadata = { ...metadata, vapiCredentialId: vapiCredentialId };
           phone = await tx.phoneNumber.update({ where: { id: phone.id }, data: { metadata: { ...metadata, vapiPhoneNumberId: metadata.vapiPhoneNumberId || null, provisioningStatus: "SIGNALWIRE_RESOURCE_VERIFIED" } } });
           if (!metadata.vapiPhoneNumberId) {
             // Reuse an earlier successful Vapi import if a previous request stopped
@@ -383,6 +490,21 @@ export async function POST(request: Request) {
               },
             });
           }
+
+          const swmlScriptId = await ensureSignalWireSwmlScript(
+            vapiCredentialId,
+            metadata.swmlScriptId,
+          );
+          metadata = { ...metadata, swmlScriptId, callRelayScriptUrl: "" };
+          phone = await tx.phoneNumber.update({
+            where: { id: phone.id },
+            data: {
+              metadata: {
+                ...metadata,
+                provisioningStatus: "SWML_SCRIPT_READY",
+              },
+            },
+          });
         } catch (error) {
           setupError = error instanceof Error ? error.message : "Provider setup is incomplete.";
           console.error("[AI PHONE RESUMABLE PROVISIONING]", { phoneNumber: phone.phoneNumber, stage: metadata.vapiPhoneNumberId ? "ROUTING" : "VAPI_IMPORT", error: setupError });
@@ -393,7 +515,7 @@ export async function POST(request: Request) {
     );
     const metadata = readProvisioningMetadata(provisioning.phone.metadata);
 
-    if (!metadata.callRelayScriptUrl || !metadata.vapiPhoneNumberId) {
+    if (!metadata.swmlScriptId || !metadata.vapiPhoneNumberId) {
       return NextResponse.json(
         {
           success: false,
@@ -417,8 +539,8 @@ export async function POST(request: Request) {
 
     // Reapply routing on retries too; this operation is safe to repeat for the same number.
     await finishSignalWireRouting(
-      provisioning.phone.providerId,
-      metadata.callRelayScriptUrl,
+      provisioning.phone.phoneNumber,
+      metadata.swmlScriptId,
     );
 
     await prisma.$transaction([
