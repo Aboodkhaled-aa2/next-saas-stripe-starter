@@ -241,12 +241,13 @@ export async function POST(request: Request) {
       "Content-Type": "application/json",
     };
 
-    // Admin-only recovery target: reconnect the already-purchased SignalWire resource.
+    // Admin Refresh targets the exact number already purchased in SignalWire.
+    // It must never search for or purchase a replacement number.
     const adminPhoneNumber = "+12024749177";
     const adminSignalWirePhoneId = "468c1f1b-d3e5-4404-b95d-56233af0ed53";
 
     const signalWireResource = await providerRequest(
-      signalWire.baseUrl + "/api/relay/rest/phone_numbers/" + encodeURIComponent(adminSignalWirePhoneId),
+      `${signalWire.baseUrl}/api/relay/rest/phone_numbers/${encodeURIComponent(adminSignalWirePhoneId)}`,
       { method: "GET", headers: signalWire.headers },
       "SignalWire",
     );
@@ -254,253 +255,51 @@ export async function POST(request: Request) {
     const signalWireResourceId = getString(signalWireResource?.id);
 
     if (signalWireResourceId !== adminSignalWirePhoneId || signalWireResourceNumber.replace(/[^+\\d]/g, "") !== adminPhoneNumber) {
-      throw new ProviderError("The existing SignalWire resource could not be verified against the admin phone number. No changes were made.", 409);
+      throw new ProviderError("SignalWire did not confirm the exact existing admin number. No changes were made.", 409);
     }
 
-    const existingAdminPhone = await prisma.phoneNumber.findUnique({
-      where: { phoneNumber: adminPhoneNumber },
-      select: { id: true, userId: true, providerId: true },
-    });
-
-    if (existingAdminPhone && existingAdminPhone.userId !== userId) {
-      throw new ProviderError("The admin phone number is already assigned to a different account. No changes were made.", 409);
+    let savedPhone = await prisma.phoneNumber.findUnique({ where: { phoneNumber: adminPhoneNumber } });
+    if (savedPhone && (savedPhone.userId !== userId || savedPhone.providerId !== adminSignalWirePhoneId)) {
+      throw new ProviderError("The existing admin number is assigned to a different account or resource. Manual review is required.", 409);
     }
-
-    if (existingAdminPhone && existingAdminPhone.providerId !== adminSignalWirePhoneId) {
-      throw new ProviderError("The saved SignalWire resource ID does not match the verified resource. Manual review is required.", 409);
-    }
-
-    if (!existingAdminPhone) {
-      await prisma.phoneNumber.create({
-        data: {
-          userId, provider: "SIGNALWIRE", providerId: adminSignalWirePhoneId,
-          phoneNumber: adminPhoneNumber, countryCode: "US", status: "PENDING",
-          metadata: { provisioningStatus: "SIGNALWIRE_RESOURCE_VERIFIED", vapiPhoneNumberId: null, swmlScriptId: null, callRelayScriptUrl: null, vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID },
-        },
+    if (!savedPhone) {
+      savedPhone = await prisma.phoneNumber.create({
+        data: { userId, provider: "SIGNALWIRE", providerId: adminSignalWirePhoneId, phoneNumber: adminPhoneNumber, countryCode: "US", status: "PENDING", metadata: { provisioningStatus: "SIGNALWIRE_RESOURCE_VERIFIED", vapiPhoneNumberId: null, swmlScriptId: null, callRelayScriptUrl: null, vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID } },
       });
     }
 
     const provisioning = await prisma.$transaction(
       async (tx) => {
-        // Serialize activation attempts for this account while provisioning.
         await tx.$queryRaw`SELECT 1 FROM (SELECT pg_advisory_xact_lock(hashtext(${userId}))) AS advisory_lock`;
-
         let phone = await tx.phoneNumber.findUnique({ where: { phoneNumber: adminPhoneNumber } });
-        const isExisting = true;
-
-        if (!phone || phone.userId !== userId) {
-          throw new ProviderError("The verified admin phone number is not assigned to this admin account. No number was purchased.", 404);
-        }
-
-        if (phone.providerId !== adminSignalWirePhoneId) {
-          throw new ProviderError("The saved SignalWire resource ID does not match the verified admin number.", 409);
-        }
-
-        // Admin Refresh reconnects only the verified existing number; no purchase fallback.
-          const searchParams = new URLSearchParams({
-            number_type: "local",
-            max_results: "30",
-          });
-          if (requestedAreaCode) {
-            searchParams.set("areacode", requestedAreaCode);
-          }
-
-          const searchPayload = await providerRequest(
-            `${signalWire.baseUrl}/api/relay/rest/phone_numbers/search?${searchParams.toString()}`,
-            { method: "GET", headers: signalWire.headers },
-            "SignalWire",
-          );
-
-          const candidates = Array.isArray(searchPayload?.data)
-            ? searchPayload.data.filter((item: unknown) => {
-                if (!isRecord(item)) return false;
-
-                const candidateNumber =
-                  getString(item.number) || getString(item.e164);
-                const capabilities = item.capabilities;
-                const supportsVoice =
-                  capabilities === undefined ||
-                  (Array.isArray(capabilities)
-                    ? capabilities.includes("voice")
-                    : isRecord(capabilities) && capabilities.voice === true);
-
-                return /^\+1\d{10}$/.test(candidateNumber) && supportsVoice;
-              })
-            : [];
-          const selected = candidates[0] as JsonRecord | undefined;
-
-          if (!selected) {
-            throw new Error(
-              requestedAreaCode
-                ? "No available voice number was found for that area code. Try another area code."
-                : "No available US voice phone numbers were returned by SignalWire.",
-            );
-          }
-
-          const number = getString(selected.number) || getString(selected.e164);
-          const purchased = await providerRequest(
-            `${signalWire.baseUrl}/api/relay/rest/phone_numbers`,
-            {
-              method: "POST",
-              headers: { ...signalWire.headers, "Content-Type": "application/json" },
-              body: JSON.stringify({ number }),
-            },
-            "SignalWire",
-          );
-
-          const signalWirePhoneId = getString(purchased?.id);
-          const purchasedNumber = getString(purchased?.number) || number;
-          if (!signalWirePhoneId || purchasedNumber !== number) {
-            throw new Error("SignalWire did not confirm the purchased phone number.");
-          }
-
-          // Create the durable PENDING record before attempting any downstream integration.
-          // Keep the provider's actual purchase identifier so retries reuse this exact number.
-          phone = await tx.phoneNumber.create({
-            data: {
-              userId,
-              provider: "SIGNALWIRE",
-              providerId: signalWirePhoneId,
-              phoneNumber: number,
-              countryCode: "US",
-              region: getString(selected.region) || null,
-              city: getString(selected.city) || null,
-              status: "PENDING",
-              metadata: {
-                provisioningStatus: "PURCHASED",
-                vapiPhoneNumberId: null,
-                swmlScriptId: null,
-                callRelayScriptUrl: null,
-                vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
-              },
-            },
-          });
-        }
-
+        if (!phone || phone.userId !== userId || phone.providerId !== adminSignalWirePhoneId) throw new ProviderError("The verified admin number is not safely assigned to this account.", 409);
         await tx.aIPhoneSettings.upsert({
           where: { businessProfileId: appProfile.id },
-          create: {
-            businessProfileId: appProfile.id,
-            status: "READY",
-            provider: "Vapi",
-            phoneNumber: phone.phoneNumber,
-            assistantName: `${appProfile.businessName || "AI"} Receptionist`.slice(0, 80),
-            enabled: false,
-          },
-          update: {
-            status: "READY",
-            provider: "Vapi",
-            phoneNumber: phone.phoneNumber,
-            enabled: false,
-          },
+          create: { businessProfileId: appProfile.id, status: "READY", provider: "Vapi", phoneNumber: phone.phoneNumber, assistantName: `${appProfile.businessName || "AI"} Receptionist`.slice(0, 80), enabled: false },
+          update: { status: "READY", provider: "Vapi", phoneNumber: phone.phoneNumber, enabled: false },
         });
-
         let metadata = readProvisioningMetadata(phone.metadata);
         let setupError: string | null = null;
-
-        // Each successful provider step is saved immediately. If a later step fails,
-        // the transaction commits the PENDING phone and the next request resumes it.
         try {
-          // Reuse the existing shared SignalWire Relay Bin URL for every number.
-          // The Relay Bin is managed in SignalWire; do not call the Fabric swml_scripts
-          // endpoint with a Relay Bin ID (they are different resource types).
           const sharedSwmlScriptId = "4882d3a4-79f0-4daf-b033-f734ee6061c1";
-          const sharedSwmlRequestUrl =
-            "https://gearnest-llc.signalwire.com/relay-bins/4882d3a4-79f0-4daf-b033-f734ee6061c1";
-
-          if (
-            metadata.swmlScriptId !== sharedSwmlScriptId ||
-            metadata.callRelayScriptUrl !== sharedSwmlRequestUrl ||
-            metadata.vapiCredentialId !== env.VAPI_SIGNALWIRE_CREDENTIAL_ID
-          ) {
-            metadata = {
-              ...metadata,
-              swmlScriptId: sharedSwmlScriptId,
-              callRelayScriptUrl: sharedSwmlRequestUrl,
-              vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
-            };
-            phone = await tx.phoneNumber.update({
-              where: { id: phone.id },
-              data: {
-                metadata: {
-                  ...metadata,
-                  vapiPhoneNumberId: metadata.vapiPhoneNumberId || null,
-                  provisioningStatus: "SHARED_SWML_CONFIGURED",
-                },
-              },
-            });
-          }
-
+          const sharedSwmlRequestUrl = "https://gearnest-llc.signalwire.com/relay-bins/4882d3a4-79f0-4daf-b033-f734ee6061c1";
+          metadata = { ...metadata, swmlScriptId: sharedSwmlScriptId, callRelayScriptUrl: sharedSwmlRequestUrl, vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID };
+          phone = await tx.phoneNumber.update({ where: { id: phone.id }, data: { metadata: { ...metadata, vapiPhoneNumberId: metadata.vapiPhoneNumberId || null, provisioningStatus: "SIGNALWIRE_RESOURCE_VERIFIED" } } });
           if (!metadata.vapiPhoneNumberId) {
-            // The webhook returns the company-specific assistant dynamically
-            // through Vapi's assistant-request event; no shared assistant is hardcoded.
-            const vapiPhone = await providerRequest(
-              `${VAPI_BASE_URL}/phone-number`,
-              {
-                method: "POST",
-                headers: vapiHeaders,
-                body: JSON.stringify({
-                  provider: "byo-phone-number",
-                  number: phone.phoneNumber,
-                  numberE164CheckEnabled: false,
-                  credentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
-                  name: `${appProfile.businessName || "Smart Cleaning Desk"} Phone`.slice(0, 40),
-                  server: {
-                    url: VAPI_WEBHOOK_URL,
-                    timeoutSeconds: 20,
-                    headers: {
-                      Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}`,
-                    },
-                  },
-                }),
-              },
-              "Vapi",
-            );
-
+            const vapiPhone = await providerRequest(`${VAPI_BASE_URL}/phone-number`, { method: "POST", headers: vapiHeaders, body: JSON.stringify({ provider: "byo-phone-number", number: phone.phoneNumber, numberE164CheckEnabled: false, credentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID, name: `${appProfile.businessName || "Smart Cleaning Desk"} Phone`.slice(0, 40), server: { url: VAPI_WEBHOOK_URL, timeoutSeconds: 20, headers: { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` } } }) }, "Vapi");
             const vapiPhoneNumberId = getString(vapiPhone?.id);
-            if (!vapiPhoneNumberId) {
-              throw new Error("Vapi did not confirm the imported phone number.");
-            }
-
+            if (!vapiPhoneNumberId) throw new Error("Vapi did not confirm the imported phone number.");
             metadata = { ...metadata, vapiPhoneNumberId };
-            phone = await tx.phoneNumber.update({
-              where: { id: phone.id },
-              data: {
-                metadata: {
-                  ...metadata,
-                  vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
-                  provisioningStatus: "VAPI_IMPORTED",
-                },
-              },
-            });
+            phone = await tx.phoneNumber.update({ where: { id: phone.id }, data: { metadata: { ...metadata, provisioningStatus: "VAPI_IMPORTED" } } });
           }
         } catch (error) {
-          setupError =
-            error instanceof Error ? error.message : "Provider setup is incomplete.";
-          console.error("[AI PHONE RESUMABLE PROVISIONING]", {
-            phoneNumber: phone.phoneNumber,
-            stage: metadata.vapiPhoneNumberId
-              ? "ROUTING"
-              : metadata.swmlScriptId &&
-                  metadata.vapiCredentialId === env.VAPI_SIGNALWIRE_CREDENTIAL_ID
-                ? "VAPI_IMPORT"
-                : "SWML_CREATION",
-            error: setupError,
-          });
+          setupError = error instanceof Error ? error.message : "Provider setup is incomplete.";
+          console.error("[AI PHONE RESUMABLE PROVISIONING]", { phoneNumber: phone.phoneNumber, stage: metadata.vapiPhoneNumberId ? "ROUTING" : "VAPI_IMPORT", error: setupError });
         }
-
-        return {
-          phone: phone as ProvisionedPhone,
-          isExisting,
-          setupError,
-        };
+        return { phone: phone as ProvisionedPhone, isExisting: true, setupError };
       },
-      {
-        maxWait: 15000,
-        timeout: 60000,
-      },
+      { maxWait: 15000, timeout: 60000 },
     );
-
     const metadata = readProvisioningMetadata(provisioning.phone.metadata);
 
     if (!metadata.callRelayScriptUrl || !metadata.vapiPhoneNumberId) {
