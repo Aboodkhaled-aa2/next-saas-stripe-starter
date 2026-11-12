@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { env } from "@/env.mjs";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { getUserSubscriptionPlan } from "@/lib/subscription";
 
 export const maxDuration = 60;
 
@@ -363,7 +364,11 @@ export async function POST(request: Request) {
     const userId = user.id;
 
     const isAdmin = user.role === "ADMIN" && user.email?.toLowerCase() === "tawilabood8@gmail.com";
-    const canUseAIPhone = user.plan === "BUSINESS" || user.plan === "PRO";
+    const subscriptionPlan = isAdmin ? null : await getUserSubscriptionPlan(user.id);
+    const canUseAIPhone = Boolean(
+      subscriptionPlan?.isPaid &&
+        (subscriptionPlan.title === "Business" || subscriptionPlan.title === "Pro"),
+    );
 
     if (!isAdmin && !canUseAIPhone) {
       return NextResponse.json(
