@@ -241,28 +241,62 @@ export async function POST(request: Request) {
       "Content-Type": "application/json",
     };
 
+    // Admin-only recovery target: reconnect the already-purchased SignalWire resource.
+    const adminPhoneNumber = "+12024749177";
+    const adminSignalWirePhoneId = "468c1f1b-d3e5-4404-b95d-56233af0ed53";
+
+    const signalWireResource = await providerRequest(
+      signalWire.baseUrl + "/api/relay/rest/phone_numbers/" + encodeURIComponent(adminSignalWirePhoneId),
+      { method: "GET", headers: signalWire.headers },
+      "SignalWire",
+    );
+    const signalWireResourceNumber = getString(signalWireResource?.number) || getString(signalWireResource?.e164);
+    const signalWireResourceId = getString(signalWireResource?.id);
+
+    if (signalWireResourceId !== adminSignalWirePhoneId || signalWireResourceNumber.replace(/[^+\\d]/g, "") !== adminPhoneNumber) {
+      throw new ProviderError("The existing SignalWire resource could not be verified against the admin phone number. No changes were made.", 409);
+    }
+
+    const existingAdminPhone = await prisma.phoneNumber.findUnique({
+      where: { phoneNumber: adminPhoneNumber },
+      select: { id: true, userId: true, providerId: true },
+    });
+
+    if (existingAdminPhone && existingAdminPhone.userId !== userId) {
+      throw new ProviderError("The admin phone number is already assigned to a different account. No changes were made.", 409);
+    }
+
+    if (existingAdminPhone && existingAdminPhone.providerId !== adminSignalWirePhoneId) {
+      throw new ProviderError("The saved SignalWire resource ID does not match the verified resource. Manual review is required.", 409);
+    }
+
+    if (!existingAdminPhone) {
+      await prisma.phoneNumber.create({
+        data: {
+          userId, provider: "SIGNALWIRE", providerId: adminSignalWirePhoneId,
+          phoneNumber: adminPhoneNumber, countryCode: "US", status: "PENDING",
+          metadata: { provisioningStatus: "SIGNALWIRE_RESOURCE_VERIFIED", vapiPhoneNumberId: null, swmlScriptId: null, callRelayScriptUrl: null, vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID },
+        },
+      });
+    }
+
     const provisioning = await prisma.$transaction(
       async (tx) => {
         // Serialize activation attempts for this account while provisioning.
         await tx.$queryRaw`SELECT 1 FROM (SELECT pg_advisory_xact_lock(hashtext(${userId}))) AS advisory_lock`;
 
-        let phone = await tx.phoneNumber.findFirst({
-          where: {
-            userId,
-            status: { in: ["ACTIVE", "PENDING"] },
-          },
-          orderBy: { purchasedAt: "desc" },
-        });
-        const isExisting = Boolean(phone);
+        let phone = await tx.phoneNumber.findUnique({ where: { phoneNumber: adminPhoneNumber } });
+        const isExisting = true;
 
-        if (!phone && retryExistingOnly) {
-          throw new ProviderError(
-            "No existing SignalWire number was found to reconnect. No number was purchased.",
-            404,
-          );
+        if (!phone || phone.userId !== userId) {
+          throw new ProviderError("The verified admin phone number is not assigned to this admin account. No number was purchased.", 404);
         }
 
-        if (!phone) {
+        if (phone.providerId !== adminSignalWirePhoneId) {
+          throw new ProviderError("The saved SignalWire resource ID does not match the verified admin number.", 409);
+        }
+
+        // Admin Refresh reconnects only the verified existing number; no purchase fallback.
           const searchParams = new URLSearchParams({
             number_type: "local",
             max_results: "30",
