@@ -141,6 +141,18 @@ function readProvisioningMetadata(value: unknown) {
   };
 }
 
+async function getSignalWireVapiCredentialId(headers: Record<string, string>) {
+  const payload = await providerRequest(`${VAPI_BASE_URL}/credential?limit=100`, { method: "GET", headers }, "Vapi");
+  const credentials = Array.isArray(payload) ? payload : [];
+  const match = credentials.find((item: unknown) => {
+    if (!isRecord(item)) return false;
+    return getString(item.name).trim().toLowerCase() === "signalwire inbound trunk" && getString(item.provider) === "byo-sip-trunk";
+  });
+  const credentialId = isRecord(match) ? getString(match.id) : "";
+  if (!credentialId) throw new ProviderError("Vapi could not find the saved SIP trunk credential named SignalWire Inbound Trunk. Check that it exists in this Vapi account.", 409);
+  return credentialId;
+}
+
 async function finishSignalWireRouting(phoneId: string, scriptUrl: string) {
   const signalWire = getSignalWireAuth();
 
@@ -189,7 +201,6 @@ export async function POST(request: Request) {
       !env.SIGNALWIRE_PROJECT_ID ||
       !(env.SIGNALWIRE_API_TOKEN_PHONE || env.SIGNALWIRE_API_TOKEN) ||
       !env.VAPI_PRIVATE_API_KEY ||
-      !env.VAPI_SIGNALWIRE_CREDENTIAL_ID ||
       !env.VAPI_WEBHOOK_SECRET
     ) {
       return NextResponse.json(
@@ -222,6 +233,7 @@ export async function POST(request: Request) {
       Accept: "application/json",
       "Content-Type": "application/json",
     };
+    const vapiCredentialId = await getSignalWireVapiCredentialId(vapiHeaders);
 
     // Admin Refresh targets the exact number already purchased in SignalWire.
     // It must never search for or purchase a replacement number.
@@ -246,7 +258,7 @@ export async function POST(request: Request) {
     }
     if (!savedPhone) {
       savedPhone = await prisma.phoneNumber.create({
-        data: { userId, provider: "SIGNALWIRE", providerId: adminSignalWirePhoneId, phoneNumber: adminPhoneNumber, countryCode: "US", status: "PENDING", metadata: { provisioningStatus: "SIGNALWIRE_RESOURCE_VERIFIED", vapiPhoneNumberId: null, swmlScriptId: null, callRelayScriptUrl: null, vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID } },
+        data: { userId, provider: "SIGNALWIRE", providerId: adminSignalWirePhoneId, phoneNumber: adminPhoneNumber, countryCode: "US", status: "PENDING", metadata: { provisioningStatus: "SIGNALWIRE_RESOURCE_VERIFIED", vapiPhoneNumberId: null, swmlScriptId: null, callRelayScriptUrl: null, vapiCredentialId: vapiCredentialId } },
       });
     }
 
@@ -265,10 +277,10 @@ export async function POST(request: Request) {
         try {
           const sharedSwmlScriptId = "4882d3a4-79f0-4daf-b033-f734ee6061c1";
           const sharedSwmlRequestUrl = "https://gearnest-llc.signalwire.com/relay-bins/4882d3a4-79f0-4daf-b033-f734ee6061c1";
-          metadata = { ...metadata, swmlScriptId: sharedSwmlScriptId, callRelayScriptUrl: sharedSwmlRequestUrl, vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID };
+          metadata = { ...metadata, swmlScriptId: sharedSwmlScriptId, callRelayScriptUrl: sharedSwmlRequestUrl, vapiCredentialId: vapiCredentialId };
           phone = await tx.phoneNumber.update({ where: { id: phone.id }, data: { metadata: { ...metadata, vapiPhoneNumberId: metadata.vapiPhoneNumberId || null, provisioningStatus: "SIGNALWIRE_RESOURCE_VERIFIED" } } });
           if (!metadata.vapiPhoneNumberId) {
-            const vapiPhone = await providerRequest(`${VAPI_BASE_URL}/phone-number`, { method: "POST", headers: vapiHeaders, body: JSON.stringify({ provider: "byo-phone-number", number: phone.phoneNumber, numberE164CheckEnabled: false, credentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID, name: `${appProfile.businessName || "Smart Cleaning Desk"} Phone`.slice(0, 40), server: { url: VAPI_WEBHOOK_URL, timeoutSeconds: 20, headers: { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` } } }) }, "Vapi");
+            const vapiPhone = await providerRequest(`${VAPI_BASE_URL}/phone-number`, { method: "POST", headers: vapiHeaders, body: JSON.stringify({ provider: "byo-phone-number", number: phone.phoneNumber, numberE164CheckEnabled: false, credentialId: vapiCredentialId, name: `${appProfile.businessName || "Smart Cleaning Desk"} Phone`.slice(0, 40), server: { url: VAPI_WEBHOOK_URL, timeoutSeconds: 20, headers: { Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}` } } }) }, "Vapi");
             const vapiPhoneNumberId = getString(vapiPhone?.id);
             if (!vapiPhoneNumberId) throw new Error("Vapi did not confirm the imported phone number.");
             metadata = { ...metadata, vapiPhoneNumberId };
@@ -312,7 +324,7 @@ export async function POST(request: Request) {
           status: "ACTIVE",
           metadata: {
             ...metadata,
-            vapiCredentialId: env.VAPI_SIGNALWIRE_CREDENTIAL_ID,
+            vapiCredentialId: vapiCredentialId,
             provisioningStatus: "ACTIVE",
           },
         },
