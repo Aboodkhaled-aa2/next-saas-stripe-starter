@@ -263,7 +263,7 @@ export async function POST(request: Request) {
     const signalWireResourceNumber = getString(signalWireResource?.number) || getString(signalWireResource?.e164);
     const signalWireResourceId = getString(signalWireResource?.id);
 
-    if (signalWireResourceId !== adminSignalWirePhoneId || signalWireResourceNumber.replace(/[^+\\d]/g, "") !== adminPhoneNumber) {
+    if (signalWireResourceId !== adminSignalWirePhoneId || signalWireResourceNumber.replace(/[^\d+]/g, "") !== adminPhoneNumber) {
       throw new ProviderError("SignalWire did not confirm the exact existing admin number. No changes were made.", 409);
     }
 
