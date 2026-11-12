@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
-    if (user.role !== "ADMIN") {
+    if (user.role !== "ADMIN" || user.email?.toLowerCase() !== "tawilabood11@gmail.com") {
       return NextResponse.json(
         { error: "AI Phone is currently restricted to admin testing." },
         { status: 403 },
@@ -29,6 +29,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
+      isAdmin: true,
       aiPhoneSettings: businessProfile?.aiPhoneSettings ?? null,
       businessProfile: businessProfile
         ? {
