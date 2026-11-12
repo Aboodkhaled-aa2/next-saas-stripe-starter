@@ -331,16 +331,23 @@ async function finishSignalWireRouting(phoneNumber: string, scriptId: string) {
     throw new ProviderError("SignalWire did not confirm the SWML Script assignment to this number.", 502);
   }
 
-  const verified = await providerRequest(
-    `${signalWire.baseUrl}/api/fabric/phone_number_addresses/${encodeURIComponent(getString(assigned.id))}`,
+  const verifiedListing = await providerRequest(
+    `${signalWire.baseUrl}/api/fabric/phone_number_addresses?page_size=1000&page_number=0`,
     { method: "GET", headers: signalWire.headers },
     "SignalWire",
   );
-  if (
-    getString(verified?.phone_number) !== phoneNumber ||
-    getString(verified?.handler_type) !== "calling" ||
-    getString(verified?.resource_id) !== scriptId
-  ) {
+  const verifiedAddresses = Array.isArray(verifiedListing?.data)
+    ? verifiedListing.data
+    : [];
+  const verified = verifiedAddresses.find(
+    (item: unknown) =>
+      isRecord(item) &&
+      getString(item.id) === getString(assigned?.id) &&
+      getString(item.phone_number) === phoneNumber &&
+      getString(item.handler_type) === "calling" &&
+      getString(item.resource_id) === scriptId,
+  );
+  if (!verified) {
     throw new ProviderError("SignalWire could not verify inbound call routing for this number.", 502);
   }
 }
