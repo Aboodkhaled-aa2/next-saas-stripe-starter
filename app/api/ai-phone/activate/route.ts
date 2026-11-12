@@ -198,25 +198,7 @@ export async function POST(request: Request) {
       );
     }
 
-    let requestedAreaCode = "";
-    let retryExistingOnly = false;
-    try {
-      const body = await request.json();
-      requestedAreaCode =
-        typeof body?.areaCode === "string" ? body.areaCode.trim() : "";
-      // Admin testing must only resume an already-purchased number.
-      // Never allow this temporary admin-only flow to buy a replacement number.
-      retryExistingOnly = isAdmin || body?.action === "retry-existing";
-    } catch {
-      requestedAreaCode = "";
-    }
-
-    if (requestedAreaCode && !/^\d{3}$/.test(requestedAreaCode)) {
-      return NextResponse.json(
-        { error: "Area code must be exactly 3 digits." },
-        { status: 400 },
-      );
-    }
+    // Admin Refresh ignores purchase options and only reconnects the saved number.
 
     const appProfile = await prisma.businessProfile.findUnique({
       where: { userId: userId },
