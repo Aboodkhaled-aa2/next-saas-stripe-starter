@@ -143,6 +143,34 @@ async function getSignalWireVapiCredentialId(headers: Record<string, string>) {
   return credentialId;
 }
 
+async function verifyVapiPhoneNumber(
+  phoneNumberId: string,
+  expectedNumber: string,
+  expectedCredentialId: string,
+) {
+  const headers = {
+    Authorization: `Bearer ${env.VAPI_PRIVATE_API_KEY}`,
+    Accept: "application/json",
+  };
+  const phone = await providerRequest(
+    `${VAPI_BASE_URL}/phone-number/${encodeURIComponent(phoneNumberId)}`,
+    { method: "GET", headers },
+    "Vapi",
+  );
+  const actualNumber = getString(phone?.number);
+  const actualCredentialId = getString(phone?.credentialId);
+  if (
+    getString(phone?.id) !== phoneNumberId ||
+    actualNumber !== expectedNumber ||
+    actualCredentialId !== expectedCredentialId
+  ) {
+    throw new ProviderError(
+      "Vapi did not confirm the imported number and SIP credential. The number remains pending.",
+      409,
+    );
+  }
+}
+
 async function finishSignalWireRouting(phoneId: string, scriptUrl: string) {
   const signalWire = getSignalWireAuth();
 
@@ -297,6 +325,13 @@ export async function POST(request: Request) {
         { status: 202 },
       );
     }
+
+    // Confirm Vapi has the exact imported number and SIP credential before marking it active.
+    await verifyVapiPhoneNumber(
+      metadata.vapiPhoneNumberId,
+      provisioning.phone.phoneNumber,
+      vapiCredentialId,
+    );
 
     // Reapply routing on retries too; this operation is safe to repeat for the same number.
     await finishSignalWireRouting(
