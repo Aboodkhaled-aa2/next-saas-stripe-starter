@@ -4,6 +4,7 @@ import { env } from "@/env.mjs";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
+import { isAIPhoneTrialTester } from "@/lib/ai-phone-access";
 
 export const maxDuration = 60;
 
@@ -364,13 +365,14 @@ export async function POST(request: Request) {
     const userId = user.id;
 
     const isAdmin = user.role === "ADMIN" && user.email?.toLowerCase() === "tawilabood8@gmail.com";
-    const subscriptionPlan = isAdmin ? null : await getUserSubscriptionPlan(user.id);
+    const isTrialTester = isAIPhoneTrialTester(user.email);
+    const subscriptionPlan = isAdmin || isTrialTester ? null : await getUserSubscriptionPlan(user.id);
     const canUseAIPhone = Boolean(
       subscriptionPlan?.isPaid &&
         (subscriptionPlan.title === "Business" || subscriptionPlan.title === "Pro"),
     );
 
-    if (!isAdmin && !canUseAIPhone) {
+    if (!isAdmin && !isTrialTester && !canUseAIPhone) {
       return NextResponse.json(
         { error: "AI Phone requires a Business or Pro plan." },
         { status: 403 },
