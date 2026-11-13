@@ -205,13 +205,17 @@ async function verifyVapiPhoneNumber(
   );
   const actualNumber = getString(phone?.number);
   const actualCredentialId = getString(phone?.credentialId);
+  const actualServerUrl = isRecord(phone?.server) ? getString(phone.server.url) : "";
+  const actualAssistantId = phone?.assistantId ?? null;
   if (
     getString(phone?.id) !== phoneNumberId ||
     actualNumber !== expectedNumber ||
-    actualCredentialId !== expectedCredentialId
+    actualCredentialId !== expectedCredentialId ||
+    actualServerUrl !== VAPI_WEBHOOK_URL ||
+    actualAssistantId !== null
   ) {
     throw new ProviderError(
-      "Vapi did not confirm the imported number and SIP credential. The number remains pending.",
+      "Vapi did not confirm the number, SignalWire credential, and dynamic Smart Cleaning Desk assistant routing. The number remains pending.",
       409,
     );
   }
@@ -402,8 +406,8 @@ export async function POST(request: Request) {
       // Empty request body uses the default local-number search.
     }
 
-    if (retryExisting && !isAdmin && !isTrialTester) {
-      return NextResponse.json({ error: "This reconnect action is not available for this account." }, { status: 403 });
+    if (retryExisting && !isAdmin && !isTrialTester && !canUseAIPhone) {
+      return NextResponse.json({ error: "Reconnect Existing Number requires an eligible Business or Pro plan." }, { status: 403 });
     }
 
     if (requestedAreaCode && !/^\d{3}$/.test(requestedAreaCode)) {
@@ -443,7 +447,7 @@ export async function POST(request: Request) {
       targetPhoneNumber = "+12024749177";
       targetSignalWirePhoneId = "468c1f1b-d3e5-4404-b95d-56233af0ed53";
       isExistingNumber = true;
-    } else if (isTrialTester && retryExisting) {
+    } else if (retryExisting) {
       const existing = await prisma.phoneNumber.findFirst({
         where: { userId, status: { in: ["ACTIVE", "PENDING"] } },
         orderBy: { purchasedAt: "desc" },
@@ -609,43 +613,79 @@ export async function POST(request: Request) {
               phone.phoneNumber,
               vapiCredentialId,
             );
-            const vapiPhone = existingVapiPhone ?? await providerRequest(
-              `${VAPI_BASE_URL}/phone-number`,
-              {
-                method: "POST",
-                headers: vapiHeaders,
-                body: JSON.stringify({
-                  provider: "byo-phone-number",
-                  number: phone.phoneNumber,
-                  numberE164CheckEnabled: false,
-                  credentialId: vapiCredentialId,
-                  name: `${appProfile.businessName || "Smart Cleaning Desk"} Phone`.slice(0, 40),
-                  server: {
-                    url: VAPI_WEBHOOK_URL,
-                    timeoutSeconds: 20,
-                    headers: {
-                      Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}`,
+            if (existingVapiPhone) {
+              metadata = { ...metadata, vapiPhoneNumberId: existingVapiPhone.id };
+            } else {
+              const createdVapiPhone = await providerRequest(
+                `${VAPI_BASE_URL}/phone-number`,
+                {
+                  method: "POST",
+                  headers: vapiHeaders,
+                  body: JSON.stringify({
+                    provider: "byo-phone-number",
+                    number: phone.phoneNumber,
+                    numberE164CheckEnabled: false,
+                    credentialId: vapiCredentialId,
+                    assistantId: null,
+                    squadId: null,
+                    name: `${appProfile.businessName || "Smart Cleaning Desk"} Phone`.slice(0, 40),
+                    server: {
+                      url: VAPI_WEBHOOK_URL,
+                      timeoutSeconds: 20,
+                      headers: {
+                        Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}`,
+                      },
                     },
-                  },
-                }),
-              },
-              "Vapi",
-            );
-            const vapiPhoneNumberId = getString(vapiPhone?.id);
-            if (!vapiPhoneNumberId) {
-              throw new Error("Vapi did not confirm the imported phone number.");
-            }
-            metadata = { ...metadata, vapiPhoneNumberId };
-            phone = await tx.phoneNumber.update({
-              where: { id: phone.id },
-              data: {
-                metadata: {
-                  ...metadata,
-                  provisioningStatus: "VAPI_IMPORTED",
+                  }),
                 },
-              },
-            });
+                "Vapi",
+              );
+              const createdId = getString(createdVapiPhone?.id);
+              if (!createdId) {
+                throw new Error("Vapi did not confirm the imported phone number.");
+              }
+              metadata = { ...metadata, vapiPhoneNumberId: createdId };
+            }
           }
+
+          // Always repair the Vapi phone configuration, including numbers that
+          // already have a saved Vapi ID. A prior import may have left a stale
+          // assistant or webhook configuration behind.
+          const vapiPhoneNumberId = metadata.vapiPhoneNumberId;
+          if (!vapiPhoneNumberId) {
+            throw new Error("Vapi phone number ID is missing after import.");
+          }
+          await providerRequest(
+            `${VAPI_BASE_URL}/phone-number/${encodeURIComponent(vapiPhoneNumberId)}`,
+            {
+              method: "PATCH",
+              headers: vapiHeaders,
+              body: JSON.stringify({
+                provider: "byo-phone-number",
+                number: phone.phoneNumber,
+                credentialId: vapiCredentialId,
+                assistantId: null,
+                squadId: null,
+                server: {
+                  url: VAPI_WEBHOOK_URL,
+                  timeoutSeconds: 20,
+                  headers: {
+                    Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}`,
+                  },
+                },
+              }),
+            },
+            "Vapi",
+          );
+          phone = await tx.phoneNumber.update({
+            where: { id: phone.id },
+            data: {
+              metadata: {
+                ...metadata,
+                provisioningStatus: "VAPI_DYNAMIC_ASSISTANT_CONFIGURED",
+              },
+            },
+          });
 
           const swmlScriptId = await ensureSignalWireSwmlScript(
             vapiCredentialId,
