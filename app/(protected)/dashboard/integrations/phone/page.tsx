@@ -16,6 +16,7 @@ import { redirect } from "next/navigation";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { getCurrentUser } from "@/lib/session";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
+import { isAIPhoneTrialTester } from "@/lib/ai-phone-access";
 import PhoneNumberClient from "../../phone/page-client";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +38,9 @@ export default async function PhoneIntegrationPage() {
         subscriptionPlan.title === "Pro"),
   );
 
-  if (isAdmin || isEligiblePaidCustomer) {
+  const isTrialTester = isAIPhoneTrialTester(user.email);
+
+  if (isAdmin || isEligiblePaidCustomer || isTrialTester) {
     return (
       <div className="space-y-6">
         <DashboardHeader
