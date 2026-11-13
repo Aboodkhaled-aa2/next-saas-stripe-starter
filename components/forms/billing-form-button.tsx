@@ -10,18 +10,16 @@ import { Icons } from "@/components/shared/icons";
 interface BillingFormButtonProps {
   offer: SubscriptionPlan;
   subscriptionPlan: UserSubscriptionPlan;
-  year: boolean;
 }
 
 export function BillingFormButton({
-  year,
   offer,
   subscriptionPlan,
 }: BillingFormButtonProps) {
   let [isPending, startTransition] = useTransition();
   const generateUserStripeSession = generateUserStripe.bind(
     null,
-    offer.stripeIds[year ? "yearly" : "monthly"],
+    offer.stripeIds.monthly,
   );
 
   const stripeSessionAction = () =>
@@ -29,7 +27,7 @@ export function BillingFormButton({
 
   const userOffer =
     subscriptionPlan.stripePriceId ===
-    offer.stripeIds[year ? "yearly" : "monthly"];
+    offer.stripeIds.monthly;
 
   return (
     <Button
