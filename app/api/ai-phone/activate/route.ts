@@ -393,11 +393,17 @@ export async function POST(request: Request) {
     }
 
     let requestedAreaCode = "";
+    let retryExisting = false;
     try {
       const body = await request.json();
       requestedAreaCode = typeof body?.areaCode === "string" ? body.areaCode.trim() : "";
+      retryExisting = body?.action === "retry-existing";
     } catch {
       // Empty request body uses the default local-number search.
+    }
+
+    if (retryExisting && !isAdmin && !isTrialTester) {
+      return NextResponse.json({ error: "This reconnect action is not available for this account." }, { status: 403 });
     }
 
     if (requestedAreaCode && !/^\d{3}$/.test(requestedAreaCode)) {
@@ -436,6 +442,21 @@ export async function POST(request: Request) {
       // Preserve the exact tested admin number; admin refresh never buys a replacement.
       targetPhoneNumber = "+12024749177";
       targetSignalWirePhoneId = "468c1f1b-d3e5-4404-b95d-56233af0ed53";
+      isExistingNumber = true;
+    } else if (isTrialTester && retryExisting) {
+      const existing = await prisma.phoneNumber.findFirst({
+        where: { userId, status: { in: ["ACTIVE", "PENDING"] } },
+        orderBy: { purchasedAt: "desc" },
+        select: { phoneNumber: true, providerId: true },
+      });
+      if (!existing) {
+        return NextResponse.json(
+          { error: "There is no existing number on this account to reconnect. Use Get Number first." },
+          { status: 409 },
+        );
+      }
+      targetPhoneNumber = existing.phoneNumber;
+      targetSignalWirePhoneId = existing.providerId;
       isExistingNumber = true;
     } else {
       // Serialize acquisition so simultaneous clicks cannot buy duplicate numbers.
