@@ -221,7 +221,7 @@ export default function PhoneNumberPage() {
                       ? "Connecting your AI Phone..."
                       : hasNumber
                         ? "Resume Number Connection"
-                        : "Purchase & Connect Number"}
+                        : "Get Number"}
                   </button>
                   <p className="mt-3 text-xs leading-5 text-slate-500">
                     We will purchase one US voice number for your account and connect it to your AI receptionist. If setup needs a retry, the same number is reused.
