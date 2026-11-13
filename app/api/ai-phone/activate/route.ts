@@ -206,14 +206,12 @@ async function verifyVapiPhoneNumber(
   const actualNumber = getString(phone?.number);
   const actualCredentialId = getString(phone?.credentialId);
   const actualServerUrl = getString(phone?.serverUrl);
-  const actualServerUrlSecret = getString(phone?.serverUrlSecret);
   const actualAssistantId = phone?.assistantId ?? null;
   if (
     getString(phone?.id) !== phoneNumberId ||
     actualNumber !== expectedNumber ||
     actualCredentialId !== expectedCredentialId ||
     actualServerUrl !== VAPI_WEBHOOK_URL ||
-    actualServerUrlSecret !== env.VAPI_WEBHOOK_SECRET ||
     actualAssistantId !== null
   ) {
     throw new ProviderError(
