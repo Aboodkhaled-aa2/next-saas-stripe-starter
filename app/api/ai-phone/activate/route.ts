@@ -215,7 +215,7 @@ async function verifyVapiPhoneNumber(
     actualAssistantId !== null
   ) {
     throw new ProviderError(
-      "Vapi did not confirm the number, SignalWire credential, and dynamic Smart Cleaning Desk assistant routing. The number remains pending.",
+      "Vapi did not confirm the number, SignalWire credential, and shared Smart Cleaning Desk assistant-request routing. The number remains pending.",
       409,
     );
   }
@@ -682,7 +682,7 @@ export async function POST(request: Request) {
             data: {
               metadata: {
                 ...metadata,
-                provisioningStatus: "VAPI_DYNAMIC_ASSISTANT_CONFIGURED",
+                provisioningStatus: "VAPI_SHARED_ASSISTANT_ROUTING_CONFIGURED",
               },
             },
           });
