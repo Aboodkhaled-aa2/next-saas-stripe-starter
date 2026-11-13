@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
+import { isAIPhoneTrialTester } from "@/lib/ai-phone-access";
 
 export async function GET() {
   try {
@@ -13,13 +14,14 @@ export async function GET() {
     }
 
     const isAdmin = user.role === "ADMIN" && user.email?.toLowerCase() === "tawilabood8@gmail.com";
-    const subscriptionPlan = isAdmin ? null : await getUserSubscriptionPlan(user.id);
+    const isTrialTester = isAIPhoneTrialTester(user.email);
+    const subscriptionPlan = isAdmin || isTrialTester ? null : await getUserSubscriptionPlan(user.id);
     const canUseAIPhone = Boolean(
       subscriptionPlan?.isPaid &&
         (subscriptionPlan.title === "Business" || subscriptionPlan.title === "Pro"),
     );
 
-    if (!isAdmin && !canUseAIPhone) {
+    if (!isAdmin && !isTrialTester && !canUseAIPhone) {
       return NextResponse.json(
         { error: "AI Phone requires an active Business or Pro subscription." },
         { status: 403 },
@@ -72,13 +74,14 @@ export async function POST(request: Request) {
     }
 
     const isAdmin = user.role === "ADMIN" && user.email?.toLowerCase() === "tawilabood8@gmail.com";
-    const subscriptionPlan = isAdmin ? null : await getUserSubscriptionPlan(user.id);
+    const isTrialTester = isAIPhoneTrialTester(user.email);
+    const subscriptionPlan = isAdmin || isTrialTester ? null : await getUserSubscriptionPlan(user.id);
     const canUseAIPhone = Boolean(
       subscriptionPlan?.isPaid &&
         (subscriptionPlan.title === "Business" || subscriptionPlan.title === "Pro"),
     );
 
-    if (!isAdmin && !canUseAIPhone) {
+    if (!isAdmin && !isTrialTester && !canUseAIPhone) {
       return NextResponse.json(
         { error: "AI Phone requires an active Business or Pro subscription." },
         { status: 403 },
