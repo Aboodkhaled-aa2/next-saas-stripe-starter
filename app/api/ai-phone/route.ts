@@ -40,6 +40,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       isAdmin,
+      isTrialTester,
       aiPhoneSettings: businessProfile?.aiPhoneSettings ?? null,
       businessProfile: businessProfile
         ? {
