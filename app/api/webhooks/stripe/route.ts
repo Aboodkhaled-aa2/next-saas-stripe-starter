@@ -5,6 +5,10 @@ import { env } from "@/env.mjs";
 import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { pricingData } from "@/config/subscriptions";
+import {
+  findPlanByStripePriceId,
+  getSupportedRecurringStripePriceIds,
+} from "@/lib/stripe-plan-prices";
 import { sendPaymentConfirmation } from "@/lib/email";
 
 function isUniqueConstraintError(error: unknown) {
@@ -16,7 +20,7 @@ function isUniqueConstraintError(error: unknown) {
   );
 }
 
-const allowedStripePriceIds = new Set(
+const monthlyStripePriceIds = new Set(
   pricingData
     .map((plan) => plan.stripeIds.monthly)
     .filter(
@@ -24,6 +28,7 @@ const allowedStripePriceIds = new Set(
         priceId && !priceId.startsWith("price_placeholder_"),
     ),
 );
+const supportedRecurringStripePriceIds = getSupportedRecurringStripePriceIds();
 
 const voicePackages = {
   "100": { minutes: 100, amountCents: 1500 },
@@ -252,7 +257,7 @@ export async function POST(req: Request) {
 
       const priceId = subscription.items.data[0]?.price.id;
 
-      if (!priceId || !allowedStripePriceIds.has(priceId)) {
+      if (!priceId || !monthlyStripePriceIds.has(priceId)) {
         console.error(
           "Stripe webhook error: Unknown subscription price",
           priceId,
@@ -289,7 +294,7 @@ export async function POST(req: Request) {
             stripeSubscriptionId: subscription.id,
           },
           data: {
-            stripePriceId: allowedStripePriceIds.has(
+            stripePriceId: supportedRecurringStripePriceIds.has(
               subscription.items.data[0]?.price.id ?? "",
             )
               ? subscription.items.data[0]?.price.id
@@ -312,9 +317,7 @@ export async function POST(req: Request) {
 
         if (user?.email) {
           const priceId = subscription.items.data[0]?.price.id;
-          const plan = pricingData.find(
-            (item) => item.stripeIds.monthly === priceId,
-          );
+          const plan = findPlanByStripePriceId(priceId);
 
           await sendPaymentConfirmation({
             email: user.email,
