@@ -512,6 +512,14 @@ function safeJsonObject(value: string): Record<string, unknown> {
 }
 
 export async function POST(request: Request) {
+  const requestStartedAt = Date.now();
+  const traceId = `${requestStartedAt}-${Math.random().toString(36).slice(2, 8)}`;
+  const logStage = (stage: string, details: Record<string, unknown> = {}) => {
+    console.info("[VapiWebhook]", { traceId, stage, elapsedMs: Date.now() - requestStartedAt, ...details });
+  };
+
+  logStage("received", { method: request.method });
+
   try {
     const webhookSecret = env.VAPI_WEBHOOK_SECRET;
     if (!webhookSecret) {
@@ -528,8 +536,10 @@ export async function POST(request: Request) {
       : legacySecret?.trim();
 
     if (!suppliedSecret || suppliedSecret !== webhookSecret) {
+      logStage("auth_failed");
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
+    logStage("authenticated");
 
     const body = (await request.json()) as { message?: VapiMessage };
     const message = body.message;
@@ -542,7 +552,15 @@ export async function POST(request: Request) {
     }
 
     const calledNumber = getCalledNumber(message);
+    const lookupStartedAt = Date.now();
     const configuration = await getBusinessByPhone(calledNumber);
+    logStage("business_lookup_complete", {
+      messageType: message.type,
+      numberPresent: Boolean(calledNumber),
+      numberLast4: calledNumber.replace(/\D/g, "").slice(-4) || null,
+      lookupMs: Date.now() - lookupStartedAt,
+      businessFound: Boolean(configuration?.businessProfile),
+    });
 
     if (!configuration?.businessProfile) {
       return NextResponse.json(
@@ -552,15 +570,22 @@ export async function POST(request: Request) {
     }
 
     if (message.type === "assistant-request") {
+      logStage("assistant_request_started");
       const voiceUser = await prisma.user.findUnique({
         where: { id: configuration.businessProfile.userId },
         select: { plan: true, stripeSubscriptionId: true },
       });
 
+      const balanceStartedAt = Date.now();
       const voiceBalance = await hasVoiceMinutesAvailable(
         configuration.businessProfile.userId,
         voiceUser?.plan,
       );
+      logStage("voice_balance_checked", {
+        balanceMs: Date.now() - balanceStartedAt,
+        allowed: voiceBalance.allowed,
+        plan: voiceUser?.plan ?? null,
+      });
 
       if (!voiceBalance.allowed) {
         return NextResponse.json(
@@ -571,8 +596,11 @@ export async function POST(request: Request) {
         );
       }
 
+      const promptStartedAt = Date.now();
       const knowledge = buildKnowledge(configuration.businessProfile);
       const systemPrompt = buildCustomerAgentSystemPrompt(knowledge);
+      logStage("prompt_built", { promptMs: Date.now() - promptStartedAt, promptChars: systemPrompt.length });
+      logStage("assistant_request_response_ready");
 
       return NextResponse.json({
         assistantId: "45f6bb2e-bed1-46da-b254-002232526e0a",
@@ -858,6 +886,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
+    logStage("handler_error", {
+      errorName: error instanceof Error ? error.name : "UnknownError",
+      errorMessage: error instanceof Error ? error.message.slice(0, 240) : "Unknown error",
+    });
     console.error("Vapi AI Phone webhook error:", error);
 
     return NextResponse.json(
