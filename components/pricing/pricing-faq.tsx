@@ -32,12 +32,6 @@ const pricingFaqData = [
     answer:
       "Yes. You can upgrade when your business needs more automation, voice usage, calling features, or advanced controls.",
   },
-  {
-    id: "item-5",
-    question: "Is the annual plan available?",
-    answer:
-      "Annual billing can be offered as an additional billing option when the corresponding Stripe prices are enabled. The current pricing experience focuses on monthly plans.",
-  },
 ];
 
 export function PricingFaq() {
