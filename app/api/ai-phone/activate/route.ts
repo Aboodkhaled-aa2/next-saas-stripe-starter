@@ -205,14 +205,17 @@ async function verifyVapiPhoneNumber(
   );
   const actualNumber = getString(phone?.number);
   const actualCredentialId = getString(phone?.credentialId);
-  const actualServerUrl = getString(phone?.serverUrl);
+  const actualServerUrl =
+    getString(phone?.server?.url) || getString(phone?.serverUrl);
   const actualAssistantId = phone?.assistantId ?? null;
+  const actualSquadId = phone?.squadId ?? null;
   if (
     getString(phone?.id) !== phoneNumberId ||
     actualNumber !== expectedNumber ||
     actualCredentialId !== expectedCredentialId ||
     actualServerUrl !== VAPI_WEBHOOK_URL ||
-    actualAssistantId !== null
+    actualAssistantId !== null ||
+    actualSquadId !== null
   ) {
     throw new ProviderError(
       "Vapi did not confirm the number, SignalWire credential, and shared Smart Cleaning Desk assistant-request routing. The number remains pending.",
@@ -629,8 +632,13 @@ export async function POST(request: Request) {
                     assistantId: null,
                     squadId: null,
                     name: `${appProfile.businessName || "Smart Cleaning Desk"} Phone`.slice(0, 40),
-                    serverUrl: VAPI_WEBHOOK_URL,
-                    serverUrlSecret: env.VAPI_WEBHOOK_SECRET,
+                    server: {
+                      url: VAPI_WEBHOOK_URL,
+                      timeoutSeconds: 20,
+                      headers: {
+                        Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}`,
+                      },
+                    },
                   }),
                 },
                 "Vapi",
@@ -661,8 +669,13 @@ export async function POST(request: Request) {
                 credentialId: vapiCredentialId,
                 assistantId: null,
                 squadId: null,
-                serverUrl: VAPI_WEBHOOK_URL,
-                serverUrlSecret: env.VAPI_WEBHOOK_SECRET,
+                server: {
+                  url: VAPI_WEBHOOK_URL,
+                  timeoutSeconds: 20,
+                  headers: {
+                    Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}`,
+                  },
+                },
               }),
             },
             "Vapi",
