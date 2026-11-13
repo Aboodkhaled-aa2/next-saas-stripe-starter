@@ -18,13 +18,12 @@ interface BillingInfoProps extends React.HTMLAttributes<HTMLDivElement> {
   userSubscriptionPlan: UserSubscriptionPlan;
 }
 
-function formatPrice(amount: number, interval: "month" | "year" | null) {
-  if (!interval) return null;
+function formatPrice(amount: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
-  }).format(amount) + (interval === "month" ? " / month" : " / year");
+  }).format(amount) + " / month";
 }
 
 export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
@@ -41,8 +40,7 @@ export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
     prices,
   } = userSubscriptionPlan;
 
-  const currentPrice =
-    interval === "year" ? prices.yearly : interval === "month" ? prices.monthly : null;
+  const currentPrice = interval === "month" ? prices.monthly : null;
   const includedAiReplies =
     title.toLowerCase() === "pro"
       ? 15000
@@ -86,7 +84,7 @@ export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
               <h2 className="text-3xl font-bold tracking-tight text-white">{title}</h2>
               {currentPrice !== null ? (
                 <span className="pb-1 text-sm font-medium text-slate-300">
-                  {formatPrice(currentPrice, interval)}
+                  {formatPrice(currentPrice)}
                 </span>
               ) : null}
             </div>
@@ -110,7 +108,7 @@ export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
                   Billing interval
                 </p>
                 <p className="mt-2 text-base font-semibold text-white">
-                  {interval === "year" ? "Annual billing" : "Monthly billing"}
+                  {interval === "month" ? "Monthly billing" : "Managed access"}
                 </p>
               </div>
               <div className="rounded-lg border border-slate-800 bg-slate-900/70 p-4 sm:col-span-2">
