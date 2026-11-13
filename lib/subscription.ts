@@ -4,6 +4,10 @@ import { pricingData } from "@/config/subscriptions";
 import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { UserSubscriptionPlan } from "types";
+import {
+  findPlanByStripePriceId,
+  isLegacyAnnualStripePriceId,
+} from "@/lib/stripe-plan-prices";
 
 const META_REVIEW_EMAIL = "meta-review@smartcleaningdesk.com";
 
@@ -60,15 +64,13 @@ export async function getUserSubscriptionPlan(
     Boolean(user.stripePriceId) &&
     currentPeriodEnd + 86_400_000 > Date.now();
 
-  const userPlan = pricingData.find(
-    (plan) => plan.stripeIds.monthly === user.stripePriceId,
-  );
+  const userPlan = findPlanByStripePriceId(user.stripePriceId);
 
   const plan = isPaid && userPlan ? userPlan : pricingData[0];
 
   let interval: "month" | null = null;
 
-  if (isPaid && userPlan) {
+  if (isPaid && userPlan && !isLegacyAnnualStripePriceId(user.stripePriceId)) {
     interval = "month";
   }
 
