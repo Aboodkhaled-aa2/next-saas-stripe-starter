@@ -205,13 +205,15 @@ async function verifyVapiPhoneNumber(
   );
   const actualNumber = getString(phone?.number);
   const actualCredentialId = getString(phone?.credentialId);
-  const actualServerUrl = isRecord(phone?.server) ? getString(phone.server.url) : "";
+  const actualServerUrl = getString(phone?.serverUrl);
+  const actualServerUrlSecret = getString(phone?.serverUrlSecret);
   const actualAssistantId = phone?.assistantId ?? null;
   if (
     getString(phone?.id) !== phoneNumberId ||
     actualNumber !== expectedNumber ||
     actualCredentialId !== expectedCredentialId ||
     actualServerUrl !== VAPI_WEBHOOK_URL ||
+    actualServerUrlSecret !== env.VAPI_WEBHOOK_SECRET ||
     actualAssistantId !== null
   ) {
     throw new ProviderError(
@@ -629,13 +631,8 @@ export async function POST(request: Request) {
                     assistantId: null,
                     squadId: null,
                     name: `${appProfile.businessName || "Smart Cleaning Desk"} Phone`.slice(0, 40),
-                    server: {
-                      url: VAPI_WEBHOOK_URL,
-                      timeoutSeconds: 20,
-                      headers: {
-                        Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}`,
-                      },
-                    },
+                    serverUrl: VAPI_WEBHOOK_URL,
+                    serverUrlSecret: env.VAPI_WEBHOOK_SECRET,
                   }),
                 },
                 "Vapi",
@@ -666,13 +663,8 @@ export async function POST(request: Request) {
                 credentialId: vapiCredentialId,
                 assistantId: null,
                 squadId: null,
-                server: {
-                  url: VAPI_WEBHOOK_URL,
-                  timeoutSeconds: 20,
-                  headers: {
-                    Authorization: `Bearer ${env.VAPI_WEBHOOK_SECRET}`,
-                  },
-                },
+                serverUrl: VAPI_WEBHOOK_URL,
+                serverUrlSecret: env.VAPI_WEBHOOK_SECRET,
               }),
             },
             "Vapi",
