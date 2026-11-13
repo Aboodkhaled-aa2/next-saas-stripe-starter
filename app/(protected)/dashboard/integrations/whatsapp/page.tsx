@@ -13,6 +13,7 @@ import { WhatsAppConnectionNotesModal } from "@/components/dashboard/whatsapp-co
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
+import { isAIPhoneTrialTester } from "@/lib/ai-phone-access";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,8 @@ export default async function WhatsAppIntegrationPage() {
   const subscription = user?.id && user.role !== "ADMIN"
     ? await getUserSubscriptionPlan(user.id)
     : null;
-  const canUseWhatsApp = user?.role === "ADMIN" || Boolean(subscription?.isPaid);
+  const isTrialTester = isAIPhoneTrialTester(user?.email);
+  const canUseWhatsApp = user?.role === "ADMIN" || isTrialTester || Boolean(subscription?.isPaid);
 
   const connection = user?.id
     ? await prisma.metaIntegration.findFirst({
