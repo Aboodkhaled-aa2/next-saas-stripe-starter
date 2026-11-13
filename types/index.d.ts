@@ -51,11 +51,9 @@ export type SubscriptionPlan = {
   limitations: string[];
   prices: {
     monthly: number;
-    yearly: number;
   };
   stripeIds: {
     monthly: string | null;
-    yearly: string | null;
   };
 };
 
@@ -65,7 +63,7 @@ export type UserSubscriptionPlan = SubscriptionPlan &
     isPaid: boolean;
     isTrial?: boolean;
     trialEndsAt?: Date | null;
-    interval: "month" | "year" | null;
+    interval: "month" | null;
     isCanceled?: boolean;
   };
 
