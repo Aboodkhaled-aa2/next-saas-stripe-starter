@@ -16,7 +16,8 @@ export type responseAction = {
 const billingUrl = absoluteUrl("/pricing");
 
 const allowedStripePriceIds = new Set(
-  pricingData.flatMap((offer) => [offer.stripeIds.monthly, offer.stripeIds.yearly])
+  pricingData
+    .map((offer) => offer.stripeIds.monthly)
     .filter((priceId) => priceId && !priceId.startsWith("price_placeholder_")),
 );
 
@@ -60,9 +61,7 @@ export async function generateUserStripe(
     }
 
     const selectedOffer = pricingData.find(
-      (offer) =>
-        offer.stripeIds.monthly === priceId ||
-        offer.stripeIds.yearly === priceId,
+      (offer) => offer.stripeIds.monthly === priceId,
     );
 
     if (!selectedOffer) {
