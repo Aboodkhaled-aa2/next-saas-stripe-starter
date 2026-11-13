@@ -575,8 +575,8 @@ export async function POST(request: Request) {
       const systemPrompt = buildCustomerAgentSystemPrompt(knowledge);
 
       return NextResponse.json({
-        assistant: {
-          name: configuration.assistantName || "Smart Cleaning Desk Receptionist",
+        assistantId: "45f6bb2e-bed1-46da-b254-002232526e0a",
+        assistantOverrides: {
           firstMessage:
             configuration.greeting ||
             `Hi, thanks for calling ${configuration.businessProfile.businessName || "our cleaning company"}. How can I help you today?`,
