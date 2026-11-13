@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/session";
+import { isAIPhoneTrialTester } from "@/lib/ai-phone-access";
 
 import PhoneNumberClient from "./page-client";
 
@@ -13,7 +14,10 @@ export default async function PhoneNumberPage() {
     redirect("/login");
   }
 
-  if (user.role !== "ADMIN" || user.email?.toLowerCase() !== "tawilabood8@gmail.com") {
+  const isAdmin = user.role === "ADMIN" && user.email?.toLowerCase() === "tawilabood8@gmail.com";
+  const isTrialTester = isAIPhoneTrialTester(user.email);
+
+  if (!isAdmin && !isTrialTester) {
     redirect("/dashboard/integrations/phone");
   }
 
