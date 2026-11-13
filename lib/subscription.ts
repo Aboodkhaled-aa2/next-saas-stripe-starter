@@ -47,7 +47,7 @@ export async function getUserSubscriptionPlan(
       ...user,
       stripeCurrentPeriodEnd: Date.now() + 366 * 86_400_000,
       isPaid: true,
-      interval: "year",
+      interval: null,
       isCanceled: false,
     };
   }
@@ -60,24 +60,16 @@ export async function getUserSubscriptionPlan(
     Boolean(user.stripePriceId) &&
     currentPeriodEnd + 86_400_000 > Date.now();
 
-  const userPlan =
-    pricingData.find(
-      (plan) => plan.stripeIds.monthly === user.stripePriceId,
-    ) ||
-    pricingData.find(
-      (plan) => plan.stripeIds.yearly === user.stripePriceId,
-    );
+  const userPlan = pricingData.find(
+    (plan) => plan.stripeIds.monthly === user.stripePriceId,
+  );
 
   const plan = isPaid && userPlan ? userPlan : pricingData[0];
 
-  let interval: "month" | "year" | null = null;
+  let interval: "month" | null = null;
 
   if (isPaid && userPlan) {
-    if (userPlan.stripeIds.monthly === user.stripePriceId) {
-      interval = "month";
-    } else if (userPlan.stripeIds.yearly === user.stripePriceId) {
-      interval = "year";
-    }
+    interval = "month";
   }
 
   let isCanceled = false;
