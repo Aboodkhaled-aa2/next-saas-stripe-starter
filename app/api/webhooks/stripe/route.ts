@@ -18,7 +18,7 @@ function isUniqueConstraintError(error: unknown) {
 
 const allowedStripePriceIds = new Set(
   pricingData
-    .flatMap((plan) => [plan.stripeIds.monthly, plan.stripeIds.yearly])
+    .map((plan) => plan.stripeIds.monthly)
     .filter(
       (priceId) =>
         priceId && !priceId.startsWith("price_placeholder_"),
@@ -313,9 +313,7 @@ export async function POST(req: Request) {
         if (user?.email) {
           const priceId = subscription.items.data[0]?.price.id;
           const plan = pricingData.find(
-            (item) =>
-              item.stripeIds.monthly === priceId ||
-              item.stripeIds.yearly === priceId,
+            (item) => item.stripeIds.monthly === priceId,
           );
 
           await sendPaymentConfirmation({
