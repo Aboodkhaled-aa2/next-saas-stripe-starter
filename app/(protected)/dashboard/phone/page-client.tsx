@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type AIPhoneSettings = {
   phoneNumber: string | null;
@@ -20,6 +21,7 @@ type AIPhoneResponse = {
 };
 
 export default function PhoneNumberPage({ compact = false }: { compact?: boolean }) {
+  const router = useRouter();
   const [settings, setSettings] = useState<AIPhoneSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(false);
@@ -101,6 +103,7 @@ export default function PhoneNumberPage({ compact = false }: { compact?: boolean
       }
 
       setNotice(data.message || "Your AI Phone number is connected.");
+      router.refresh();
     } catch (err) {
       setError(
         err instanceof Error
