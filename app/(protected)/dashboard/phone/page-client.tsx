@@ -19,7 +19,7 @@ type AIPhoneResponse = {
   isTrialTester?: boolean;
 };
 
-export default function PhoneNumberPage() {
+export default function PhoneNumberPage({ compact = false }: { compact?: boolean }) {
   const [settings, setSettings] = useState<AIPhoneSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(false);
@@ -114,6 +114,36 @@ export default function PhoneNumberPage() {
 
   const hasNumber = Boolean(settings?.phoneNumber);
   const isEnabled = Boolean(settings?.enabled);
+
+  if (compact) {
+    return (
+      <section className="mt-6 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => void activatePhone(false)}
+            disabled={loading || activating || hasNumber}
+            className="inline-flex h-11 items-center justify-center rounded-lg bg-violet-600 px-5 text-sm font-semibold text-white hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {activating ? "Working..." : "Get Number"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void activatePhone(true)}
+            disabled={loading || activating}
+            className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-700 px-5 text-sm font-semibold text-slate-200 hover:border-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Reconnect Existing Number
+          </button>
+        </div>
+        <p className="mt-3 text-xs leading-5 text-slate-400">
+          {hasNumber ? `Assigned number: ${settings?.phoneNumber}` : "No number is connected yet. Getting a number may incur phone-provider charges."}
+        </p>
+        {error ? <p role="alert" className="mt-3 text-sm text-red-300">{error}</p> : null}
+        {notice ? <p role="status" className="mt-3 text-sm text-emerald-300">{notice}</p> : null}
+      </section>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#020617] px-4 py-10 text-white sm:px-6 lg:px-8">
