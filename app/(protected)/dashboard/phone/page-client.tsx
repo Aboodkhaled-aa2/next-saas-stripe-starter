@@ -16,6 +16,7 @@ type AIPhoneResponse = {
   error?: string;
   message?: string;
   isAdmin?: boolean;
+  isTrialTester?: boolean;
 };
 
 export default function PhoneNumberPage() {
@@ -26,6 +27,7 @@ export default function PhoneNumberPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isTrialTester, setIsTrialTester] = useState(false);
 
   async function loadSettings() {
     try {
@@ -40,6 +42,7 @@ export default function PhoneNumberPage() {
 
       setSettings(data.aiPhoneSettings ?? null);
       setIsAdmin(data.isAdmin === true);
+      setIsTrialTester(data.isTrialTester === true);
     } catch (err) {
       setError(
         err instanceof Error
@@ -193,9 +196,9 @@ export default function PhoneNumberPage() {
             </div>
           </div>
 
-          {!loading && (isAdmin || !isEnabled) ? (
+          {!loading && (isAdmin || isTrialTester || !isEnabled) ? (
             <div className="mt-6 border-t border-slate-800 pt-6">
-              {isAdmin ? (
+              {isAdmin || isTrialTester ? (
                 <>
                   <button
                     type="button"
@@ -206,8 +209,18 @@ export default function PhoneNumberPage() {
                     {activating ? "Reconnecting your saved number..." : "Reconnect Existing Number"}
                   </button>
                   <p className="mt-3 text-xs leading-5 text-slate-500">
-                    Admin refresh reconnects the exact number already assigned to the admin account. It never purchases a replacement.
+                    Reconnect retries the exact number already assigned to this account. It never purchases a replacement.
                   </p>
+                  {isTrialTester ? (
+                    <button
+                      type="button"
+                      onClick={() => void activatePhone(false)}
+                      disabled={activating || hasNumber}
+                      className="mt-3 inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-700 px-5 text-sm font-semibold text-slate-200 transition-colors hover:border-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {activating ? "Connecting your AI Phone..." : "Get Number"}
+                    </button>
+                  ) : null}
                 </>
               ) : (
                 <>
