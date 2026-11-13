@@ -17,6 +17,8 @@ import { prisma } from "@/lib/db";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
 import { constructMetadata } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard/header";
+import PhoneNumberClient from "@/app/(protected)/dashboard/phone/page-client";
+import { isAIPhoneTrialTester } from "@/lib/ai-phone-access";
 
 export const metadata = constructMetadata({
   title: "AI Employee – Smart Cleaning Desk",
@@ -41,6 +43,8 @@ export default async function AIEmployeePage() {
     }),
     getUserSubscriptionPlan(user.id),
   ]);
+
+  const isTrialTester = isAIPhoneTrialTester(user.email);
 
   const isConfigured = Boolean(
     businessProfile?.onboardingCompleted &&
@@ -109,7 +113,15 @@ export default async function AIEmployeePage() {
             </div>
           </div>
 
-          {hasVoice ? (
+          {isTrialTester ? (
+            <Link
+              href="/dashboard/ai/phone/setup"
+              className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-500"
+            >
+              <Settings2 className="h-4 w-4" />
+              Configure AI Phone
+            </Link>
+          ) : hasVoice ? (
             <Link
               href="/dashboard/ai/phone/setup"
               className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-500"
@@ -127,6 +139,8 @@ export default async function AIEmployeePage() {
             </Link>
           )}
         </div>
+
+        {isTrialTester ? <PhoneNumberClient compact /> : null}
 
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
           <PhoneStatusItem label="Phone number" value={aiPhoneSettings?.phoneNumber || "Not connected"} />
