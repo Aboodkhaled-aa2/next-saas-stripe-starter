@@ -49,9 +49,13 @@ export default async function AIEmployeePage() {
       businessProfile.pricing,
   );
 
+  const isAdmin = user.role === "ADMIN";
   const hasVoice =
-    subscriptionPlan.title === "Business" ||
-    subscriptionPlan.title === "Pro";
+    isAdmin ||
+    Boolean(
+      subscriptionPlan.isPaid &&
+        (subscriptionPlan.title === "Business" || subscriptionPlan.title === "Pro"),
+    );
 
   const planLabel = subscriptionPlan.title;
   const aiPhoneSettings = businessProfile?.aiPhoneSettings;
@@ -111,11 +115,11 @@ export default async function AIEmployeePage() {
 
           {hasVoice ? (
             <Link
-              href="/dashboard/ai/phone/setup"
+              href={isAdmin ? "/dashboard/ai/phone/setup" : "/dashboard/ai/phone/activate"}
               className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-500"
             >
               <Settings2 className="h-4 w-4" />
-              {aiPhoneConfigured ? "Manage AI Phone" : "Set Up AI Phone"}
+              {isAdmin ? (aiPhoneConfigured ? "Manage AI Phone" : "Set Up AI Phone") : "Activate AI Phone"}
             </Link>
           ) : (
             <Link
