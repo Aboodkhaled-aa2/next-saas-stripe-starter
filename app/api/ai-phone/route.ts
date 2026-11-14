@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { getUserSubscriptionPlan } from "@/lib/subscription";
 
 export async function GET() {
   try {
@@ -11,9 +12,11 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
-    if (user.role !== "ADMIN") {
+    const subscriptionPlan = user.role === "ADMIN" ? null : await getUserSubscriptionPlan(user.id);
+    const canUseAIPhone = user.role === "ADMIN" || Boolean(subscriptionPlan?.isPaid && (subscriptionPlan.title === "Business" || subscriptionPlan.title === "Pro"));
+    if (!canUseAIPhone) {
       return NextResponse.json(
-        { error: "AI Phone is currently restricted to admin testing." },
+        { error: "AI Phone is available on paid Business and Pro plans." },
         { status: 403 },
       );
     }
@@ -62,9 +65,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
-    if (user.role !== "ADMIN") {
+    const subscriptionPlan = user.role === "ADMIN" ? null : await getUserSubscriptionPlan(user.id);
+    const canUseAIPhone = user.role === "ADMIN" || Boolean(subscriptionPlan?.isPaid && (subscriptionPlan.title === "Business" || subscriptionPlan.title === "Pro"));
+    if (!canUseAIPhone) {
       return NextResponse.json(
-        { error: "AI Phone is currently restricted to admin testing." },
+        { error: "AI Phone is available on paid Business and Pro plans." },
         { status: 403 },
       );
     }
