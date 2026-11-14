@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { env } from "@/env.mjs";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { getUserSubscriptionPlan } from "@/lib/subscription";
 
 export const maxDuration = 60;
 
@@ -176,10 +177,17 @@ export async function POST(request: Request) {
     const userId = user.id;
 
     const isAdmin = user.role === "ADMIN";
+    const subscriptionPlan = isAdmin ? null : await getUserSubscriptionPlan(userId);
+    const canUseAIPhone =
+      isAdmin ||
+      Boolean(
+        subscriptionPlan?.isPaid &&
+          (subscriptionPlan.title === "Business" || subscriptionPlan.title === "Pro"),
+      );
 
-    if (!isAdmin) {
+    if (!canUseAIPhone) {
       return NextResponse.json(
-        { error: "AI Phone provisioning is currently restricted to admin testing." },
+        { error: "AI Phone activation is available on paid Business and Pro plans." },
         { status: 403 },
       );
     }
@@ -206,7 +214,7 @@ export async function POST(request: Request) {
         typeof body?.areaCode === "string" ? body.areaCode.trim() : "";
       // Admin testing must only resume an already-purchased number.
       // Never allow this temporary admin-only flow to buy a replacement number.
-      retryExistingOnly = isAdmin || body?.action === "retry-existing";
+      retryExistingOnly = isAdmin || body?.action === "retry-existing" || body?.action === "connect-existing";
     } catch {
       requestedAreaCode = "";
     }
