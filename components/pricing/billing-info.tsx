@@ -27,6 +27,7 @@ interface BillingUsage {
 interface BillingInfoProps extends React.HTMLAttributes<HTMLDivElement> {
   userSubscriptionPlan: UserSubscriptionPlan;
   billingUsage: BillingUsage;
+  showUsagePanel?: boolean;
 }
 
 function formatPrice(amount: number, interval: "month" | "year" | null) {
@@ -38,7 +39,7 @@ function formatPrice(amount: number, interval: "month" | "year" | null) {
   }).format(amount) + (interval === "month" ? " / month" : " / year");
 }
 
-export function BillingInfo({ userSubscriptionPlan, billingUsage }: BillingInfoProps) {
+export function BillingInfo({ userSubscriptionPlan, billingUsage, showUsagePanel = false }: BillingInfoProps) {
   const {
     title,
     description,
@@ -181,6 +182,7 @@ export function BillingInfo({ userSubscriptionPlan, billingUsage }: BillingInfoP
         </CardFooter>
       </Card>
 
+      {showUsagePanel ? (
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="border-slate-800 bg-slate-950 text-white">
           <CardHeader>
@@ -207,6 +209,7 @@ export function BillingInfo({ userSubscriptionPlan, billingUsage }: BillingInfoP
           </CardContent>
         </Card>
       </div>
+      ) : null}
 
       {isPaid ? (
         <div className="grid gap-4 md:grid-cols-2">
