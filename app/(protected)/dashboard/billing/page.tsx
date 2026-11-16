@@ -60,31 +60,41 @@ export default async function BillingPage() {
     ? plan === "PRO" ? 30 : plan === "BUSINESS" ? 15 : 0
     : plan === "PRO" ? 500 : plan === "BUSINESS" ? 200 : 0;
 
-  const [usedMessages, voiceUsage] = await Promise.all([
-    prisma.message.count({
-      where: {
-        direction: "OUTBOUND",
-        createdAt: { gte: periodStart, lt: periodEnd },
-        conversation: {
-          userId: user.id,
-          channel: { in: ["FACEBOOK", "INSTAGRAM", "WHATSAPP"] },
-        },
+  const usedMessages = await prisma.message.count({
+    where: {
+      direction: "OUTBOUND",
+      createdAt: { gte: periodStart, lt: periodEnd },
+      conversation: {
+        userId: user.id,
+        channel: { in: ["FACEBOOK", "INSTAGRAM", "WHATSAPP"] },
       },
-    }),
-    prisma.voiceUsage.aggregate({
+    },
+  });
+
+  let usedVoiceMinutes = 0;
+  if (isTrial) {
+    const trialUsage = await prisma.voiceUsage.aggregate({
       where: {
         userId: user.id,
         source: "VAPI_CALL",
         startedAt: { gte: periodStart, lt: periodEnd },
-        ...(isTrial ? { metadata: { path: ["billingPeriod"], equals: "trial" } } : {}),
+        metadata: { path: ["billingPeriod"], equals: "trial" },
       },
-      _sum: isTrial ? { billedMinutes: true } : { includedMinutesUsed: true },
-    }),
-  ]);
+      _sum: { billedMinutes: true },
+    });
+    usedVoiceMinutes = trialUsage._sum.billedMinutes ?? 0;
+  } else {
+    const paidUsage = await prisma.voiceUsage.aggregate({
+      where: {
+        userId: user.id,
+        source: "VAPI_CALL",
+        startedAt: { gte: periodStart, lt: periodEnd },
+      },
+      _sum: { includedMinutesUsed: true },
+    });
+    usedVoiceMinutes = paidUsage._sum.includedMinutesUsed ?? 0;
+  }
 
-  const usedVoiceMinutes = isTrial
-    ? voiceUsage._sum.billedMinutes ?? 0
-    : voiceUsage._sum.includedMinutesUsed ?? 0;
   const billingUsage = {
     messageLimit,
     usedMessages,
