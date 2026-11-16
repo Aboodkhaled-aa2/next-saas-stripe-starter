@@ -24,7 +24,9 @@ export default async function BillingPage() {
     redirect("/login");
   }
 
-  const account = await prisma.user.findUnique({
+  const isUsageTestAccount = user.email?.toLowerCase() === "aboodkhaled1177@gmail.com";
+
+  const account = isUsageTestAccount ? await prisma.user.findUnique({
     where: { id: user.id },
     select: {
       plan: true,
@@ -34,7 +36,7 @@ export default async function BillingPage() {
       extraMessageCredits: true,
       extraVoiceMinutes: true,
     },
-  });
+  }) : null;
 
   let periodStart = account?.trialStartedAt ?? new Date();
   let periodEnd = account?.trialEndsAt ?? new Date();
@@ -60,7 +62,7 @@ export default async function BillingPage() {
     ? plan === "PRO" ? 30 : plan === "BUSINESS" ? 15 : 0
     : plan === "PRO" ? 500 : plan === "BUSINESS" ? 200 : 0;
 
-  const usedMessages = await prisma.message.count({
+  const usedMessages = isUsageTestAccount ? await prisma.message.count({
     where: {
       direction: "OUTBOUND",
       createdAt: { gte: periodStart, lt: periodEnd },
@@ -69,10 +71,10 @@ export default async function BillingPage() {
         channel: { in: ["FACEBOOK", "INSTAGRAM", "WHATSAPP"] },
       },
     },
-  });
+  }) : 0;
 
   let usedVoiceMinutes = 0;
-  if (isTrial) {
+  if (isUsageTestAccount && isTrial) {
     const trialUsage = await prisma.voiceUsage.aggregate({
       where: {
         userId: user.id,
@@ -83,7 +85,7 @@ export default async function BillingPage() {
       _sum: { billedMinutes: true },
     });
     usedVoiceMinutes = trialUsage._sum.billedMinutes ?? 0;
-  } else {
+  } else if (isUsageTestAccount) {
     const paidUsage = await prisma.voiceUsage.aggregate({
       where: {
         userId: user.id,
@@ -114,7 +116,7 @@ export default async function BillingPage() {
         />
 
         <div className="grid gap-8">
-          <BillingInfo userSubscriptionPlan={userSubscriptionPlan} billingUsage={billingUsage} />
+          <BillingInfo userSubscriptionPlan={userSubscriptionPlan} billingUsage={billingUsage} showUsagePanel={isUsageTestAccount} />
         </div>
       </div>
     </div>
