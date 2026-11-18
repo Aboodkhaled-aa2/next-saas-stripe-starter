@@ -271,15 +271,17 @@ export default async function DashboardPage() {
     totalRemainingVoiceMinutes > 0 &&
     totalRemainingVoiceMinutes <= voiceLowBalanceThreshold;
 
-  const messagingChannelLimit = trialActive
-    ? 100
-    : paidActive
-      ? billingUser?.plan === "PRO"
-        ? 15000
-        : billingUser?.plan === "BUSINESS"
-          ? 6000
-          : 3000
-      : 0;
+  const messagingChannelLimit = isAdmin
+    ? 15000
+    : trialActive
+      ? 100
+      : paidActive
+        ? billingUser?.plan === "PRO"
+          ? 15000
+          : billingUser?.plan === "BUSINESS"
+            ? 6000
+            : 3000
+        : 0;
 
   const messagingPeriodFilter =
     currentPeriodStart && currentPeriodEnd
