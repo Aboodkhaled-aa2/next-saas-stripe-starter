@@ -179,6 +179,7 @@ async function canUseMessaging(
       trialStartedAt: true,
       trialEndsAt: true,
       plan: true,
+      role: true,
       extraMessageCredits: true,
     },
   });
@@ -193,7 +194,7 @@ async function canUseMessaging(
   }
 
   const now = new Date();
-  const isTrial = !user.stripeSubscriptionId &&
+  const isTrial = user.role !== "ADMIN" && !user.stripeSubscriptionId &&
     Boolean(user.trialStartedAt && user.trialEndsAt && user.trialEndsAt > now);
 
   // Trial and paid allowances are shared across Facebook, Instagram, and WhatsApp.
@@ -206,6 +207,10 @@ async function canUseMessaging(
     periodStart = user.trialStartedAt!;
     periodEnd = user.trialEndsAt!;
     limit = 100;
+  } else if (user.role === "ADMIN" && !user.stripeSubscriptionId) {
+    periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    periodEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+    limit = 15000;
   } else {
     if (!user.stripeSubscriptionId) {
       return {
@@ -250,6 +255,7 @@ async function canUseMessaging(
       userId,
       channel: { in: ["FACEBOOK", "INSTAGRAM", "WHATSAPP"] },
     },
+    ...(user.role === "ADMIN" ? { direction: "OUTBOUND" as const } : {}),
   };
 
   const used = await prisma.message.count({ where: usageWhere });
@@ -265,6 +271,7 @@ async function canUseMessaging(
     periodStart,
     periodEnd,
     isTrial,
+    isAdmin: user.role === "ADMIN",
     reason:
       used >= limit && !hasExtraMessageCredits
         ? "Your shared monthly AI reply allowance across Facebook, Instagram, and WhatsApp has been reached. Purchase additional message credits to continue."
@@ -279,6 +286,7 @@ async function reserveMessagingAllowance(
   periodEnd: Date,
   limit: number,
   isTrial: boolean,
+  isAdmin: boolean,
   conversationId: string,
   reply: string,
 ) {
@@ -295,6 +303,7 @@ async function reserveMessagingAllowance(
           userId,
           channel: { in: ["FACEBOOK", "INSTAGRAM", "WHATSAPP"] },
         },
+        ...(isAdmin ? { direction: "OUTBOUND" as const } : {}),
       },
     });
 
@@ -458,6 +467,7 @@ async function handleMetaMessage(
       trialMessaging.periodEnd,
       trialMessaging.limit,
       trialMessaging.isTrial,
+      Boolean(trialMessaging.isAdmin),
       conversation.id,
       reply,
     );
@@ -629,6 +639,7 @@ async function handleWhatsAppMessage(
       trialMessaging.periodEnd,
       trialMessaging.limit,
       trialMessaging.isTrial,
+      Boolean(trialMessaging.isAdmin),
       conversation.id,
       reply,
     );

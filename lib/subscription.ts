@@ -21,6 +21,7 @@ export async function getUserSubscriptionPlan(
     select: {
       id: true,
       email: true,
+      role: true,
       stripeSubscriptionId: true,
       stripeCurrentPeriodEnd: true,
       stripeCustomerId: true,
@@ -37,6 +38,19 @@ export async function getUserSubscriptionPlan(
 
   // Legacy accounts without trial dates remain without a trial.
   // Never manufacture trial dates during reads, login, or subscription checks.
+
+  if (user.role === "ADMIN") {
+    const adminPlan = pricingData.find((plan) => plan.title === "Pro") || pricingData[0];
+    return {
+      ...adminPlan,
+      ...user,
+      stripeCurrentPeriodEnd: Date.now() + 30 * 86_400_000,
+      isPaid: true,
+      isTrial: false,
+      interval: "month",
+      isCanceled: false,
+    };
+  }
 
   if (user.email?.toLowerCase() === META_REVIEW_EMAIL) {
     const reviewPlan =

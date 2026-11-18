@@ -10,10 +10,13 @@ const packages = [
 
 export default function MessageCreditPurchase({
   searchParams = {},
+  isAdmin = false,
 }: {
   searchParams?: { messages?: string };
+  isAdmin?: boolean;
 }) {
   const [loading, setLoading] = useState<number | null>(null);
+  const [testBalance, setTestBalance] = useState<number | null>(null);
   const selectedMessages = Number(searchParams.messages);
   const selectedPackage = packages.find(
     (pack) => pack.messages === selectedMessages,
@@ -22,15 +25,21 @@ export default function MessageCreditPurchase({
   const buy = async (messages: number) => {
     try {
       setLoading(messages);
-      const response = await fetch("/api/stripe/message-credits", {
+      const response = await fetch(isAdmin ? "/api/admin/test-message-credits" : "/api/stripe/message-credits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages }),
       });
       const data = await response.json();
 
-      if (!response.ok || !data.url) {
+      if (!response.ok || (!isAdmin && !data.url)) {
         throw new Error(data.error || "Unable to start checkout.");
+      }
+
+      if (isAdmin) {
+        setTestBalance(data.extraMessageCredits);
+        setLoading(null);
+        return;
       }
 
       window.location.href = data.url;
@@ -55,6 +64,13 @@ export default function MessageCreditPurchase({
             Buy additional AI-generated replies. Only outgoing AI replies count toward your balance; incoming customer messages are not deducted.
           </p>
         </div>
+
+        {isAdmin && (
+          <div className="mb-6 rounded-xl border border-blue-500/30 bg-blue-500/10 p-4 text-sm text-blue-200">
+            Admin test mode: adding credits here changes only the admin account balance and does not open Stripe or charge a card.
+            {testBalance !== null && <p className="mt-2 font-semibold">Updated test balance: {testBalance.toLocaleString()} messages</p>}
+          </div>
+        )}
 
         {selectedPackage ? (
           <div className="mb-8 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-5">
@@ -85,8 +101,8 @@ export default function MessageCreditPurchase({
               </p>
               <span className="mt-5 inline-flex text-sm font-semibold text-white">
                 {loading === pack.messages
-                  ? "Opening checkout..."
-                  : "Buy messages"}
+                  ? (isAdmin ? "Adding test credits..." : "Opening checkout...")
+                  : (isAdmin ? "Add test credits (no charge)" : "Buy messages")}
               </span>
             </button>
           ))}
