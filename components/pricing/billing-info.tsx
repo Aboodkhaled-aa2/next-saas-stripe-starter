@@ -152,13 +152,17 @@ export function BillingInfo({ userSubscriptionPlan, isAdmin = false, extraMessag
 
         <CardFooter className="flex flex-col items-stretch gap-3 border-t border-slate-800 bg-slate-900/60 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <p className="text-xs leading-5 text-slate-400">
-            {isPaid
-              ? "Manage your payment method, invoices, plan changes, and cancellation securely with Stripe."
-              : isTrial
-                ? "Your trial does not require a payment method. You can subscribe at any time."
-                : "Select a plan to activate your subscription."}
+            {isAdmin
+              ? "Admin-only Pro preview. No Stripe subscription or customer billing is changed."
+              : isPaid
+                ? "Manage your payment method, invoices, plan changes, and cancellation securely with Stripe."
+                : isTrial
+                  ? "Your trial does not require a payment method. You can subscribe at any time."
+                  : "Select a plan to activate your subscription."}
           </p>
-          {isPaid && stripeCustomerId ? (
+          {isAdmin ? (
+            <span className="text-sm font-semibold text-blue-300">Pro features enabled for admin</span>
+          ) : isPaid && stripeCustomerId ? (
             <CustomerPortalButton userStripeId={stripeCustomerId} />
           ) : (
             <Link
