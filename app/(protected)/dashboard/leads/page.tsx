@@ -166,7 +166,6 @@ export default async function LeadsPage() {
                   {leads.map((lead) => (
                     <tr
                       key={lead.id}
-                      onClick={undefined}
                       className="border-b border-slate-800/70 transition-colors last:border-0 hover:bg-slate-900/30"
                     >
                       <td className="px-6 py-4">
