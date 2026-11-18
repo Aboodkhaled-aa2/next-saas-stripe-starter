@@ -1038,9 +1038,10 @@ export default async function DashboardPage() {
               <div className="mt-6 space-y-3">
                 {recentLeads.length > 0 ? (
                   recentLeads.map((lead) => (
-                    <div
+                    <Link
                       key={lead.id}
-                      className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"
+                      href={`/dashboard/leads/${lead.id}`}
+                      className="block rounded-xl border border-slate-800 bg-slate-900/50 p-4 transition-colors hover:border-blue-500/40 hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
@@ -1064,7 +1065,7 @@ export default async function DashboardPage() {
                         })}
                         {lead.phone ? ` · ${lead.phone}` : ""}
                       </p>
-                    </div>
+                    </Link>
                   ))
                 ) : (
                   <div className="flex min-h-[190px] flex-col items-center justify-center text-center">
