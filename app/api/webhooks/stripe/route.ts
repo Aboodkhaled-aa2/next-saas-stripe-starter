@@ -386,13 +386,17 @@ export async function POST(req: Request) {
               subscription.status === "trialing"
                 ? subscription.items.data[0]?.price.id ?? null
                 : null,
-            ...(user.email?.toLowerCase() === "aboodkhaled1177@gmail.com"
+            ...(pricingData.find(
+              (item) =>
+                item.stripeIds.monthly === subscription.items.data[0]?.price.id ||
+                item.stripeIds.yearly === subscription.items.data[0]?.price.id,
+            )?.title
               ? {
-                  plan: (pricingData.find(
+                  plan: pricingData.find(
                     (item) =>
                       item.stripeIds.monthly === subscription.items.data[0]?.price.id ||
                       item.stripeIds.yearly === subscription.items.data[0]?.price.id,
-                  )?.title.toUpperCase() ?? "STARTER") as "STARTER" | "BUSINESS" | "PRO",
+                  )!.title.toUpperCase() as "STARTER" | "BUSINESS" | "PRO",
                 }
               : {}),
             stripeCurrentPeriodEnd: new Date(
