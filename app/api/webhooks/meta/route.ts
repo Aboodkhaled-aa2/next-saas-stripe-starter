@@ -703,6 +703,11 @@ export async function POST(request: Request) {
   const body = await request.text();
   const signature = request.headers.get("x-hub-signature-256");
 
+  if (!body.trim()) {
+    console.warn("META WEBHOOK EMPTY BODY");
+    return new NextResponse("Empty payload", { status: 400 });
+  }
+
   try {
     const payload = JSON.parse(body) as {
       object?: string;
