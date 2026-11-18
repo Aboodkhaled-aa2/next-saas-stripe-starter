@@ -9,6 +9,14 @@ type AIPhoneSettings = {
   enabled: boolean;
 };
 
+type AIPhoneUsage = {
+  plan: string;
+  periodStart: string;
+  periodEnd: string;
+  messages: { used: number; included: number; remaining: number; extra: number };
+  voice: { used: number; included: number; remaining: number; extra: number };
+};
+
 type AIPhoneResponse = {
   success?: boolean;
   aiPhoneSettings?: AIPhoneSettings | null;
@@ -24,6 +32,23 @@ export default function PhoneNumberPage() {
   const [areaCode, setAreaCode] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [usage, setUsage] = useState<AIPhoneUsage | null>(null);
+  const [usageError, setUsageError] = useState("");
+  const [usageLoading, setUsageLoading] = useState(true);
+
+  async function loadUsage() {
+    try {
+      const response = await fetch("/api/ai-phone/usage", { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to load usage.");
+      setUsage(data as AIPhoneUsage);
+      setUsageError("");
+    } catch (err) {
+      setUsageError(err instanceof Error ? err.message : "Unable to load usage.");
+    } finally {
+      setUsageLoading(false);
+    }
+  }
 
   async function loadSettings() {
     try {
@@ -50,6 +75,7 @@ export default function PhoneNumberPage() {
 
   useEffect(() => {
     void loadSettings();
+    void loadUsage();
   }, []);
 
   async function activatePhone(retryExisting = false) {
@@ -139,6 +165,26 @@ export default function PhoneNumberPage() {
           </div>
         ) : null}
 
+        <section className="mb-5 rounded-2xl border border-slate-800 bg-slate-950/80 p-6">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-lg font-semibold">Pro Usage</h2>
+              <p className="mt-1 text-sm text-slate-400">Current calendar month · Admin test account</p>
+            </div>
+            <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-300">PRO</span>
+          </div>
+          {usageLoading ? (
+            <p className="text-sm text-slate-400">Loading usage counters...</p>
+          ) : usageError ? (
+            <p role="alert" className="text-sm text-amber-300">{usageError}</p>
+          ) : usage ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              <UsageMeter title="AI Messages" used={usage.messages.used} included={usage.messages.included} remaining={usage.messages.remaining} extra={usage.messages.extra} unit="messages" />
+              <UsageMeter title="AI Phone Minutes" used={usage.voice.used} included={usage.voice.included} remaining={usage.voice.remaining} extra={usage.voice.extra} unit="minutes" />
+            </div>
+          ) : null}
+        </section>
+
         <section className="rounded-2xl border border-slate-800 bg-slate-950/80 p-6">
           <div className="flex items-start gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300">
@@ -221,5 +267,49 @@ export default function PhoneNumberPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+
+function UsageMeter({
+  title,
+  used,
+  included,
+  remaining,
+  extra,
+  unit,
+}: {
+  title: string;
+  used: number;
+  included: number;
+  remaining: number;
+  extra: number;
+  unit: string;
+}) {
+  const percentage = included > 0 ? Math.min(100, (used / included) * 100) : 0;
+  const format = (value: number) =>
+    Number(value).toLocaleString("en-US", { maximumFractionDigits: 2 });
+
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+      <h3 className="text-sm font-medium text-slate-300">{title}</h3>
+      <p className="mt-3 text-2xl font-bold text-white">
+        {format(used)} <span className="text-sm font-normal text-slate-400">/ {format(included)} {unit}</span>
+      </p>
+      <div
+        className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800"
+        role="progressbar"
+        aria-label={title}
+        aria-valuenow={Math.min(used, included)}
+        aria-valuemin={0}
+        aria-valuemax={included}
+      >
+        <div className="h-full rounded-full bg-blue-500" style={{ width: `${percentage}%` }} />
+      </div>
+      <div className="mt-3 flex flex-wrap justify-between gap-2 text-xs text-slate-400">
+        <span>{format(remaining)} {unit} remaining</span>
+        <span>{format(extra)} extra {unit}</span>
+      </div>
+    </div>
   );
 }
