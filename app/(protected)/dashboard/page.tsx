@@ -715,7 +715,9 @@ export default async function DashboardPage() {
             <p className="mt-1 text-sm text-slate-500">
               {trialActive
                 ? "Your trial includes 100 total messages and AI replies shared across Facebook, Instagram, and WhatsApp."
-                : "{isAdmin ? "Admin Pro preview: only outgoing AI replies count toward the 15,000-message allowance." : "Your plan includes one shared monthly allowance across Facebook, Instagram, and WhatsApp. Both incoming customer messages and outgoing AI replies count."}"}
+                : isAdmin
+                  ? "Admin Pro preview: only outgoing AI replies count toward the 15,000-message allowance."
+                  : "Your plan includes one shared monthly allowance across Facebook, Instagram, and WhatsApp. Both incoming customer messages and outgoing AI replies count."}
             </p>
           </div>
 
