@@ -38,11 +38,11 @@ export default async function AdminVoiceUsagePage() {
   const now = new Date();
   const customers = await prisma.user.findMany({
     where: {
-      role: "USER",
       stripeSubscriptionId: { not: null },
     },
     select: {
       id: true,
+      role: true,
       name: true,
       email: true,
       plan: true,
@@ -84,6 +84,7 @@ export default async function AdminVoiceUsagePage() {
 
   const activeCustomers = customers.filter(
     (customer) =>
+      customer.role === "USER" &&
       Boolean(customer.stripeSubscriptionId) &&
       Boolean(customer.stripeCurrentPeriodEnd && customer.stripeCurrentPeriodEnd > now),
   );
