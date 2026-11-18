@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/db";\nimport { stripe } from "@/lib/stripe";
 import { getCurrentUser } from "@/lib/session";
 import { constructMetadata } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard/header";
@@ -85,6 +85,33 @@ export default async function AdminVoiceUsagePage() {
     (customer) =>
       Boolean(customer.stripeSubscriptionId) &&
       Boolean(customer.stripeCurrentPeriodEnd && customer.stripeCurrentPeriodEnd > now),
+  );
+
+  const customersWithPeriodUsage = await Promise.all(
+    activeCustomers.map(async (customer) => {
+      let includedUsedThisPeriod = 0;
+      try {
+        const subscription = await stripe.subscriptions.retrieve(
+          customer.stripeSubscriptionId!,
+        );
+        if (["active", "trialing"].includes(subscription.status)) {
+          const periodStart = new Date(subscription.current_period_start * 1000);
+          const periodEnd = new Date(subscription.current_period_end * 1000);
+          const usage = await prisma.voiceUsage.aggregate({
+            where: {
+              userId: customer.id,
+              source: "VAPI_CALL",
+              startedAt: { gte: periodStart, lt: periodEnd },
+            },
+            _sum: { includedMinutesUsed: true },
+          });
+          includedUsedThisPeriod = usage._sum.includedMinutesUsed ?? 0;
+        }
+      } catch (error) {
+        console.error("Unable to load current voice billing period:", error);
+      }
+      return { ...customer, includedUsedThisPeriod };
+    }),
   );
 
   const totalExtraBalance = activeCustomers.reduce(
@@ -190,7 +217,7 @@ export default async function AdminVoiceUsagePage() {
             </tbody>
           </table>
         </div>
-        <p className="px-5 py-3 text-xs text-slate-500">* Included-used total is based on the latest 100 recorded calls per customer shown in this view.</p>
+        <p className="px-5 py-3 text-xs text-slate-500">* Included-used value is calculated from the current Stripe billing period.</p>
       </section>
 
       <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
