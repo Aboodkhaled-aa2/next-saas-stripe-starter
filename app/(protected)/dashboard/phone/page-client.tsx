@@ -25,7 +25,7 @@ type AIPhoneResponse = {
   message?: string;
 };
 
-export default function PhoneNumberPage() {
+export default function PhoneNumberPage({ showAdminUsage = false }: { showAdminUsage?: boolean }) {
   const [settings, setSettings] = useState<AIPhoneSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(false);
@@ -75,8 +75,8 @@ export default function PhoneNumberPage() {
 
   useEffect(() => {
     void loadSettings();
-    void loadUsage();
-  }, []);
+    if (showAdminUsage) void loadUsage();
+  }, [showAdminUsage]);
 
   async function activatePhone(retryExisting = false) {
     if (activating) return;
@@ -165,7 +165,7 @@ export default function PhoneNumberPage() {
           </div>
         ) : null}
 
-        <section className="mb-5 rounded-2xl border border-slate-800 bg-slate-950/80 p-6">
+        {showAdminUsage ? <section className="mb-5 rounded-2xl border border-slate-800 bg-slate-950/80 p-6">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="text-lg font-semibold">Pro Usage</h2>
@@ -183,7 +183,7 @@ export default function PhoneNumberPage() {
               <UsageMeter title="AI Phone Minutes" used={usage.voice.used} included={usage.voice.included} remaining={usage.voice.remaining} extra={usage.voice.extra} unit="minutes" />
             </div>
           ) : null}
-        </section>
+        </section> : null}
 
         <section className="rounded-2xl border border-slate-800 bg-slate-950/80 p-6">
           <div className="flex items-start gap-4">
