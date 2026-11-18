@@ -176,6 +176,7 @@ async function canUseMessaging(
     where: { id: userId },
     select: {
       stripeSubscriptionId: true,
+      role: true,
       trialStartedAt: true,
       trialEndsAt: true,
       plan: true,
@@ -189,6 +190,22 @@ async function canUseMessaging(
       remaining: 0,
       usesExtraCredit: false,
       reason: "Account not found.",
+    };
+  }
+
+  // Admin messaging is unlimited and bypasses trial/subscription message quotas.
+  // Keep the same reservation flow with a broad period and a practically unlimited cap.
+  if (user.role === "ADMIN") {
+    return {
+      allowed: true,
+      remaining: Number.MAX_SAFE_INTEGER,
+      used: 0,
+      limit: Number.MAX_SAFE_INTEGER,
+      usesExtraCredit: false,
+      periodStart: new Date(0),
+      periodEnd: new Date("9999-12-31T23:59:59.999Z"),
+      isTrial: false,
+      reason: null,
     };
   }
 
