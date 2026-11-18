@@ -725,6 +725,9 @@ export async function POST(request: Request) {
           value?: {
             metadata?: { phone_number_id?: string };
             messages?: WhatsAppMessage[];
+            sender?: { id?: string };
+            recipient?: { id?: string };
+            message?: { mid?: string; text?: string };
           };
         }>;
       }>;
@@ -754,19 +757,43 @@ export async function POST(request: Request) {
       return new NextResponse("Invalid signature", { status: 401 });
     }
 
-    if (payload.object === "page" || payload.object === "instagram") {
-      const channel = payload.object === "page" ? "FACEBOOK" : "INSTAGRAM";
-
+    if (payload.object === "page") {
       for (const entry of payload.entry ?? []) {
         for (const event of entry.messaging ?? []) {
           console.log("META MESSAGE EVENT:", JSON.stringify({
-            channel,
+            channel: "FACEBOOK",
             senderId: event.sender?.id ?? null,
             recipientId: event.recipient?.id ?? null,
             hasText: Boolean(event.message?.text),
             messageId: event.message?.mid ?? null,
           }));
-          await handleMetaMessage(channel, event);
+          await handleMetaMessage("FACEBOOK", event);
+        }
+      }
+
+      return new NextResponse("EVENT_RECEIVED", { status: 200 });
+    }
+
+    if (payload.object === "instagram") {
+      for (const entry of payload.entry ?? []) {
+        for (const change of entry.changes ?? []) {
+          if (change.field !== "messages" || !change.value) continue;
+
+          const value = change.value;
+          const event: MetaMessageEvent = {
+            sender: value.sender,
+            recipient: value.recipient,
+            message: value.message,
+          };
+
+          console.log("META INSTAGRAM MESSAGE CHANGE:", JSON.stringify({
+            recipientId: event.recipient?.id ?? null,
+            senderId: event.sender?.id ?? null,
+            hasText: Boolean(event.message?.text),
+            messageId: event.message?.mid ?? null,
+          }));
+
+          await handleMetaMessage("INSTAGRAM", event);
         }
       }
 
