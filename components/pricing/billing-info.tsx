@@ -16,6 +16,8 @@ import { UserSubscriptionPlan } from "types";
 
 interface BillingInfoProps extends React.HTMLAttributes<HTMLDivElement> {
   userSubscriptionPlan: UserSubscriptionPlan;
+  isAdmin?: boolean;
+  extraMessageCredits?: number;
 }
 
 function formatPrice(amount: number, interval: "month" | "year" | null) {
@@ -27,7 +29,7 @@ function formatPrice(amount: number, interval: "month" | "year" | null) {
   }).format(amount) + (interval === "month" ? " / month" : " / year");
 }
 
-export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
+export function BillingInfo({ userSubscriptionPlan, isAdmin = false, extraMessageCredits = 0 }: BillingInfoProps) {
   const {
     title,
     description,
@@ -52,7 +54,9 @@ export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
           ? 3000
           : 0;
 
-  const statusLabel = isPaid
+  const statusLabel = isAdmin
+    ? "Admin Pro preview"
+    : isPaid
     ? isCanceled
       ? "Cancels at period end"
       : "Active subscription"
@@ -99,10 +103,10 @@ export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
             <>
               <div className="rounded-lg border border-slate-800 bg-slate-900/70 p-4">
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                  {isCanceled ? "Access ends on" : "Next billing date"}
+                  {isAdmin ? "Preview mode" : isCanceled ? "Access ends on" : "Next billing date"}
                 </p>
                 <p className="mt-2 text-base font-semibold text-white">
-                  {formatDate(stripeCurrentPeriodEnd)}
+                  {isAdmin ? "No Stripe billing" : formatDate(stripeCurrentPeriodEnd)}
                 </p>
               </div>
               <div className="rounded-lg border border-slate-800 bg-slate-900/70 p-4">
@@ -169,7 +173,7 @@ export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
 
       {isPaid ? (
         <div className="grid gap-4 md:grid-cols-2">
-          <Card className="border-slate-800 bg-slate-950 text-white">
+          {!isAdmin && <Card className="border-slate-800 bg-slate-950 text-white">
             <CardHeader>
               <CardTitle>Extra AI Phone Minutes</CardTitle>
               <CardDescription className="text-slate-400">
@@ -181,12 +185,12 @@ export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
                 Buy Extra Minutes
               </Link>
             </CardFooter>
-          </Card>
+          </Card>}
           <Card className="border-slate-800 bg-slate-950 text-white">
             <CardHeader>
               <CardTitle>Extra Message Credits</CardTitle>
               <CardDescription className="text-slate-400">
-                Purchase additional message credits for your business.
+                {isAdmin ? `Current extra message balance: ${extraMessageCredits.toLocaleString()}` : "Purchase additional message credits for your business."}
               </CardDescription>
             </CardHeader>
             <CardFooter>
