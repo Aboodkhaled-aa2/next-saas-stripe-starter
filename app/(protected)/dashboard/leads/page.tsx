@@ -166,13 +166,17 @@ export default async function LeadsPage() {
                   {leads.map((lead) => (
                     <tr
                       key={lead.id}
+                      onClick={undefined}
                       className="border-b border-slate-800/70 transition-colors last:border-0 hover:bg-slate-900/30"
                     >
                       <td className="px-6 py-4">
                         <div>
-                          <p className="font-medium text-white">
+                          <Link
+                            href={`/dashboard/leads/${lead.id}`}
+                            className="font-medium text-white hover:text-blue-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                          >
                             {lead.name || "Unnamed lead"}
-                          </p>
+                          </Link>
 
                           <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500">
                             {lead.email && (
@@ -232,7 +236,11 @@ export default async function LeadsPage() {
 
             <div className="divide-y divide-slate-800 md:hidden">
               {leads.map((lead) => (
-                <div key={lead.id} className="p-5">
+                <Link
+                  key={lead.id}
+                  href={`/dashboard/leads/${lead.id}`}
+                  className="block p-5 transition-colors hover:bg-slate-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="font-medium text-white">
@@ -288,7 +296,7 @@ export default async function LeadsPage() {
                       </span>
                     )}
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </>
