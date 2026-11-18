@@ -194,7 +194,7 @@ async function canUseMessaging(
   }
 
   const now = new Date();
-  const isTrial = !user.stripeSubscriptionId &&
+  const isTrial = user.role !== "ADMIN" && !user.stripeSubscriptionId &&
     Boolean(user.trialStartedAt && user.trialEndsAt && user.trialEndsAt > now);
 
   // Trial and paid allowances are shared across Facebook, Instagram, and WhatsApp.
