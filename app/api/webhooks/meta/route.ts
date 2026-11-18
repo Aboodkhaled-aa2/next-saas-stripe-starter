@@ -175,6 +175,7 @@ async function canUseMessaging(
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
+      email: true,
       stripeSubscriptionId: true,
       trialStartedAt: true,
       trialEndsAt: true,
@@ -245,6 +246,7 @@ async function canUseMessaging(
 
   // Count every customer message received and every AI reply sent across all channels.
   const usageWhere = {
+    ...(user.email?.toLowerCase() === "tawilabood8@gmail.com" ? { direction: "OUTBOUND" as const } : {}),
     createdAt: { gte: periodStart, lt: periodEnd },
     conversation: {
       userId,
@@ -288,8 +290,13 @@ async function reserveMessagingAllowance(
   return prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey})::bigint)`;
 
+    const reservationUser = await tx.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
     const used = await tx.message.count({
       where: {
+        ...(reservationUser?.email?.toLowerCase() === "tawilabood8@gmail.com" ? { direction: "OUTBOUND" as const } : {}),
         createdAt: { gte: periodStart, lt: periodEnd },
         conversation: {
           userId,

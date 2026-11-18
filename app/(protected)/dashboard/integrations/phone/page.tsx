@@ -44,7 +44,7 @@ export default async function PhoneIntegrationPage() {
           heading="AI Phone"
           text="Give your cleaning business an AI receptionist that answers calls, qualifies customers, and helps book appointments."
         />
-        <PhoneNumberClient />
+        <PhoneNumberClient showAdminUsage={isAdmin} />
         <section className="grid gap-4 sm:grid-cols-2">
           <InfoCard
             icon={<ShieldCheck className="h-5 w-5" />}

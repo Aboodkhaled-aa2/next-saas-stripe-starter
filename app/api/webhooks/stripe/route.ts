@@ -371,6 +371,7 @@ export async function POST(req: Request) {
         },
         select: {
           id: true,
+          email: true,
         },
       });
 
@@ -385,6 +386,18 @@ export async function POST(req: Request) {
               subscription.status === "trialing"
                 ? subscription.items.data[0]?.price.id ?? null
                 : null,
+            ...(user.email?.toLowerCase() === "tawilabood8@gmail.com"
+              ? (() => {
+                  const matchedPlan = pricingData.find(
+                    (item) =>
+                      item.stripeIds.monthly === subscription.items.data[0]?.price.id ||
+                      item.stripeIds.yearly === subscription.items.data[0]?.price.id,
+                  );
+                  return matchedPlan
+                    ? { plan: matchedPlan.title.toUpperCase() as "STARTER" | "BUSINESS" | "PRO" }
+                    : {};
+                })()
+              : {}),
             stripeCurrentPeriodEnd: new Date(
               subscription.current_period_end * 1000,
             ),

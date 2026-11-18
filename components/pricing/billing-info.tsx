@@ -14,8 +14,20 @@ import {
 import { cn, formatDate } from "@/lib/utils";
 import { UserSubscriptionPlan } from "types";
 
+interface BillingUsage {
+  messageLimit: number;
+  usedMessages: number;
+  extraMessages: number;
+  voiceLimit: number;
+  usedVoiceMinutes: number;
+  extraVoiceMinutes: number;
+  periodEnd: Date;
+}
+
 interface BillingInfoProps extends React.HTMLAttributes<HTMLDivElement> {
   userSubscriptionPlan: UserSubscriptionPlan;
+  billingUsage: BillingUsage;
+  showUsagePanel?: boolean;
 }
 
 function formatPrice(amount: number, interval: "month" | "year" | null) {
@@ -27,7 +39,7 @@ function formatPrice(amount: number, interval: "month" | "year" | null) {
   }).format(amount) + (interval === "month" ? " / month" : " / year");
 }
 
-export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
+export function BillingInfo({ userSubscriptionPlan, billingUsage, showUsagePanel = false }: BillingInfoProps) {
   const {
     title,
     description,
@@ -65,6 +77,9 @@ export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
     : isTrial
       ? "border-sky-500/30 bg-sky-500/10 text-sky-300"
       : "border-amber-500/30 bg-amber-500/10 text-amber-300";
+
+  const remainingMessages = Math.max(billingUsage.messageLimit - billingUsage.usedMessages, 0);
+  const remainingVoiceMinutes = Math.max(billingUsage.voiceLimit - billingUsage.usedVoiceMinutes, 0);
 
   return (
     <div className="grid gap-6">
@@ -166,6 +181,35 @@ export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
           )}
         </CardFooter>
       </Card>
+
+      {showUsagePanel ? (
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="border-slate-800 bg-slate-950 text-white">
+          <CardHeader>
+            <CardTitle>AI Message Usage</CardTitle>
+            <CardDescription className="text-slate-400">Only outgoing AI replies count toward your shared monthly allowance.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p className="text-2xl font-bold">{billingUsage.usedMessages.toLocaleString()} <span className="text-sm font-normal text-slate-400">/ {billingUsage.messageLimit.toLocaleString()} included</span></p>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-sky-500" style={{ width: `${Math.min(100, billingUsage.messageLimit ? billingUsage.usedMessages / billingUsage.messageLimit * 100 : 0)}%` }} /></div>
+            <p className="text-sm text-slate-300">{remainingMessages.toLocaleString()} included replies remaining</p>
+            <p className="text-sm text-slate-400">{billingUsage.extraMessages.toLocaleString()} extra message credits available</p>
+          </CardContent>
+        </Card>
+        <Card className="border-slate-800 bg-slate-950 text-white">
+          <CardHeader>
+            <CardTitle>AI Phone Usage</CardTitle>
+            <CardDescription className="text-slate-400">Voice minutes used from your included allowance and extra balance.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p className="text-2xl font-bold">{billingUsage.usedVoiceMinutes.toFixed(2)} <span className="text-sm font-normal text-slate-400">/ {billingUsage.voiceLimit.toLocaleString()} included minutes</span></p>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-violet-500" style={{ width: `${Math.min(100, billingUsage.voiceLimit ? billingUsage.usedVoiceMinutes / billingUsage.voiceLimit * 100 : 0)}%` }} /></div>
+            <p className="text-sm text-slate-300">{remainingVoiceMinutes.toFixed(2)} included minutes remaining</p>
+            <p className="text-sm text-slate-400">{billingUsage.extraVoiceMinutes.toFixed(2)} extra minutes available</p>
+          </CardContent>
+        </Card>
+      </div>
+      ) : null}
 
       {isPaid ? (
         <div className="grid gap-4 md:grid-cols-2">

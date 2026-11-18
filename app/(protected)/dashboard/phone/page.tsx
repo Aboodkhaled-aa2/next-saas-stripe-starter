@@ -17,5 +17,5 @@ export default async function PhoneNumberPage() {
     redirect("/dashboard/integrations/phone");
   }
 
-  return <PhoneNumberClient />;
+  return <PhoneNumberClient showAdminUsage />;
 }
