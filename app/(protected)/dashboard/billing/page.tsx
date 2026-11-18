@@ -24,7 +24,7 @@ export default async function BillingPage() {
     redirect("/login");
   }
 
-  const isUsageTestAccount = user.email?.toLowerCase() === "aboodkhaled1177@gmail.com";
+  const isUsageTestAccount = user.email?.toLowerCase() === "tawilabood8@gmail.com";
 
   const account = isUsageTestAccount ? await prisma.user.findUnique({
     where: { id: user.id },
