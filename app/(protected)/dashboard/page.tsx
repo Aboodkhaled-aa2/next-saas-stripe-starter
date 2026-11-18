@@ -154,14 +154,16 @@ export default async function DashboardPage() {
       })
     : null;
 
+  const isAdmin = user?.role === "ADMIN";
+
   const trialActive =
-    Boolean(
+    !isAdmin && Boolean(
       billingUser?.trialEndsAt &&
         billingUser.trialEndsAt.getTime() > Date.now(),
     ) && !billingUser?.stripeSubscriptionId;
 
   const trialExpired =
-    Boolean(
+    !isAdmin && Boolean(
       billingUser?.trialEndsAt &&
         billingUser.trialEndsAt.getTime() <= Date.now(),
     ) && !billingUser?.stripeSubscriptionId;
@@ -176,7 +178,7 @@ export default async function DashboardPage() {
       )
     : 0;
 
-  const paidActive = Boolean(billingUser?.stripeSubscriptionId);
+  const paidActive = isAdmin || Boolean(billingUser?.stripeSubscriptionId);
 
   if (billingUser?.stripeSubscriptionId) {
     try {
@@ -192,6 +194,12 @@ export default async function DashboardPage() {
         error,
       );
     }
+  }
+
+  if (isAdmin && !billingUser?.stripeSubscriptionId) {
+    const now = new Date();
+    currentPeriodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    currentPeriodEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
   }
 
   if (trialActive) {
@@ -221,7 +229,7 @@ export default async function DashboardPage() {
     },
   });
 
-  const voicePlanEnabled = user?.plan === "BUSINESS" || user?.plan === "PRO";
+  const voicePlanEnabled = !isAdmin && (user?.plan === "BUSINESS" || user?.plan === "PRO");
 
   const includedVoiceMinutes =
     !voicePlanEnabled || trialActive
@@ -294,18 +302,21 @@ export default async function DashboardPage() {
         where: {
           ...messagingBaseWhere,
           conversation: { userId: user?.id ?? "", channel: "FACEBOOK" },
+          ...(isAdmin ? { direction: "OUTBOUND" } : {}),
         },
       }),
       prisma.message.count({
         where: {
           ...messagingBaseWhere,
           conversation: { userId: user?.id ?? "", channel: "INSTAGRAM" },
+          ...(isAdmin ? { direction: "OUTBOUND" } : {}),
         },
       }),
       prisma.message.count({
         where: {
           ...messagingBaseWhere,
           conversation: { userId: user?.id ?? "", channel: "WHATSAPP" },
+          ...(isAdmin ? { direction: "OUTBOUND" } : {}),
         },
       }),
     ]);
@@ -704,7 +715,7 @@ export default async function DashboardPage() {
             <p className="mt-1 text-sm text-slate-500">
               {trialActive
                 ? "Your trial includes 100 total messages and AI replies shared across Facebook, Instagram, and WhatsApp."
-                : "Your plan includes one shared monthly allowance across Facebook, Instagram, and WhatsApp. Both incoming customer messages and outgoing AI replies count."}
+                : "{isAdmin ? "Admin Pro preview: only outgoing AI replies count toward the 15,000-message allowance." : "Your plan includes one shared monthly allowance across Facebook, Instagram, and WhatsApp. Both incoming customer messages and outgoing AI replies count."}"}
             </p>
           </div>
 
@@ -713,7 +724,7 @@ export default async function DashboardPage() {
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                    Messages + AI Replies
+                    {isAdmin ? "Outgoing AI Replies" : "Messages + AI Replies"}
                   </p>
                   <p className="mt-1 text-3xl font-bold tracking-tight text-white">
                     {usedMessagingMessages.toLocaleString()}
@@ -759,7 +770,7 @@ export default async function DashboardPage() {
 
               <div className="mt-5">
                 <p className="mb-3 text-xs text-slate-500">
-                  Channel breakdown — incoming messages and outgoing AI replies both use the same shared allowance.
+                  {isAdmin ? "Outgoing AI replies by channel." : "Channel breakdown — incoming messages and outgoing AI replies both use the same shared allowance."}
                 </p>
                 <div className="grid gap-3 sm:grid-cols-3">
                   {[
@@ -784,7 +795,7 @@ export default async function DashboardPage() {
                     {usedMessagingMessages.toLocaleString()}
                   </p>
                   <p className="mt-1 text-[11px] text-slate-600">
-                    Incoming messages + outgoing AI replies this period
+                    {isAdmin ? "Outgoing AI replies this month" : "Incoming messages + outgoing AI replies this period"}
                   </p>
                 </div>
 
