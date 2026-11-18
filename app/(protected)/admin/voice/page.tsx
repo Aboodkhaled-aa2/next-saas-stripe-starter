@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
-import { prisma } from "@/lib/db";\nimport { stripe } from "@/lib/stripe";
+import { prisma } from "@/lib/db";
+import { stripe } from "@/lib/stripe";
 import { getCurrentUser } from "@/lib/session";
 import { constructMetadata } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard/header";
