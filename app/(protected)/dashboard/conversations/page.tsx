@@ -79,23 +79,30 @@ export default async function ConversationsPage() {
               const latestMessage = conversation.messages[0];
               const channel = channelLabels[conversation.channel] ?? conversation.channel;
               return (
-                <div key={conversation.id} className="group flex flex-col gap-4 p-5 transition-colors hover:bg-slate-900/40 sm:flex-row sm:items-center">
+                <Link
+                  key={conversation.id}
+                  href={`/dashboard/conversations/${conversation.id}`}
+                  className="group flex flex-col gap-4 p-5 transition-colors hover:bg-slate-900/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 sm:flex-row sm:items-center"
+                >
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-800 bg-slate-900">
                     <UserRound className="h-5 w-5 text-slate-500" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-medium text-white">{conversation.customerName || conversation.customerExternalId || "Customer"}</h3>
+                      <h3 className="font-medium text-white">{conversation.customerName || `${channel} customer`}</h3>
                       <span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${channelStyles[conversation.channel] || "border-slate-800 bg-slate-900 text-slate-400"}`}>{channel}</span>
                       <span className="rounded-full border border-slate-800 bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-slate-500">{conversation.status}</span>
                     </div>
-                    <p className="mt-1 truncate text-sm text-slate-500">{latestMessage?.text || "No messages yet"}</p>
+                    {conversation.customerExternalId && (
+                      <p className="mt-1 truncate text-xs text-slate-600">ID: {conversation.customerExternalId}</p>
+                    )}
+                    <p className="mt-1 truncate text-sm text-slate-400">{latestMessage?.text || "No messages yet"}</p>
                   </div>
                   <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end">
                     <span className="text-xs text-slate-600">{formatRelativeTime(conversation.lastMessageAt)}</span>
-                    <Link href={`/dashboard/conversations/${conversation.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors hover:text-white">View<ArrowRight className="h-3.5 w-3.5" /></Link>
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-400 transition-colors group-hover:text-blue-300">View<ArrowRight className="h-3.5 w-3.5" /></span>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
