@@ -16,7 +16,7 @@ export default async function MessageCreditPurchasePage({
 }) {
   const user = await getCurrentUser();
 
-  if (!user?.id || user.role !== "USER") {
+  if (!user?.id) {
     redirect("/login");
   }
 
@@ -26,5 +26,5 @@ export default async function MessageCreditPurchasePage({
     redirect("/dashboard/billing");
   }
 
-  return <MessageCreditPurchase searchParams={searchParams} />;
+  return <MessageCreditPurchase searchParams={searchParams} isAdmin={user.role === "ADMIN"} />;
 }
