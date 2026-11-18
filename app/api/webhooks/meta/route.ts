@@ -179,6 +179,7 @@ async function canUseMessaging(
       trialStartedAt: true,
       trialEndsAt: true,
       plan: true,
+      role: true,
       extraMessageCredits: true,
     },
   });
@@ -265,6 +266,7 @@ async function canUseMessaging(
     periodStart,
     periodEnd,
     isTrial,
+    isAdmin: user.role === "ADMIN",
     reason:
       used >= limit && !hasExtraMessageCredits
         ? "Your shared monthly AI reply allowance across Facebook, Instagram, and WhatsApp has been reached. Purchase additional message credits to continue."
@@ -279,6 +281,7 @@ async function reserveMessagingAllowance(
   periodEnd: Date,
   limit: number,
   isTrial: boolean,
+  isAdmin: boolean,
   conversationId: string,
   reply: string,
 ) {
@@ -295,6 +298,7 @@ async function reserveMessagingAllowance(
           userId,
           channel: { in: ["FACEBOOK", "INSTAGRAM", "WHATSAPP"] },
         },
+        ...(isAdmin ? { direction: "OUTBOUND" as const } : {}),
       },
     });
 
@@ -458,6 +462,7 @@ async function handleMetaMessage(
       trialMessaging.periodEnd,
       trialMessaging.limit,
       trialMessaging.isTrial,
+      Boolean(trialMessaging.isAdmin),
       conversation.id,
       reply,
     );
@@ -629,6 +634,7 @@ async function handleWhatsAppMessage(
       trialMessaging.periodEnd,
       trialMessaging.limit,
       trialMessaging.isTrial,
+      Boolean(trialMessaging.isAdmin),
       conversation.id,
       reply,
     );
