@@ -229,7 +229,7 @@ export default async function DashboardPage() {
     },
   });
 
-  const voicePlanEnabled = !isAdmin && (user?.plan === "BUSINESS" || user?.plan === "PRO");
+  const voicePlanEnabled = isAdmin || user?.plan === "BUSINESS" || user?.plan === "PRO";
 
   const includedVoiceMinutes =
     !voicePlanEnabled || trialActive
