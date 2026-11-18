@@ -207,6 +207,10 @@ async function canUseMessaging(
     periodStart = user.trialStartedAt!;
     periodEnd = user.trialEndsAt!;
     limit = 100;
+  } else if (user.role === "ADMIN" && !user.stripeSubscriptionId) {
+    periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    periodEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+    limit = 15000;
   } else {
     if (!user.stripeSubscriptionId) {
       return {
@@ -251,6 +255,7 @@ async function canUseMessaging(
       userId,
       channel: { in: ["FACEBOOK", "INSTAGRAM", "WHATSAPP"] },
     },
+    ...(user.role === "ADMIN" ? { direction: "OUTBOUND" as const } : {}),
   };
 
   const used = await prisma.message.count({ where: usageWhere });
