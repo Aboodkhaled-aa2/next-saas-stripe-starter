@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/session";
+import { prisma } from "@/lib/db";
 import { getUserSubscriptionPlan } from "@/lib/subscription";
 import { constructMetadata } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard/header";
@@ -15,9 +16,14 @@ export default async function BillingPage() {
   const user = await getCurrentUser();
 
   let userSubscriptionPlan;
+  let extraMessageCredits = 0;
 
-  if (user && user.id && user.role === "USER") {
+  if (user && user.id) {
     userSubscriptionPlan = await getUserSubscriptionPlan(user.id);
+    if (user.role === "ADMIN") {
+      const billingUser = await prisma.user.findUnique({ where: { id: user.id }, select: { extraMessageCredits: true } });
+      extraMessageCredits = billingUser?.extraMessageCredits ?? 0;
+    }
   } else {
     redirect("/login");
   }
@@ -31,7 +37,7 @@ export default async function BillingPage() {
         />
 
         <div className="grid gap-8">
-          <BillingInfo userSubscriptionPlan={userSubscriptionPlan} />
+          <BillingInfo userSubscriptionPlan={userSubscriptionPlan} isAdmin={user.role === "ADMIN"} extraMessageCredits={extraMessageCredits} />
         </div>
       </div>
     </div>
