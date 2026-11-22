@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Check, Loader2, Save } from "lucide-react";
+import { PricingEditor } from "@/components/dashboard/pricing-editor";
 
 type Profile = {
   businessName?: string | null;
@@ -162,12 +163,14 @@ export function BusinessProfileSettings() {
               {section.fields.map(([key, label]) => (
                 <label key={key} className={longFields.has(key) ? "sm:col-span-2 block" : "block"}>
                   <span className="text-sm font-medium text-slate-300">{label}</span>
-                  {longFields.has(key) ? (
+                  {key === "pricing" ? (
+                    <div className="mt-2"><PricingEditor value={fields.pricing} onChange={(value) => update("pricing", value)} /></div>
+                  ) : longFields.has(key) ? (
                     <textarea
                       value={fields[key]}
                       onChange={(event) => update(key, event.target.value)}
-                      rows={key === "pricing" || key === "bookingRules" ? 5 : 3}
-                      placeholder={key === "pricing" ? "Example: Standard cleaning starts at $120. Price is based on bedrooms, bathrooms, square footage, and cleaning type. Deep cleaning starts at $200. Add exact rates or formulas; the AI will not invent missing prices." : key === "services" ? "Enter one service per line." : key === "paymentMethods" ? "Enter one payment method per line." : ""}
+                      rows={key === "bookingRules" ? 5 : 3}
+                      placeholder={key === "services" ? "Enter one service per line." : key === "paymentMethods" ? "Enter one payment method per line." : ""}
                       className="mt-2 w-full rounded-xl border border-slate-800 bg-slate-900/70 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-blue-500/50"
                     />
                   ) : (
