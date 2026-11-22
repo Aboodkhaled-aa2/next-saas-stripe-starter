@@ -112,42 +112,40 @@ async function resolveConfiguredDuration(
   const bedrooms = details.bedrooms ?? null;
   const bathrooms = details.bathrooms ?? null;
 
-  const bedroomRules: RegExpExecArray[] = [];
   const bedroomRulePattern =
-    /(\d+)\s*(?:-|–|to)\s*(\d+)\s*bedrooms?\s*=\s*(\d+(?:\.\d+)?)\s*hours?/gi;
+    /(\d+)\s*(?:-|–|to)\s*(\d+)\s*bedrooms?\s*(?:=|:)\s*(\d+(?:\.\d+)?)\s*(hours?|minutes?)/gi;
   let bedroomRuleMatch: RegExpExecArray | null;
+  let durationMinutes: number | null = null;
 
   while ((bedroomRuleMatch = bedroomRulePattern.exec(rules)) !== null) {
-    bedroomRules.push(bedroomRuleMatch);
-  }
-
-  let durationHours: number | null = null;
-
-  for (const match of bedroomRules) {
-    const min = Number(match[1]);
-    const max = Number(match[2]);
-    const hours = Number(match[3]);
+    const min = Number(bedroomRuleMatch[1]);
+    const max = Number(bedroomRuleMatch[2]);
+    const amount = Number(bedroomRuleMatch[3]);
+    const unit = bedroomRuleMatch[4].toLowerCase();
 
     if (bedrooms !== null && bedrooms >= min && bedrooms <= max) {
-      durationHours = hours;
+      durationMinutes = Math.round(amount * (unit.startsWith("hour") ? 60 : 1));
       break;
     }
   }
 
   const plusMatch = rules.match(
-    /(\d+)\s*\+\s*bedrooms?\s*=\s*(\d+(?:\.\d+)?)\s*hours?/i,
+    /(\d+)\s*\+\s*bedrooms?\s*(?:=|:)\s*(\d+(?:\.\d+)?)\s*(hours?|minutes?)/i,
   );
 
   if (
-    durationHours === null &&
+    durationMinutes === null &&
     plusMatch &&
     bedrooms !== null &&
     bedrooms >= Number(plusMatch[1])
   ) {
-    durationHours = Number(plusMatch[2]);
+    const amount = Number(plusMatch[2]);
+    durationMinutes = Math.round(
+      amount * (plusMatch[3].toLowerCase().startsWith("hour") ? 60 : 1),
+    );
   }
 
-  if (durationHours === null) {
+  if (durationMinutes === null) {
     return {
       success: false,
       needsMoreDetails: bedrooms === null,
@@ -156,19 +154,26 @@ async function resolveConfiguredDuration(
     };
   }
 
-  let minutes = Math.round(durationHours * 60);
+  let minutes = durationMinutes;
 
-  const bathroomMatch = rules.match(
-    /add\s+(\d+)\s*minutes?\s+for\s+every\s+(\d+)\s+additional\s+bathrooms?/i,
-  );
+  const bathroomRule =
+    rules.match(
+      /add\s+(\d+)\s*minutes?\s+for\s+every\s+(\d+)\s+bathrooms?\s+above\s+the\s+first\s+(\d+)\s+bathrooms?/i,
+    ) ??
+    rules.match(
+      /add\s+(\d+)\s*minutes?\s+for\s+every\s+(\d+)\s+additional\s+bathrooms?/i,
+    );
 
-  if (bathroomMatch && bathrooms !== null) {
-    const extraMinutes = Number(bathroomMatch[1]);
-    const bathroomStep = Number(bathroomMatch[2]);
+  if (bathroomRule && bathrooms !== null) {
+    const extraMinutes = Number(bathroomRule[1]);
+    const bathroomStep = Number(bathroomRule[2]);
+    const baseBathrooms = bathroomRule[3]
+      ? Number(bathroomRule[3])
+      : bathroomStep;
 
-    if (bathroomStep > 0 && bathrooms > bathroomStep) {
+    if (bathroomStep > 0 && bathrooms > baseBathrooms) {
       minutes +=
-        Math.floor((bathrooms - bathroomStep) / bathroomStep) *
+        Math.floor((bathrooms - baseBathrooms) / bathroomStep) *
         extraMinutes;
     }
   }
