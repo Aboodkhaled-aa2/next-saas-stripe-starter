@@ -1206,14 +1206,20 @@ function shouldBookIfAvailable(message: string) {
 
 function sanitizeCustomerFacingMessage(message: string): string {
   return message
-    .replace(/(?:booking|reservation|database)\\s*(?:id|reference)\\s*[:#-]?\\s*[a-z0-9_-]+/gi, "")
-    .replace(/\\b[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\\b/gi, "")
-    .replace(/\\bc[a-z0-9]{20,}\\b/gi, "")
-    .replace(/[ \\t]{2,}/g, " ")
-    .replace(/\\n{3,}/g, "\\n\\n")
+    .split("\n")
+    .filter(
+      (line) =>
+        !/(?:booking|reservation|database)\s*(?:id|reference|number)\s*[:#-]/i.test(
+          line,
+        ),
+    )
+    .join("\n")
+    .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi, "")
+    .replace(/\bc[a-z0-9]{20,}\b/gi, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
-
 export async function runCustomerAgent(
   options: CustomerAgentRunOptions,
 ): Promise<CustomerAgentRunResult> {
