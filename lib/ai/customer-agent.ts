@@ -160,6 +160,7 @@ CONVERSATION STYLE:
 - Avoid long questionnaires in a single message unless the customer asks for a full checklist.
 - Confirm important details before booking unless the customer has already explicitly authorized booking if available.
 - Keep phone responses especially concise.
+- Never include the internal booking ID, database ID, or booking reference in a customer-facing message. Keep it internal; confirm the request using the service, date, time, and pending/confirmed status instead.
 - Match the configured AI tone without becoming unnatural.
 
 HUMAN HANDOFF:
