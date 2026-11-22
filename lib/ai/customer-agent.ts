@@ -188,7 +188,33 @@ function formatValue(value: unknown): string {
   }
 
   if (typeof value === "string") {
-    return value.trim() || "Not provided";
+    const raw = value.trim();
+    if (!raw) return "Not provided";
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed?.format === "smart-cleaning-pricing-v1" && Array.isArray(parsed.rows)) {
+        const rules = parsed.rows.map((row: Record<string, unknown>) => {
+          const lines = [
+            `Service: ${row.service || "Unnamed service"}`,
+            `Pricing method: ${row.method === "quote" ? "Custom quote" : row.method === "per_unit" ? "Price per unit" : "Base price plus add-ons"}`,
+          ];
+          if (row.method !== "quote") {
+            lines.push(`Base price (USD): ${row.basePrice || "Not specified"}`);
+            lines.push(`Included bedrooms: ${row.includedBedrooms || "Not specified"}`);
+            lines.push(`Included bathrooms: ${row.includedBathrooms || "Not specified"}`);
+            lines.push(`Included square feet: ${row.includedSqft || "Not specified"}`);
+            lines.push(`Extra bedroom (USD): ${row.extraBedroom || "Not specified"}`);
+            lines.push(`Extra bathroom (USD): ${row.extraBathroom || "Not specified"}`);
+            lines.push(`Extra square feet charge (USD): ${row.extraSqft || "Not specified"} per ${row.extraSqftUnit || "unspecified"} sq ft`);
+          }
+          if (row.notes) lines.push(`Additional rules: ${row.notes}`);
+          return lines.join("\\n");
+        });
+        if (parsed.legacy) rules.push(`Existing pricing notes: ${parsed.legacy}`);
+        return rules.join("\\n\\n") || "No pricing rules configured";
+      }
+    } catch {}
+    return raw;
   }
 
   try {
