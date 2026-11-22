@@ -112,42 +112,40 @@ async function resolveConfiguredDuration(
   const bedrooms = details.bedrooms ?? null;
   const bathrooms = details.bathrooms ?? null;
 
-  const bedroomRules: RegExpExecArray[] = [];
   const bedroomRulePattern =
-    /(\d+)\s*(?:-|–|to)\s*(\d+)\s*bedrooms?\s*=\s*(\d+(?:\.\d+)?)\s*hours?/gi;
+    /(\d+)\s*(?:-|–|to)\s*(\d+)\s*bedrooms?\s*(?:=|:)\s*(\d+(?:\.\d+)?)\s*(hours?|minutes?)/gi;
+  let durationMinutes: number | null = null;
   let bedroomRuleMatch: RegExpExecArray | null;
 
   while ((bedroomRuleMatch = bedroomRulePattern.exec(rules)) !== null) {
-    bedroomRules.push(bedroomRuleMatch);
-  }
-
-  let durationHours: number | null = null;
-
-  for (const match of bedroomRules) {
-    const min = Number(match[1]);
-    const max = Number(match[2]);
-    const hours = Number(match[3]);
+    const min = Number(bedroomRuleMatch[1]);
+    const max = Number(bedroomRuleMatch[2]);
+    const amount = Number(bedroomRuleMatch[3]);
+    const unit = bedroomRuleMatch[4].toLowerCase();
 
     if (bedrooms !== null && bedrooms >= min && bedrooms <= max) {
-      durationHours = hours;
+      durationMinutes = Math.round(unit.startsWith("hour") ? amount * 60 : amount);
       break;
     }
   }
 
   const plusMatch = rules.match(
-    /(\d+)\s*\+\s*bedrooms?\s*=\s*(\d+(?:\.\d+)?)\s*hours?/i,
+    /(\d+)\s*\+\s*bedrooms?\s*(?:=|:)\s*(\d+(?:\.\d+)?)\s*(hours?|minutes?)/i,
   );
 
   if (
-    durationHours === null &&
+    durationMinutes === null &&
     plusMatch &&
     bedrooms !== null &&
     bedrooms >= Number(plusMatch[1])
   ) {
-    durationHours = Number(plusMatch[2]);
+    const amount = Number(plusMatch[2]);
+    durationMinutes = Math.round(
+      plusMatch[3].toLowerCase().startsWith("hour") ? amount * 60 : amount,
+    );
   }
 
-  if (durationHours === null) {
+  if (durationMinutes === null) {
     return {
       success: false,
       needsMoreDetails: bedrooms === null,
@@ -156,24 +154,23 @@ async function resolveConfiguredDuration(
     };
   }
 
-  let minutes = Math.round(durationHours * 60);
-
   const bathroomMatch = rules.match(
-    /add\s+(\d+)\s*minutes?\s+for\s+every\s+(\d+)\s+additional\s+bathrooms?/i,
+    /add\s+(\d+)\s*minutes?\s+for\s+every\s+(\d+)\s+bathrooms?(?:\s+above\s+the\s+first\s+(\d+))?/i,
   );
 
   if (bathroomMatch && bathrooms !== null) {
     const extraMinutes = Number(bathroomMatch[1]);
     const bathroomStep = Number(bathroomMatch[2]);
+    const includedBathrooms = Number(bathroomMatch[3] ?? bathroomMatch[2]);
 
-    if (bathroomStep > 0 && bathrooms > bathroomStep) {
-      minutes +=
-        Math.floor((bathrooms - bathroomStep) / bathroomStep) *
+    if (bathroomStep > 0 && bathrooms > includedBathrooms) {
+      durationMinutes +=
+        Math.ceil((bathrooms - includedBathrooms) / bathroomStep) *
         extraMinutes;
     }
   }
 
-  return { success: true, durationMinutes: minutes };
+  return { success: true, durationMinutes };
 }
 
 async function findAlternativeBookingTimes(
