@@ -286,7 +286,7 @@ async function reserveMessagingAllowance(
   const lockKey = userId + ":" + scope + ":" + periodStart.toISOString();
 
   return prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey})::bigint)`;
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey})::bigint)`;
 
     const used = await tx.message.count({
       where: {
