@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -153,6 +153,73 @@ export default function OnboardingPage() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    fetch("/api/business-profile", { cache: "no-store" })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok || !data.businessProfile) return;
+
+        const profile = data.businessProfile;
+        const rawRules = profile.bookingRules;
+        let parsedRules: {
+          generalRules?: string;
+          duration?: {
+            mode?: "fixed" | "rules";
+            fixedDurationMinutes?: number | null;
+            rules?: string | null;
+          };
+        } = {};
+
+        try {
+          parsedRules = typeof rawRules === "string"
+            ? JSON.parse(rawRules)
+            : rawRules && typeof rawRules === "object"
+              ? rawRules
+              : {};
+        } catch {
+          parsedRules = { generalRules: typeof rawRules === "string" ? rawRules : "" };
+        }
+
+        const knownTypes = businessTypeOptions.map((option) => option.value);
+        const savedType = profile.businessType || "";
+        const isKnownType = knownTypes.includes(savedType);
+        const savedServices = Array.isArray(profile.services) ? profile.services.map(String) : [];
+
+        if (!active) return;
+
+        setFormData((current) => ({
+          ...current,
+          businessName: profile.businessName || "",
+          businessPhone: profile.businessPhone || "",
+          businessEmail: profile.businessEmail || "",
+          websiteUrl: profile.websiteUrl || "",
+          businessType: isKnownType ? savedType : savedType ? "Other" : "",
+          customBusinessType: isKnownType ? "" : savedType,
+          services: savedServices.filter((service: string) => (serviceOptionsByType[isKnownType ? savedType : "Other"] || serviceOptionsByType.Other).includes(service)),
+          customServices: savedServices.filter((service: string) => !(serviceOptionsByType[isKnownType ? savedType : "Other"] || serviceOptionsByType.Other).includes(service)).join("\\n"),
+          serviceAreas: typeof profile.serviceAreas === "string" ? profile.serviceAreas : JSON.stringify(profile.serviceAreas || ""),
+          pricing: typeof profile.pricing === "string" ? profile.pricing : JSON.stringify(profile.pricing || ""),
+          businessHours: typeof profile.businessHours === "string" ? profile.businessHours : JSON.stringify(profile.businessHours || ""),
+          paymentMethods: Array.isArray(profile.paymentMethods) ? profile.paymentMethods.map(String) : [],
+          bookingRules: parsedRules.generalRules || "",
+          durationMode: parsedRules.duration?.mode === "rules" ? "rules" : "fixed",
+          fixedDurationMinutes: parsedRules.duration?.fixedDurationMinutes ? String(parsedRules.duration.fixedDurationMinutes) : "",
+          durationRules: parsedRules.duration?.rules || "",
+          cancellationPolicy: profile.cancellationPolicy || "",
+          reschedulingPolicy: profile.reschedulingPolicy || "",
+          aiInstructions: profile.aiInstructions || "",
+          aiTone: profile.aiTone || "Professional and friendly",
+          humanHandoffInstructions: profile.humanHandoffInstructions || "",
+          additionalNotes: profile.additionalNotes || "",
+        }));
+      })
+      .catch((loadError) => console.error("Business profile preload error:", loadError));
+
+    return () => { active = false; };
+  }, []);
 
   const step = steps[currentStep];
   const StepIcon = step.icon;
