@@ -1078,7 +1078,6 @@ async function executeCustomerAgentTool(
       customerId: customer.id,
       leadId: lead?.id ?? null,
       booking: {
-        id: booking.id,
         customerName: booking.customerName,
         service: booking.service,
         startAt: booking.startAt.toISOString(),
