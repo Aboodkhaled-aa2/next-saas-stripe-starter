@@ -306,18 +306,21 @@ export default async function DashboardPage() {
       prisma.message.count({
         where: {
           ...messagingBaseWhere,
+          direction: "OUTBOUND",
           conversation: { userId: user?.id ?? "", channel: "FACEBOOK" },
         },
       }),
       prisma.message.count({
         where: {
           ...messagingBaseWhere,
+          direction: "OUTBOUND",
           conversation: { userId: user?.id ?? "", channel: "INSTAGRAM" },
         },
       }),
       prisma.message.count({
         where: {
           ...messagingBaseWhere,
+          direction: "OUTBOUND",
           conversation: { userId: user?.id ?? "", channel: "WHATSAPP" },
         },
       }),
@@ -716,8 +719,8 @@ export default async function DashboardPage() {
             </h2>
             <p className="mt-1 text-sm text-slate-500">
               {trialActive
-                ? "Your trial includes 100 total messages and AI replies shared across Facebook, Instagram, and WhatsApp."
-                : "Your plan includes one shared monthly allowance across Facebook, Instagram, and WhatsApp. Both incoming customer messages and outgoing AI replies count."}
+                ? "Your trial includes 100 AI replies shared across Facebook, Instagram, and WhatsApp. Incoming customer messages are free."
+                : "Your plan includes one shared monthly allowance for AI replies across Facebook, Instagram, and WhatsApp. Incoming customer messages are free."}
             </p>
           </div>
 
@@ -726,7 +729,7 @@ export default async function DashboardPage() {
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                    Messages + AI Replies
+                    AI Replies Sent
                   </p>
                   <p className="mt-1 text-3xl font-bold tracking-tight text-white">
                     {usedMessagingMessages.toLocaleString()}
@@ -772,7 +775,7 @@ export default async function DashboardPage() {
 
               <div className="mt-5">
                 <p className="mb-3 text-xs text-slate-500">
-                  Channel breakdown — incoming messages and outgoing AI replies both use the same shared allowance.
+                  Channel breakdown — only successfully sent AI replies count toward your shared allowance.
                 </p>
                 <div className="grid gap-3 sm:grid-cols-3">
                   {[
@@ -783,7 +786,7 @@ export default async function DashboardPage() {
                     <div key={item.label} className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
                       <p className="text-xs text-slate-400">{item.label}</p>
                       <p className="mt-1 text-lg font-semibold text-white">
-                        {item.used.toLocaleString()} <span className="text-xs font-normal text-slate-500">counted messages</span>
+                        {item.used.toLocaleString()} <span className="text-xs font-normal text-slate-500">AI replies</span>
                       </p>
                     </div>
                   ))}
@@ -797,7 +800,7 @@ export default async function DashboardPage() {
                     {usedMessagingMessages.toLocaleString()}
                   </p>
                   <p className="mt-1 text-[11px] text-slate-600">
-                    Incoming messages + outgoing AI replies this period
+                    Successfully sent AI replies this period
                   </p>
                 </div>
 
