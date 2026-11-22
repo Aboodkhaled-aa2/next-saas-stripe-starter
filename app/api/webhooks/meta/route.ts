@@ -243,8 +243,9 @@ async function canUseMessaging(
     limit = user.plan === "PRO" ? 15000 : user.plan === "BUSINESS" ? 6000 : 3000;
   }
 
-  // Count every customer message received and every AI reply sent across all channels.
+  // Only successfully sent AI replies consume messaging allowance. Inbound customer messages are free.
   const usageWhere = {
+    direction: "OUTBOUND" as const,
     createdAt: { gte: periodStart, lt: periodEnd },
     conversation: {
       userId,
@@ -290,6 +291,7 @@ async function reserveMessagingAllowance(
 
     const used = await tx.message.count({
       where: {
+        direction: "OUTBOUND",
         createdAt: { gte: periodStart, lt: periodEnd },
         conversation: {
           userId,
