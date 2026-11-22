@@ -5,6 +5,7 @@ import { constructMetadata } from "@/lib/utils";
 import { DeleteAccountSection } from "@/components/dashboard/delete-account";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { UserNameForm } from "@/components/forms/user-name-form";
+import { BusinessProfileSettings } from "@/components/dashboard/business-profile-settings";
 
 export const metadata = constructMetadata({
   title: "Settings – Smart Cleaning Desk",
@@ -25,6 +26,8 @@ export default async function SettingsPage() {
         />
 
         <div className="divide-y divide-slate-800/80 pb-10">
+          <BusinessProfileSettings />
+
           <UserNameForm
             user={{
               id: user.id,
