@@ -154,6 +154,8 @@ export default async function DashboardPage() {
       })
     : null;
 
+  const isAdmin = user?.role === "ADMIN";
+
   const trialActive =
     Boolean(
       billingUser?.trialEndsAt &&
@@ -194,9 +196,17 @@ export default async function DashboardPage() {
     }
   }
 
-  if (trialActive) {
+  if (trialActive && !isAdmin) {
     currentPeriodStart = billingUser?.trialStartedAt ?? new Date();
     currentPeriodEnd = billingUser?.trialEndsAt ?? new Date();
+  }
+
+  // Admin dashboard displays Pro-equivalent usage counters on a calendar-month basis.
+  // This is a visibility/test allowance only; usage enforcement remains unchanged.
+  if (isAdmin && (!currentPeriodStart || !currentPeriodEnd)) {
+    const now = new Date();
+    currentPeriodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    currentPeriodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   }
 
   const voiceUsage = await prisma.voiceUsage.aggregate({
@@ -221,10 +231,11 @@ export default async function DashboardPage() {
     },
   });
 
-  const voicePlanEnabled = user?.plan === "BUSINESS" || user?.plan === "PRO";
+  const voicePlanEnabled = isAdmin || user?.plan === "BUSINESS" || user?.plan === "PRO";
 
-  const includedVoiceMinutes =
-    !voicePlanEnabled || trialActive
+  const includedVoiceMinutes = isAdmin
+    ? 500
+    : !voicePlanEnabled || trialActive
       ? 0
       : paidActive
         ? user?.plan === "PRO"
@@ -263,9 +274,11 @@ export default async function DashboardPage() {
     totalRemainingVoiceMinutes > 0 &&
     totalRemainingVoiceMinutes <= voiceLowBalanceThreshold;
 
-  const messagingChannelLimit = trialActive
-    ? 100
-    : paidActive
+  const messagingChannelLimit = isAdmin
+    ? 15000
+    : trialActive
+      ? 100
+      : paidActive
       ? billingUser?.plan === "PRO"
         ? 15000
         : billingUser?.plan === "BUSINESS"
