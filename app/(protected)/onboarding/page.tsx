@@ -562,7 +562,7 @@ export default function OnboardingPage() {
 
                   <div>
                     <Label
-                      text="Tell us about your pricing"
+                      text="Set your prices and explain how each price is calculated"
                       required
                     />
 
@@ -571,7 +571,7 @@ export default function OnboardingPage() {
                       onChange={(event) =>
                         updateField("pricing", event.target.value)
                       }
-                      placeholder={formData.businessType === "Car Wash & Auto Detailing" ? "Example: Exterior wash starts at $35; full detailing starts at $180." : formData.businessType === "Hotels & Hospitality" ? "Example: Room cleaning starts at $45 per room; deep cleaning is quoted by room size." : formData.businessType === "Industrial Cleaning" ? "Example: Warehouse cleaning is quoted by square footage and job requirements." : formData.businessType === "Commercial & Janitorial" ? "Example: Office cleaning is quoted by square footage and frequency." : formData.businessType === "Other" ? "Describe prices for your specific cleaning services." : "Example: Standard home cleaning starts at $120; deep cleaning starts at $200."}
+                      placeholder={formData.businessType === "Car Wash & Auto Detailing" ? "Example: Exterior wash starts at $35; full detailing starts at $180." : formData.businessType === "Hotels & Hospitality" ? "Example: Room cleaning starts at $45 per room; deep cleaning is quoted by room size." : formData.businessType === "Industrial Cleaning" ? "Example: Warehouse cleaning is quoted by square footage and job requirements." : formData.businessType === "Commercial & Janitorial" ? "Example: Office cleaning is quoted by square footage and frequency." : formData.businessType === "Other" ? "Describe prices for your specific cleaning services." : "Example: Standard cleaning starts at $120. Deep cleaning starts at $200. Price depends on bedrooms, bathrooms, square footage, and cleaning type. List exact rates or explain the formula for each service."}
                       rows={5}
                       className="mt-3 w-full resize-none rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
                     />
