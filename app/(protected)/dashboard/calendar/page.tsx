@@ -15,15 +15,9 @@ export default async function CalendarPage() {
   const now = new Date();
   const startOfToday = new Date(now);
   startOfToday.setHours(0, 0, 0, 0);
-  const startOfWeek = new Date(startOfToday);
-  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(endOfWeek.getDate() + 7);
-
   const appointments = await prisma.booking.findMany({
     where: {
       userId: user.id,
-      startAt: { gte: startOfWeek, lt: endOfWeek },
       status: { not: "CANCELLED" },
     },
     orderBy: { startAt: "asc" },
