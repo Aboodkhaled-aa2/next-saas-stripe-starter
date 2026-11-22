@@ -1188,13 +1188,13 @@ async function executeCustomerAgentTool(
 }
 
 function shouldForceAvailabilityCheck(message: string) {
-  return /check\s+(?:the\s+)?availability|check\s+if\s+.*available|if\s+.*available.*(?:book|schedule)|(?:book|schedule).*if\s+.*available/i.test(
+  return /check\\s+(?:the\\s+)?availability|check\\s+if\\s+.*available|\\b(?:book|booking|schedule|appointment|reserve|reservation)\\b/i.test(
     message,
   );
 }
 
 function shouldBookIfAvailable(message: string) {
-  return /(?:book|schedule).*if\s+.*available|if\s+.*available.*(?:book|schedule)/i.test(
+  return /\\b(?:book\\s+(?:me|this|that|the|an?|my)|i(?:'d| would| want to| would like to)\\s+(?:book|schedule|reserve)|please\\s+(?:book|schedule|reserve)|reserve\\s+(?:me|this|that|a|the)|schedule\\s+me)\\b/i.test(
     message,
   );
 }
