@@ -32,8 +32,10 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
 
   if (
-    !body?.code ||
-    !body?.state ||
+    typeof body?.code !== "string" ||
+    !body.code ||
+    typeof body?.state !== "string" ||
+    !body.state ||
     body.state !== stateCookie
   ) {
     return NextResponse.json(
