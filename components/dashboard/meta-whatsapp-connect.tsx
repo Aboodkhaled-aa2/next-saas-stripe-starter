@@ -5,6 +5,7 @@ import { Loader2, MessageCircle } from "lucide-react";
 
 type FacebookLoginResponse = {
   status?: string;
+  code?: string;
   authResponse?: {
     code?: string;
   };
@@ -36,6 +37,9 @@ export function MetaWhatsAppConnect() {
   const codeRef = useRef<string | null>(null);
   const sessionInfoRef = useRef<WhatsAppSessionInfo | null>(null);
   const submittedRef = useRef(false);
+  const loginCallbackReceivedRef = useRef(false);
+  const signupEventReceivedRef = useRef(false);
+  const signupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!appId) return;
@@ -172,6 +176,7 @@ export function MetaWhatsAppConnect() {
         console.log("WhatsApp Embedded Signup event:", message);
 
         if (message?.event === "CANCEL") {
+          if (signupTimeoutRef.current) clearTimeout(signupTimeoutRef.current);
           setLoading(false);
           setError(
             message.data?.current_step
@@ -182,6 +187,7 @@ export function MetaWhatsAppConnect() {
         }
 
         if (message?.event === "ERROR") {
+          if (signupTimeoutRef.current) clearTimeout(signupTimeoutRef.current);
           setLoading(false);
           setError(
             message.data?.error_message ||
@@ -202,6 +208,7 @@ export function MetaWhatsAppConnect() {
           waba_id: message.data?.waba_id,
           business_id: message.data?.business_id,
         };
+        signupEventReceivedRef.current = true;
 
         void submitSignup();
       } catch {
@@ -227,11 +234,21 @@ export function MetaWhatsAppConnect() {
 
     // Meta can deliver the FINISH postMessage before or after FB.login
     // returns the authorization code. Wait until both are available.
-    if (
-      !code ||
-      !state ||
-      !sessionInfo?.waba_id
-    ) {
+    if (!code || !state || !sessionInfo?.waba_id) {
+      // Wait for both Meta callbacks because their arrival order is not guaranteed.
+      // If both callbacks have arrived but required data is still missing, stop
+      // the spinner and explain the missing response instead of hanging forever.
+      if (loginCallbackReceivedRef.current && signupEventReceivedRef.current) {
+        if (signupTimeoutRef.current) clearTimeout(signupTimeoutRef.current);
+        setLoading(false);
+        setError(
+          !code
+            ? "Meta completed account setup but did not return an authorization code. Please try connecting again."
+            : !sessionInfo?.waba_id
+              ? "Meta completed account setup but did not return the WhatsApp Business Account ID. Please try again."
+              : "WhatsApp connection could not be completed. Please try again.",
+        );
+      }
       return;
     }
 
@@ -263,8 +280,10 @@ export function MetaWhatsAppConnect() {
         );
       }
 
+      if (signupTimeoutRef.current) clearTimeout(signupTimeoutRef.current);
       window.location.reload();
     } catch (err) {
+      if (signupTimeoutRef.current) clearTimeout(signupTimeoutRef.current);
       submittedRef.current = false;
       setLoading(false);
       setError(
@@ -295,14 +314,29 @@ export function MetaWhatsAppConnect() {
     codeRef.current = null;
     sessionInfoRef.current = null;
     submittedRef.current = false;
+    loginCallbackReceivedRef.current = false;
+    signupEventReceivedRef.current = false;
 
-    fb.login(
+    if (signupTimeoutRef.current) clearTimeout(signupTimeoutRef.current);
+    signupTimeoutRef.current = setTimeout(() => {
+      setLoading(false);
+      setError(
+        "Meta signup did not return all required connection details. Your WhatsApp account was not connected. Please try again.",
+      );
+    }, 90000);
+
+    try {
+      fb.login(
       (response) => {
-        const code = response.authResponse?.code;
+        loginCallbackReceivedRef.current = true;
+        const code = response.authResponse?.code || response.code;
 
         if (!code) {
-          setLoading(false);
-          setError("WhatsApp authorization was not completed.");
+          if (signupEventReceivedRef.current) {
+            if (signupTimeoutRef.current) clearTimeout(signupTimeoutRef.current);
+            setLoading(false);
+            setError("Meta closed the signup window without returning an authorization code. Please try again.");
+          }
           return;
         }
 
@@ -318,7 +352,16 @@ export function MetaWhatsAppConnect() {
           featureType: "whatsapp_business_app_onboarding",
         },
       },
-    );
+      );
+    } catch (err) {
+      if (signupTimeoutRef.current) clearTimeout(signupTimeoutRef.current);
+      setLoading(false);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not open Meta WhatsApp signup. Please try again.",
+      );
+    }
   };
 
   return (
