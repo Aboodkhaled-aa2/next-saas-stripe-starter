@@ -69,7 +69,7 @@ export async function POST(request: Request) {
 
     const tokenData = await tokenResponse.json();
 
-    if (!tokenResponse.ok || !tokenData.access_token) {
+    if (!tokenResponse.ok || typeof tokenData?.access_token !== "string" || !tokenData.access_token) {
       throw new Error(
         tokenData.error?.message ||
           "Failed to exchange WhatsApp authorization code",
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
     );
     const wabaData = await wabaResponse.json().catch(() => null);
 
-    if (!wabaResponse.ok || !wabaData?.id) {
+    if (!wabaResponse.ok || !wabaData?.id || String(wabaData.id) !== wabaId) {
       throw new Error(
         wabaData?.error?.message ||
           "The connected WhatsApp Business Account could not be verified.",
@@ -136,7 +136,7 @@ export async function POST(request: Request) {
     );
     const phoneData = await phoneResponse.json().catch(() => null);
 
-    if (!phoneResponse.ok || !phoneData?.id) {
+    if (!phoneResponse.ok || !phoneData?.id || String(phoneData.id) !== phoneNumberId) {
       throw new Error(
         phoneData?.error?.message ||
           "The connected WhatsApp phone number could not be verified.",
