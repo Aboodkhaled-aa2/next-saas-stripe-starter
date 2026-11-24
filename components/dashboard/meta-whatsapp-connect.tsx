@@ -300,6 +300,7 @@ export function MetaWhatsAppConnect() {
           extras: {
             setup: {},
             featureType: "whatsapp_business_app_onboarding",
+            sessionInfoVersion: "3",
           },
         },
       );
