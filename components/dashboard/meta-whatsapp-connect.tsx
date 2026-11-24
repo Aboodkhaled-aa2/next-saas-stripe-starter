@@ -242,6 +242,14 @@ export function MetaWhatsAppConnect() {
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
+      // Safe diagnostic: record message origin and payload type before filtering.
+      // Never log message contents, authorization codes, tokens, or account IDs.
+      console.info(DIAGNOSTIC, "Window message received.", {
+        origin: event.origin,
+        dataType: typeof event.data,
+      });
+      recordDiagnostic(`Window message: origin=${event.origin}, data type=${typeof event.data}.`);
+
       let originUrl: URL;
       try {
         originUrl = new URL(event.origin);
