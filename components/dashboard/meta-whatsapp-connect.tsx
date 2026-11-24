@@ -272,7 +272,13 @@ export function MetaWhatsAppConnect() {
           ? JSON.parse(event.data)
           : event.data;
       } catch {
-        console.warn(DIAGNOSTIC, "Received an unparseable message from an approved Facebook origin.");
+        // Report only payload shape, never the raw message text.
+        const rawLength = typeof event.data === "string" ? event.data.length : 0;
+        recordDiagnostic(`Facebook message was not JSON (string length=${rawLength}).`);
+        console.warn(DIAGNOSTIC, "Received a non-JSON message from an approved Facebook origin.", {
+          dataType: typeof event.data,
+          stringLength: rawLength,
+        });
         return;
       }
 
