@@ -31,6 +31,8 @@ type EmbeddedSignupMessage = {
   };
 };
 
+const DIAGNOSTIC = "[WhatsApp signup diagnostic]";
+
 export function MetaWhatsAppConnect() {
   const [sdkReady, setSdkReady] = useState(false);
   const [setupReady, setSetupReady] = useState(false);
@@ -38,6 +40,11 @@ export function MetaWhatsAppConnect() {
   const [error, setError] = useState("");
   const [configId, setConfigId] = useState<string | null>(null);
   const [appId, setAppId] = useState<string | null>(null);
+  const [diagnostics, setDiagnostics] = useState<string[]>([]);
+
+  const recordDiagnostic = (message: string) => {
+    setDiagnostics((current) => [...current, message].slice(-8));
+  };
 
   const stateRef = useRef<string | null>(null);
   const codeRef = useRef<string | null>(null);
@@ -60,17 +67,30 @@ export function MetaWhatsAppConnect() {
   };
 
   const submitSignup = async () => {
-    if (submittedRef.current) return;
+    if (submittedRef.current) {
+      console.info(DIAGNOSTIC, "Callback skipped: request already submitted.");
+      return;
+    }
 
     const code = codeRef.current;
     const state = stateRef.current;
     const sessionInfo = sessionInfoRef.current;
+
+    recordDiagnostic(`Prerequisites: code=${Boolean(code)}, state=${Boolean(state)}, WABA=${Boolean(sessionInfo?.waba_id)}, phone=${Boolean(sessionInfo?.phone_number_id)}.`);
+    console.info(DIAGNOSTIC, "Checking signup prerequisites.", {
+      hasAuthorizationCode: Boolean(code),
+      hasOAuthState: Boolean(state),
+      hasWabaId: Boolean(sessionInfo?.waba_id),
+      hasPhoneNumberId: Boolean(sessionInfo?.phone_number_id),
+      hasBusinessId: Boolean(sessionInfo?.business_id),
+    });
 
     // Meta returns the authorization code and selected assets on separate channels.
     if (!code || !state || !sessionInfo?.waba_id) return;
 
     submittedRef.current = true;
     clearSignupTimeout();
+    console.info(DIAGNOSTIC, "Sending signup data to the application callback.");
 
     try {
       const response = await fetch("/api/integrations/meta/whatsapp/callback", {
@@ -87,14 +107,25 @@ export function MetaWhatsAppConnect() {
       });
 
       const data = await response.json().catch(() => null);
+      recordDiagnostic(`Server callback: HTTP ${response.status} (${response.ok ? "success" : "failed"}).`);
+      console.info(DIAGNOSTIC, "Application callback responded.", {
+        status: response.status,
+        ok: response.ok,
+        hasErrorMessage: Boolean(data?.error),
+      });
+
       if (!response.ok) {
         throw new Error(data?.error || "WhatsApp connection failed.");
       }
 
+      console.info(DIAGNOSTIC, "Signup completed successfully; reloading integration page.");
       window.location.reload();
     } catch (err) {
       submittedRef.current = false;
       setLoading(false);
+      console.error(DIAGNOSTIC, "Application callback failed.", {
+        message: err instanceof Error ? err.message : "Unknown callback error",
+      });
       setError(err instanceof Error ? err.message : "WhatsApp connection failed.");
     }
   };
@@ -108,12 +139,21 @@ export function MetaWhatsAppConnect() {
     const initialize = () => {
       const fb = getFacebook();
       if (!fb) {
+        console.error(DIAGNOSTIC, "Facebook SDK initialization callback ran without FB.");
         if (!cancelled) setError("Facebook SDK failed to initialize.");
         return;
       }
 
-      fb.init({ appId, cookie: true, xfbml: true, version: "v26.0" });
-      if (!cancelled) setSdkReady(true);
+      try {
+        fb.init({ appId, cookie: true, xfbml: true, version: "v26.0" });
+        console.info(DIAGNOSTIC, "Facebook SDK initialized.", { version: "v26.0" });
+        if (!cancelled) setSdkReady(true);
+      } catch (err) {
+        console.error(DIAGNOSTIC, "Facebook SDK initialization failed.", {
+          message: err instanceof Error ? err.message : "Unknown SDK initialization error",
+        });
+        if (!cancelled) setError("Facebook SDK failed to initialize.");
+      }
     };
 
     if (getFacebook()) {
@@ -129,6 +169,10 @@ export function MetaWhatsAppConnect() {
         script.defer = true;
         script.crossOrigin = "anonymous";
         script.src = "https://connect.facebook.net/en_US/sdk.js";
+        script.onerror = () => {
+          console.error(DIAGNOSTIC, "Facebook SDK script failed to load.");
+          if (!cancelled) setError("Facebook SDK failed to load. Check network or content blockers.");
+        };
         document.body.appendChild(script);
       } else {
         const interval = window.setInterval(() => {
@@ -154,12 +198,21 @@ export function MetaWhatsAppConnect() {
     let cancelled = false;
 
     const prepare = async () => {
+      console.info(DIAGNOSTIC, "Requesting signup configuration.");
       try {
         const response = await fetch("/api/integrations/meta/whatsapp/start", {
           method: "POST",
           cache: "no-store",
         });
         const data = await response.json().catch(() => null);
+
+        console.info(DIAGNOSTIC, "Signup configuration response.", {
+          status: response.status,
+          ok: response.ok,
+          hasState: Boolean(data?.state),
+          hasConfigId: Boolean(data?.configId),
+          hasAppId: Boolean(data?.appId),
+        });
 
         if (!response.ok || !data?.state || !data?.configId || !data?.appId) {
           throw new Error(data?.error || "WhatsApp Embedded Signup is unavailable.");
@@ -172,6 +225,9 @@ export function MetaWhatsAppConnect() {
           setSetupReady(true);
         }
       } catch (err) {
+        console.error(DIAGNOSTIC, "Could not prepare signup.", {
+          message: err instanceof Error ? err.message : "Unknown setup error",
+        });
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "WhatsApp Embedded Signup is unavailable.");
         }
@@ -186,10 +242,21 @@ export function MetaWhatsAppConnect() {
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
-      if (
-        event.origin !== "https://www.facebook.com" &&
-        event.origin !== "https://web.facebook.com"
-      ) return;
+      let originUrl: URL;
+      try {
+        originUrl = new URL(event.origin);
+      } catch {
+        return;
+      }
+
+      // Meta may deliver Embedded Signup messages from different HTTPS
+      // subdomains of facebook.com. Match the hostname boundary safely.
+      const isFacebookOrigin =
+        originUrl.protocol === "https:" &&
+        (originUrl.hostname === "facebook.com" ||
+          originUrl.hostname.endsWith(".facebook.com"));
+
+      if (!isFacebookOrigin) return;
 
       let message: EmbeddedSignupMessage;
       try {
@@ -197,14 +264,34 @@ export function MetaWhatsAppConnect() {
           ? JSON.parse(event.data)
           : event.data;
       } catch {
+        console.warn(DIAGNOSTIC, "Received an unparseable message from an approved Facebook origin.");
         return;
       }
 
-      if (!message || message.type !== "WA_EMBEDDED_SIGNUP") return;
+      if (!message) {
+        recordDiagnostic("Meta sent an empty message.");
+        return;
+      }
 
+      const dataKeys = message.data && typeof message.data === "object"
+        ? Object.keys(message.data).sort().join(", ") || "none"
+        : "not an object";
       const eventName = String(message.event || "").toUpperCase();
+      recordDiagnostic(`Meta message: type=${String(message.type || "missing")}, event=${eventName || "missing"}, data keys=${dataKeys}.`);
+      if (message.type !== "WA_EMBEDDED_SIGNUP") return;
+
+      console.info(DIAGNOSTIC, "Received Embedded Signup event.", {
+        origin: event.origin,
+        event: eventName || "missing",
+        hasWabaId: Boolean(message.data?.waba_id),
+        hasPhoneNumberId: Boolean(message.data?.phone_number_id),
+        hasBusinessId: Boolean(message.data?.business_id),
+        currentStep: message.data?.current_step || null,
+        hasMetaErrorMessage: Boolean(message.data?.error_message),
+      });
 
       if (eventName === "CANCEL") {
+        recordDiagnostic(`Meta signup cancelled${message.data?.current_step ? ` at ${message.data.current_step}` : ""}.`);
         setLoading(false);
         resetSignup();
         setError(
@@ -216,6 +303,7 @@ export function MetaWhatsAppConnect() {
       }
 
       if (eventName === "ERROR") {
+        recordDiagnostic("Meta reported an Embedded Signup error.");
         setLoading(false);
         resetSignup();
         setError(message.data?.error_message || "Meta reported an error during WhatsApp signup.");
@@ -234,6 +322,8 @@ export function MetaWhatsAppConnect() {
       };
 
       if (!sessionInfoRef.current.waba_id) {
+        recordDiagnostic(`Meta finish event had no WABA ID. Available data keys: ${dataKeys}.`);
+        console.error(DIAGNOSTIC, "Meta sent a finish event without a WABA ID.");
         setLoading(false);
         resetSignup();
         setError("Meta completed signup but did not return a WhatsApp Business Account ID. Please try again.");
@@ -262,15 +352,23 @@ export function MetaWhatsAppConnect() {
     resetSignup();
     setLoading(true);
     setError("");
+    setDiagnostics(["Signup started. Waiting for Meta authorization and account details."]);
+    console.info(DIAGNOSTIC, "User started Embedded Signup.");
 
-    // A bounded wait prevents an incomplete Meta popup flow from leaving the button spinning forever.
     timeoutRef.current = setTimeout(() => {
       if (submittedRef.current) return;
+      console.error(DIAGNOSTIC, "Signup timed out waiting for both Meta response channels.", {
+        receivedAuthorizationCode: Boolean(codeRef.current),
+        receivedWabaId: Boolean(sessionInfoRef.current?.waba_id),
+        receivedPhoneNumberId: Boolean(sessionInfoRef.current?.phone_number_id),
+      });
       setLoading(false);
       setError(
         sessionInfoRef.current?.waba_id
           ? "Meta returned the business account, but the authorization code was not received. Please try connecting again."
-          : "WhatsApp signup did not finish. If the Meta window was closed, try connecting again.",
+          : codeRef.current
+            ? "Meta authorization succeeded, but the WhatsApp business account details were not received."
+            : "WhatsApp signup did not finish. Check the browser console for diagnostic details.",
       );
       resetSignup();
     }, 60000);
@@ -279,6 +377,11 @@ export function MetaWhatsAppConnect() {
       fb.login(
         (response) => {
           const code = response?.authResponse?.code;
+          console.info(DIAGNOSTIC, "Facebook login callback received.", {
+            status: response?.status || "missing",
+            hasAuthorizationCode: Boolean(code),
+          });
+
           if (!code) {
             setLoading(false);
             resetSignup();
@@ -290,6 +393,7 @@ export function MetaWhatsAppConnect() {
             return;
           }
 
+          recordDiagnostic("Meta authorization code received. Waiting for WhatsApp account details.");
           codeRef.current = code;
           void submitSignup();
         },
@@ -304,7 +408,10 @@ export function MetaWhatsAppConnect() {
           },
         },
       );
-    } catch {
+    } catch (err) {
+      console.error(DIAGNOSTIC, "FB.login threw an exception.", {
+        message: err instanceof Error ? err.message : "Unknown FB.login error",
+      });
       setLoading(false);
       resetSignup();
       setError("Could not open the Meta signup window. Check your browser popup settings and try again.");
@@ -330,6 +437,14 @@ export function MetaWhatsAppConnect() {
         <p role="alert" className="max-w-xl text-sm leading-5 text-red-400">
           {error}
         </p>
+      )}
+      {diagnostics.length > 0 && (
+        <div className="w-full max-w-xl rounded-lg border border-slate-700 bg-slate-900/70 p-3 text-xs leading-5 text-slate-300" aria-live="polite">
+          <p className="mb-1 font-semibold text-slate-100">WhatsApp connection diagnostics</p>
+          <ol className="list-decimal space-y-1 pl-4">
+            {diagnostics.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}
+          </ol>
+        </div>
       )}
     </div>
   );
