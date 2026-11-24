@@ -242,18 +242,21 @@ export function MetaWhatsAppConnect() {
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
-      const approvedOrigin =
-        event.origin === "https://www.facebook.com" ||
-        event.origin === "https://web.facebook.com";
-      let originHost = "unknown";
-      try { originHost = new URL(event.origin).hostname; } catch {}
-      if (!approvedOrigin) {
-        if (originHost === "facebook.com" || originHost.endsWith(".facebook.com")) {
-          recordDiagnostic(`Meta message ignored from unapproved origin: ${originHost}.`);
-          console.warn(DIAGNOSTIC, "Ignored Facebook message from unapproved origin.", { origin: event.origin });
-        }
+      let originUrl: URL;
+      try {
+        originUrl = new URL(event.origin);
+      } catch {
         return;
       }
+
+      // Meta may deliver Embedded Signup messages from different HTTPS
+      // subdomains of facebook.com. Match the hostname boundary safely.
+      const isFacebookOrigin =
+        originUrl.protocol === "https:" &&
+        (originUrl.hostname === "facebook.com" ||
+          originUrl.hostname.endsWith(".facebook.com"));
+
+      if (!isFacebookOrigin) return;
 
       let message: EmbeddedSignupMessage;
       try {
