@@ -50,6 +50,7 @@ export function MetaWhatsAppConnect() {
   const codeRef = useRef<string | null>(null);
   const sessionInfoRef = useRef<WhatsAppSessionInfo | null>(null);
   const submittedRef = useRef(false);
+  const attemptActiveRef = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearSignupTimeout = () => {
@@ -61,13 +62,14 @@ export function MetaWhatsAppConnect() {
 
   const resetSignup = () => {
     clearSignupTimeout();
+    attemptActiveRef.current = false;
     codeRef.current = null;
     sessionInfoRef.current = null;
     submittedRef.current = false;
   };
 
   const submitSignup = async () => {
-    if (submittedRef.current) {
+    if (!attemptActiveRef.current || submittedRef.current) {
       console.info(DIAGNOSTIC, "Callback skipped: request already submitted.");
       return;
     }
@@ -121,11 +123,11 @@ export function MetaWhatsAppConnect() {
       console.info(DIAGNOSTIC, "Signup completed successfully; reloading integration page.");
       window.location.reload();
     } catch (err) {
-      submittedRef.current = false;
-      setLoading(false);
       console.error(DIAGNOSTIC, "Application callback failed.", {
         message: err instanceof Error ? err.message : "Unknown callback error",
       });
+      resetSignup();
+      setLoading(false);
       setError(err instanceof Error ? err.message : "WhatsApp connection failed.");
     }
   };
@@ -364,6 +366,7 @@ export function MetaWhatsAppConnect() {
     }
 
     resetSignup();
+    attemptActiveRef.current = true;
     setLoading(true);
     setError("");
     setDiagnostics(["Signup started. Waiting for Meta authorization and account details."]);
@@ -385,11 +388,12 @@ export function MetaWhatsAppConnect() {
             : "WhatsApp signup did not finish. Check the browser console for diagnostic details.",
       );
       resetSignup();
-    }, 60000);
+    }, 15000);
 
     try {
       fb.login(
         (response) => {
+          if (!attemptActiveRef.current) return;
           const code = response?.authResponse?.code;
           console.info(DIAGNOSTIC, "Facebook login callback received.", {
             status: response?.status || "missing",
