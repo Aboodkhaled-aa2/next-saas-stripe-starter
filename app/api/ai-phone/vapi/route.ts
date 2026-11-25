@@ -387,12 +387,22 @@ async function hasVoiceMinutesAvailable(userId: string, plan: string | null | un
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
+      email: true,
       stripeSubscriptionId: true,
       extraVoiceMinutes: true,
       trialStartedAt: true,
       trialEndsAt: true,
     },
   });
+
+  if (user?.email?.toLowerCase() === "tawilabood8@gmail.com") {
+    return {
+      allowed: true,
+      remaining: Number.MAX_SAFE_INTEGER,
+      maxDurationSeconds: 4 * 60 * 60,
+      reason: null,
+    };
+  }
 
   const now = Date.now();
   const trialActive =
@@ -636,6 +646,7 @@ export async function POST(request: Request) {
       const user = await prisma.user.findUnique({
         where: { id: configuration.businessProfile.userId },
         select: {
+          email: true,
           plan: true,
           stripeSubscriptionId: true,
           trialStartedAt: true,
@@ -644,7 +655,10 @@ export async function POST(request: Request) {
         },
       });
 
+      const adminVoiceOverride =
+        user?.email?.toLowerCase() === "tawilabood8@gmail.com";
       const trialActive =
+        !adminVoiceOverride &&
         !user?.stripeSubscriptionId &&
         Boolean(user?.trialEndsAt && user.trialEndsAt.getTime() > Date.now());
 
@@ -683,7 +697,7 @@ export async function POST(request: Request) {
         );
       }
 
-      if (!trialActive && user?.stripeSubscriptionId && includedVoiceMinutes > 0) {
+      if (!adminVoiceOverride && !trialActive && user?.stripeSubscriptionId && includedVoiceMinutes > 0) {
         try {
           const subscription = await stripe.subscriptions.retrieve(
             user.stripeSubscriptionId,
@@ -720,13 +734,13 @@ export async function POST(request: Request) {
         }
       }
 
-      const includedMinutesUsed = trialActive
+      const includedMinutesUsed = adminVoiceOverride || trialActive
         ? 0
         : Math.min(billedMinutes, includedRemaining);
       const trialMinutesUsed = trialActive
         ? Math.min(billedMinutes, includedRemaining)
         : 0;
-      const extraMinutesUsed = trialActive
+      const extraMinutesUsed = adminVoiceOverride || trialActive
         ? 0
         : Math.max(billedMinutes - includedMinutesUsed, 0);
 
@@ -740,7 +754,7 @@ export async function POST(request: Request) {
           return;
         }
 
-        let chargeableExtraMinutes = extraMinutesUsed;
+        let chargeableExtraMinutes = adminVoiceOverride ? 0 : extraMinutesUsed;
 
         if (chargeableExtraMinutes > 0) {
           const deducted = await tx.user.updateMany({
@@ -819,7 +833,7 @@ export async function POST(request: Request) {
                 ? new Date(message.endedAt)
                 : null,
             metadata: {
-              billingPeriod: trialActive ? "trial" : "subscription",
+              billingPeriod: adminVoiceOverride ? "admin_override" : trialActive ? "trial" : "subscription",
               trialMinutesUsed,
               endedReason:
                 typeof (message as { endedReason?: unknown }).endedReason === "string"
