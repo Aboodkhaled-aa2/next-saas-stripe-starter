@@ -195,22 +195,7 @@ async function canUseMessaging(
 
   const now = new Date();
 
-  if (user.email?.toLowerCase() === "tawilabood8@gmail.com") {
-    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-
-    return {
-      allowed: true,
-      remaining: Number.MAX_SAFE_INTEGER,
-      used: 0,
-      limit: Number.MAX_SAFE_INTEGER,
-      usesExtraCredit: false,
-      periodStart,
-      periodEnd,
-      isTrial: false,
-      reason: null,
-    };
-  }
+  const isAdminAccount = user.email?.toLowerCase() === "tawilabood8@gmail.com";
 
   const isTrial = !user.stripeSubscriptionId &&
     Boolean(user.trialStartedAt && user.trialEndsAt && user.trialEndsAt > now);
@@ -226,40 +211,46 @@ async function canUseMessaging(
     periodEnd = user.trialEndsAt!;
     limit = 100;
   } else {
-    if (!user.stripeSubscriptionId) {
-      return {
-        allowed: false,
-        remaining: 0,
-        usesExtraCredit: false,
-        reason: "Your free trial has ended. Choose a plan to continue.",
-      };
-    }
+    if (isAdminAccount && !user.stripeSubscriptionId) {
+      periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      limit = user.plan === "PRO" ? 15000 : user.plan === "BUSINESS" ? 6000 : 3000;
+    } else {
+      if (!user.stripeSubscriptionId) {
+        return {
+          allowed: false,
+          remaining: 0,
+          usesExtraCredit: false,
+          reason: "Your free trial has ended. Choose a plan to continue.",
+        };
+      }
 
-    let subscription;
-    try {
-      subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
-    } catch (error) {
-      console.error("Failed to verify subscription before messaging:", error);
-      return {
-        allowed: false,
-        remaining: 0,
-        usesExtraCredit: false,
-        reason: "We could not verify your subscription. Please try again later.",
-      };
-    }
+      let subscription;
+      try {
+        subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+      } catch (error) {
+        console.error("Failed to verify subscription before messaging:", error);
+        return {
+          allowed: false,
+          remaining: 0,
+          usesExtraCredit: false,
+          reason: "We could not verify your subscription. Please try again later.",
+        };
+      }
 
-    if (!["active", "trialing"].includes(subscription.status)) {
-      return {
-        allowed: false,
-        remaining: 0,
-        usesExtraCredit: false,
-        reason: "Messaging automation requires an active paid subscription.",
-      };
-    }
+      if (!["active", "trialing"].includes(subscription.status)) {
+        return {
+          allowed: false,
+          remaining: 0,
+          usesExtraCredit: false,
+          reason: "Messaging automation requires an active paid subscription.",
+        };
+      }
 
-    periodStart = new Date(subscription.current_period_start * 1000);
-    periodEnd = new Date(subscription.current_period_end * 1000);
-    limit = user.plan === "PRO" ? 15000 : user.plan === "BUSINESS" ? 6000 : 3000;
+      periodStart = new Date(subscription.current_period_start * 1000);
+      periodEnd = new Date(subscription.current_period_end * 1000);
+      limit = user.plan === "PRO" ? 15000 : user.plan === "BUSINESS" ? 6000 : 3000;
+    }
   }
 
   // Only successfully sent AI replies consume messaging allowance. Inbound customer messages are free.
