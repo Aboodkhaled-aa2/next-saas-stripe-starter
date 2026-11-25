@@ -6,6 +6,7 @@ import { stripe } from "@/lib/stripe";
 import { UserSubscriptionPlan } from "types";
 
 const META_REVIEW_EMAIL = "meta-review@smartcleaningdesk.com";
+const ADMIN_AI_OVERRIDE_EMAIL = "tawilabood8@gmail.com";
 
 export async function getUserSubscriptionPlan(
   userId: string,
@@ -37,6 +38,21 @@ export async function getUserSubscriptionPlan(
 
   // Legacy accounts without trial dates remain without a trial.
   // Never manufacture trial dates during reads, login, or subscription checks.
+
+  if (user.email?.toLowerCase() === ADMIN_AI_OVERRIDE_EMAIL) {
+    const adminPlan =
+      pricingData.find((plan) => plan.title === "Pro") || pricingData[0];
+
+    return {
+      ...adminPlan,
+      ...user,
+      stripeCurrentPeriodEnd: Date.now() + 366 * 86_400_000,
+      isPaid: true,
+      isTrial: false,
+      interval: "year",
+      isCanceled: false,
+    };
+  }
 
   if (user.email?.toLowerCase() === META_REVIEW_EMAIL) {
     const reviewPlan =
