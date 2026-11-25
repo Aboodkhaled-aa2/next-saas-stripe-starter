@@ -51,17 +51,8 @@ export function MetaWhatsAppConnect() {
   const sessionInfoRef = useRef<WhatsAppSessionInfo | null>(null);
   const submittedRef = useRef(false);
   const attemptActiveRef = useRef(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearSignupTimeout = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-  };
 
   const resetSignup = () => {
-    clearSignupTimeout();
     attemptActiveRef.current = false;
     codeRef.current = null;
     sessionInfoRef.current = null;
@@ -91,7 +82,6 @@ export function MetaWhatsAppConnect() {
     if (!code || !state || !sessionInfo?.waba_id) return;
 
     submittedRef.current = true;
-    clearSignupTimeout();
     console.info(DIAGNOSTIC, "Sending signup data to the application callback.");
 
     try {
@@ -371,24 +361,6 @@ export function MetaWhatsAppConnect() {
     setError("");
     setDiagnostics(["Signup started. Waiting for Meta authorization and account details."]);
     console.info(DIAGNOSTIC, "User started Embedded Signup.");
-
-    timeoutRef.current = setTimeout(() => {
-      if (submittedRef.current) return;
-      console.error(DIAGNOSTIC, "Signup timed out waiting for both Meta response channels.", {
-        receivedAuthorizationCode: Boolean(codeRef.current),
-        receivedWabaId: Boolean(sessionInfoRef.current?.waba_id),
-        receivedPhoneNumberId: Boolean(sessionInfoRef.current?.phone_number_id),
-      });
-      setLoading(false);
-      setError(
-        sessionInfoRef.current?.waba_id
-          ? "Meta returned the business account, but the authorization code was not received. Please try connecting again."
-          : codeRef.current
-            ? "Meta authorization succeeded, but the WhatsApp business account details were not received."
-            : "WhatsApp signup did not finish. Check the browser console for diagnostic details.",
-      );
-      resetSignup();
-    }, 15000);
 
     try {
       fb.login(
