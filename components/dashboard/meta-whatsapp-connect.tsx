@@ -40,12 +40,6 @@ export function MetaWhatsAppConnect() {
   const [error, setError] = useState("");
   const [configId, setConfigId] = useState<string | null>(null);
   const [appId, setAppId] = useState<string | null>(null);
-  const [diagnostics, setDiagnostics] = useState<string[]>([]);
-
-  const recordDiagnostic = (message: string) => {
-    setDiagnostics((current) => [...current, message].slice(-8));
-  };
-
   const stateRef = useRef<string | null>(null);
   const codeRef = useRef<string | null>(null);
   const sessionInfoRef = useRef<WhatsAppSessionInfo | null>(null);
@@ -69,7 +63,6 @@ export function MetaWhatsAppConnect() {
     const state = stateRef.current;
     const sessionInfo = sessionInfoRef.current;
 
-    recordDiagnostic(`Prerequisites: code=${Boolean(code)}, state=${Boolean(state)}, WABA=${Boolean(sessionInfo?.waba_id)}, phone=${Boolean(sessionInfo?.phone_number_id)}.`);
     console.info(DIAGNOSTIC, "Checking signup prerequisites.", {
       hasAuthorizationCode: Boolean(code),
       hasOAuthState: Boolean(state),
@@ -99,7 +92,7 @@ export function MetaWhatsAppConnect() {
       });
 
       const data = await response.json().catch(() => null);
-      recordDiagnostic(`Server callback: HTTP ${response.status} (${response.ok ? "success" : "failed"}).`);
+
       console.info(DIAGNOSTIC, "Application callback responded.", {
         status: response.status,
         ok: response.ok,
@@ -240,7 +233,7 @@ export function MetaWhatsAppConnect() {
         origin: event.origin,
         dataType: typeof event.data,
       });
-      recordDiagnostic(`Window message: origin=${event.origin}, data type=${typeof event.data}.`);
+
 
       let originUrl: URL;
       try {
@@ -266,7 +259,7 @@ export function MetaWhatsAppConnect() {
       } catch {
         // Report only payload shape, never the raw message text.
         const rawLength = typeof event.data === "string" ? event.data.length : 0;
-        recordDiagnostic(`Facebook message was not JSON (string length=${rawLength}).`);
+
         console.warn(DIAGNOSTIC, "Received a non-JSON message from an approved Facebook origin.", {
           dataType: typeof event.data,
           stringLength: rawLength,
@@ -275,7 +268,7 @@ export function MetaWhatsAppConnect() {
       }
 
       if (!message) {
-        recordDiagnostic("Meta sent an empty message.");
+
         return;
       }
 
@@ -283,7 +276,7 @@ export function MetaWhatsAppConnect() {
         ? Object.keys(message.data).sort().join(", ") || "none"
         : "not an object";
       const eventName = String(message.event || "").toUpperCase();
-      recordDiagnostic(`Meta message: type=${String(message.type || "missing")}, event=${eventName || "missing"}, data keys=${dataKeys}.`);
+
       if (message.type !== "WA_EMBEDDED_SIGNUP") return;
 
       console.info(DIAGNOSTIC, "Received Embedded Signup event.", {
@@ -297,7 +290,7 @@ export function MetaWhatsAppConnect() {
       });
 
       if (eventName === "CANCEL") {
-        recordDiagnostic(`Meta signup cancelled${message.data?.current_step ? ` at ${message.data.current_step}` : ""}.`);
+
         setLoading(false);
         resetSignup();
         setError(
@@ -309,7 +302,7 @@ export function MetaWhatsAppConnect() {
       }
 
       if (eventName === "ERROR") {
-        recordDiagnostic("Meta reported an Embedded Signup error.");
+
         setLoading(false);
         resetSignup();
         setError(message.data?.error_message || "Meta reported an error during WhatsApp signup.");
@@ -328,7 +321,7 @@ export function MetaWhatsAppConnect() {
       };
 
       if (!sessionInfoRef.current.waba_id) {
-        recordDiagnostic(`Meta finish event had no WABA ID. Available data keys: ${dataKeys}.`);
+
         console.error(DIAGNOSTIC, "Meta sent a finish event without a WABA ID.");
         setLoading(false);
         resetSignup();
@@ -359,7 +352,6 @@ export function MetaWhatsAppConnect() {
     attemptActiveRef.current = true;
     setLoading(true);
     setError("");
-    setDiagnostics(["Signup started. Waiting for Meta authorization and account details."]);
     console.info(DIAGNOSTIC, "User started Embedded Signup.");
 
     try {
@@ -383,7 +375,6 @@ export function MetaWhatsAppConnect() {
             return;
           }
 
-          recordDiagnostic("Meta authorization code received. Waiting for WhatsApp account details.");
           codeRef.current = code;
           void submitSignup();
         },
@@ -427,14 +418,6 @@ export function MetaWhatsAppConnect() {
         <p role="alert" className="max-w-xl text-sm leading-5 text-red-400">
           {error}
         </p>
-      )}
-      {diagnostics.length > 0 && (
-        <div className="w-full max-w-xl rounded-lg border border-slate-700 bg-slate-900/70 p-3 text-xs leading-5 text-slate-300" aria-live="polite">
-          <p className="mb-1 font-semibold text-slate-100">WhatsApp connection diagnostics</p>
-          <ol className="list-decimal space-y-1 pl-4">
-            {diagnostics.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}
-          </ol>
-        </div>
       )}
     </div>
   );
