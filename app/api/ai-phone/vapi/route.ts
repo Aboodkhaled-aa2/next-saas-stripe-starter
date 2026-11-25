@@ -395,14 +395,7 @@ async function hasVoiceMinutesAvailable(userId: string, plan: string | null | un
     },
   });
 
-  if (user?.email?.toLowerCase() === "tawilabood8@gmail.com") {
-    return {
-      allowed: true,
-      remaining: Number.MAX_SAFE_INTEGER,
-      maxDurationSeconds: 4 * 60 * 60,
-      reason: null,
-    };
-  }
+  const isAdminAccount = user?.email?.toLowerCase() === "tawilabood8@gmail.com";
 
   const now = Date.now();
   const trialActive =
@@ -462,7 +455,26 @@ async function hasVoiceMinutesAvailable(userId: string, plan: string | null | un
   const extraVoiceMinutes = Math.max(user?.extraVoiceMinutes ?? 0, 0);
   let includedRemaining = 0;
 
-  if (user?.stripeSubscriptionId) {
+  if (isAdminAccount && !user?.stripeSubscriptionId) {
+    const includedVoiceMinutes = plan === "PRO" ? 500 : 200;
+    const periodStart = new Date(now);
+    periodStart.setDate(1);
+    periodStart.setHours(0, 0, 0, 0);
+    const periodEnd = new Date(periodStart);
+    periodEnd.setMonth(periodEnd.getMonth() + 1);
+    const usage = await prisma.voiceUsage.aggregate({
+      where: {
+        userId,
+        source: "VAPI_CALL",
+        startedAt: { gte: periodStart, lt: periodEnd },
+      },
+      _sum: { includedMinutesUsed: true },
+    });
+    includedRemaining = Math.max(
+      includedVoiceMinutes - (usage._sum.includedMinutesUsed ?? 0),
+      0,
+    );
+  } else if (user?.stripeSubscriptionId) {
     try {
       const subscription = await stripe.subscriptions.retrieve(
         user.stripeSubscriptionId,
@@ -655,10 +667,10 @@ export async function POST(request: Request) {
         },
       });
 
-      const adminVoiceOverride =
+      const isAdminAccount =
         user?.email?.toLowerCase() === "tawilabood8@gmail.com";
       const trialActive =
-        !adminVoiceOverride &&
+        !isAdminAccount &&
         !user?.stripeSubscriptionId &&
         Boolean(user?.trialEndsAt && user.trialEndsAt.getTime() > Date.now());
 
@@ -697,7 +709,27 @@ export async function POST(request: Request) {
         );
       }
 
-      if (!adminVoiceOverride && !trialActive && user?.stripeSubscriptionId && includedVoiceMinutes > 0) {
+      if (isAdminAccount && !trialActive && includedVoiceMinutes > 0) {
+        const periodStart = new Date();
+        periodStart.setDate(1);
+        periodStart.setHours(0, 0, 0, 0);
+        const periodEnd = new Date(periodStart);
+        periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+        const usage = await prisma.voiceUsage.aggregate({
+          where: {
+            userId: configuration.businessProfile.userId,
+            source: "VAPI_CALL",
+            startedAt: { gte: periodStart, lt: periodEnd },
+          },
+          _sum: { includedMinutesUsed: true },
+        });
+
+        includedRemaining = Math.max(
+          includedVoiceMinutes - (usage._sum.includedMinutesUsed ?? 0),
+          0,
+        );
+      } else if (!trialActive && user?.stripeSubscriptionId && includedVoiceMinutes > 0) {
         try {
           const subscription = await stripe.subscriptions.retrieve(
             user.stripeSubscriptionId,
@@ -716,9 +748,7 @@ export async function POST(request: Request) {
                   lt: periodEnd,
                 },
               },
-              _sum: {
-                includedMinutesUsed: true,
-              },
+              _sum: { includedMinutesUsed: true },
             });
 
             includedRemaining = Math.max(
@@ -734,13 +764,13 @@ export async function POST(request: Request) {
         }
       }
 
-      const includedMinutesUsed = adminVoiceOverride || trialActive
+      const includedMinutesUsed = trialActive
         ? 0
         : Math.min(billedMinutes, includedRemaining);
       const trialMinutesUsed = trialActive
         ? Math.min(billedMinutes, includedRemaining)
         : 0;
-      const extraMinutesUsed = adminVoiceOverride || trialActive
+      const extraMinutesUsed = trialActive
         ? 0
         : Math.max(billedMinutes - includedMinutesUsed, 0);
 
@@ -754,7 +784,7 @@ export async function POST(request: Request) {
           return;
         }
 
-        let chargeableExtraMinutes = adminVoiceOverride ? 0 : extraMinutesUsed;
+        let chargeableExtraMinutes = extraMinutesUsed;
 
         if (chargeableExtraMinutes > 0) {
           const deducted = await tx.user.updateMany({
@@ -833,7 +863,7 @@ export async function POST(request: Request) {
                 ? new Date(message.endedAt)
                 : null,
             metadata: {
-              billingPeriod: adminVoiceOverride ? "admin_override" : trialActive ? "trial" : "subscription",
+              billingPeriod: trialActive ? "trial" : "subscription",
               trialMinutesUsed,
               endedReason:
                 typeof (message as { endedReason?: unknown }).endedReason === "string"
