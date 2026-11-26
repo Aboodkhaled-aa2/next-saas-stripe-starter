@@ -403,9 +403,13 @@ function normalizeToolCalls(message: VapiMessage) {
     };
   });
 
-  return [...directCalls, ...wrappedCalls].filter(
+  const calls = [...directCalls, ...wrappedCalls].filter(
     (call) => call.id && call.name,
   );
+
+  // Vapi payloads can expose the same call in both supported shapes.
+  // Deduplicate by call ID to prevent executing a booking twice.
+  return Array.from(new Map(calls.map((call) => [call.id, call])).values());
 }
 
 
@@ -656,6 +660,26 @@ export async function POST(request: Request) {
 
       const knowledge = buildKnowledge(configuration.businessProfile);
       const systemPrompt = buildCustomerAgentSystemPrompt(knowledge);
+      const phoneSystemPrompt = `${systemPrompt}
+
+PHONE CALL ENDING RULES:
+- When the caller clearly says goodbye or confirms they have nothing else to ask, call the endCall tool immediately.
+- Do not say goodbye yourself; the endCall tool provides the final goodbye.
+- Never repeat goodbye or continue a goodbye loop.
+- Do not call endCall while the caller is answering, asking a follow-up question, or asking you to wait.
+- Never claim an appointment is booked unless create_booking returned success: true.
+- Never negotiate, discount, or change a price unless the configured business pricing explicitly authorizes it.
+`;
+      const maxDurationSeconds = Math.min(
+        180,
+        voiceBalance.maxDurationSeconds ?? 180,
+      );
+
+      console.info("[VAPI ASSISTANT CONFIGURED]", {
+        callId: message.call?.id ?? null,
+        toolNames: [...toolSchemas.map((tool) => tool.function.name), "endCall"],
+        maxDurationSeconds,
+      });
 
       return NextResponse.json({
         assistant: {
@@ -663,17 +687,17 @@ export async function POST(request: Request) {
           firstMessage:
             configuration.greeting ||
             `Hi, thanks for calling ${configuration.businessProfile.businessName || "our cleaning company"}. How can I help you today?`,
-          maxDurationSeconds: voiceBalance.maxDurationSeconds ?? 600,
+          maxDurationSeconds,
           model: {
             provider: "openai",
             model: "gpt-4o",
             messages: [
               {
                 role: "system",
-                content: systemPrompt,
+                content: phoneSystemPrompt,
               },
             ],
-            tools: toolSchemas,
+            tools: [...toolSchemas, { type: "endCall" }],
           },
           serverMessages: [
             "end-of-call-report",
@@ -945,12 +969,39 @@ export async function POST(request: Request) {
         result: string;
       }> = [];
 
+      console.info("[VAPI TOOL CALLS RECEIVED]", {
+        callId: message.call?.id ?? null,
+        count: toolCalls.length,
+        toolNames: toolCalls.map((toolCall) => toolCall.name),
+      });
+
       for (const toolCall of toolCalls) {
-        const result = await executeCustomerAgentToolCall({
-          name: toolCall.name,
-          arguments: toolCall.parameters,
-          userId: configuration.businessProfile.userId,
-        });
+        let result: Record<string, unknown>;
+
+        try {
+          result = await executeCustomerAgentToolCall({
+            name: toolCall.name,
+            arguments: toolCall.parameters,
+            userId: configuration.businessProfile.userId,
+          });
+
+          console.info("[VAPI TOOL CALL COMPLETED]", {
+            callId: message.call?.id ?? null,
+            toolName: toolCall.name,
+            success: result.success === true,
+          });
+        } catch (error) {
+          console.error("[VAPI TOOL EXECUTION FAILED]", {
+            callId: message.call?.id ?? null,
+            toolName: toolCall.name,
+            errorName: error instanceof Error ? error.name : "UnknownError",
+          });
+
+          result = {
+            success: false,
+            error: "The requested action could not be completed. Please offer a human follow-up.",
+          };
+        }
 
         results.push({
           toolCallId: toolCall.id,
