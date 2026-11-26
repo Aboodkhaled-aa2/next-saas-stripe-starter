@@ -246,14 +246,18 @@ type VapiMessage = {
     endedAt?: string | null;
     duration?: number | null;
     phoneNumber?: {
+      id?: string | null;
       number?: string | null;
     } | null;
+    phoneNumberId?: string | null;
   } | null;
   startedAt?: string | null;
   endedAt?: string | null;
   phoneNumber?: {
+    id?: string | null;
     number?: string | null;
   } | null;
+  phoneNumberId?: string | null;
   toolCallList?: Array<{
     id?: string;
     name?: string;
@@ -284,6 +288,16 @@ function getCalledNumber(message: VapiMessage) {
   );
 }
 
+function getVapiPhoneNumberId(message: VapiMessage) {
+  return (
+    message.call?.phoneNumber?.id?.trim() ||
+    message.call?.phoneNumberId?.trim() ||
+    message.phoneNumber?.id?.trim() ||
+    message.phoneNumberId?.trim() ||
+    ""
+  );
+}
+
 async function getBusinessByPhone(phoneNumber: string) {
   if (!phoneNumber) {
     return null;
@@ -301,6 +315,43 @@ async function getBusinessByPhone(phoneNumber: string) {
       businessProfile: true,
     },
   });
+}
+
+async function getBusinessByVapiPhoneNumberId(vapiPhoneNumberId: string) {
+  if (!vapiPhoneNumberId) {
+    return null;
+  }
+
+  const phone = await prisma.phoneNumber.findFirst({
+    where: {
+      status: "ACTIVE",
+      metadata: {
+        path: ["vapiPhoneNumberId"],
+        equals: vapiPhoneNumberId,
+      },
+    },
+    select: {
+      phoneNumber: true,
+    },
+  });
+
+  if (!phone?.phoneNumber) {
+    return null;
+  }
+
+  return getBusinessByPhone(phone.phoneNumber);
+}
+
+async function getBusinessForMessage(message: VapiMessage) {
+  const vapiPhoneNumberId = getVapiPhoneNumberId(message);
+  if (vapiPhoneNumberId) {
+    const configuration = await getBusinessByVapiPhoneNumberId(vapiPhoneNumberId);
+    if (configuration?.businessProfile) {
+      return configuration;
+    }
+  }
+
+  return getBusinessByPhone(getCalledNumber(message));
 }
 
 function buildKnowledge(
@@ -563,10 +614,20 @@ export async function POST(request: Request) {
       );
     }
 
+    // Resolve the tenant from Vapi's immutable imported phone-number ID first.
+    // Fall back to the E.164 number for older webhook payloads.
     const calledNumber = getCalledNumber(message);
-    const configuration = await getBusinessByPhone(calledNumber);
+    const vapiPhoneNumberId = getVapiPhoneNumberId(message);
+    const configuration = await getBusinessForMessage(message);
 
     if (!configuration?.businessProfile) {
+      console.error("[VAPI WEBHOOK UNMATCHED PHONE]", {
+        messageType: message.type,
+        callId: message.call?.id ?? null,
+        vapiPhoneNumberId: vapiPhoneNumberId || null,
+        hasCalledNumber: Boolean(calledNumber),
+      });
+
       return NextResponse.json(
         { error: "AI Phone configuration was not found." },
         { status: 404 },
