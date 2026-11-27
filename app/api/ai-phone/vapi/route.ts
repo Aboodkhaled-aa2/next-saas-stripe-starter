@@ -740,7 +740,8 @@ PHONE CALL ENDING RULES:
       });
 
       if (existingUsage) {
-        return NextResponse.json({ ok: true });
+        console.info("[VAPI USAGE DUPLICATE IGNORED]", { callId });
+        return NextResponse.json({ ok: true, duplicate: true });
       }
 
       const user = await prisma.user.findUnique({
@@ -862,7 +863,9 @@ PHONE CALL ENDING RULES:
         ? 0
         : Math.max(billedMinutes - includedMinutesUsed, 0);
 
-      await prisma.$transaction(async (tx) => {
+      let chargeableExtraMinutes = extraMinutesUsed;
+      try {
+        await prisma.$transaction(async (tx) => {
         const currentUsage = await tx.voiceUsage.findUnique({
           where: { callId },
           select: { id: true },
@@ -871,8 +874,6 @@ PHONE CALL ENDING RULES:
         if (currentUsage) {
           return;
         }
-
-        let chargeableExtraMinutes = extraMinutesUsed;
 
         if (chargeableExtraMinutes > 0) {
           const deducted = await tx.user.updateMany({
@@ -959,9 +960,29 @@ PHONE CALL ENDING RULES:
                   : null,
             },
           },
-        });
+          });
+      } catch (error) {
+        if (
+          error &&
+          typeof error === "object" &&
+          "code" in error &&
+          error.code === "P2002"
+        ) {
+          console.info("[VAPI USAGE DUPLICATE RACE IGNORED]", { callId });
+          return NextResponse.json({ ok: true, duplicate: true });
+        }
+        throw error;
+      }
       });
 
+      console.info("[VAPI USAGE RECORDED]", {
+        callId,
+        durationSeconds,
+        billedMinutes,
+        includedMinutesUsed,
+        trialMinutesUsed,
+        extraMinutesUsed: chargeableExtraMinutes,
+      });
       return NextResponse.json({ ok: true });
     }
 
