@@ -60,6 +60,38 @@ export async function POST(req: Request) {
       );
     }
 
+    // Validate the configured Stripe price before creating Checkout.
+    // Voice-minute purchases use one-time payment prices, not recurring prices.
+    let stripePrice;
+    try {
+      stripePrice = await stripe.prices.retrieve(selected.priceId);
+    } catch (priceError) {
+      console.error("[VOICE MINUTE PRICE NOT FOUND]", {
+        package: packageKey,
+        priceId: selected.priceId,
+        error: priceError,
+      });
+
+      return NextResponse.json(
+        { error: "The selected voice minute package has an invalid Stripe price configuration." },
+        { status: 500 },
+      );
+    }
+
+    if (!stripePrice.active || stripePrice.type !== "one_time") {
+      console.error("[VOICE MINUTE PRICE INVALID]", {
+        package: packageKey,
+        priceId: selected.priceId,
+        active: stripePrice.active,
+        type: stripePrice.type,
+      });
+
+      return NextResponse.json(
+        { error: "The selected voice minute package must use an active one-time Stripe price." },
+        { status: 500 },
+      );
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { id: true, email: true },
