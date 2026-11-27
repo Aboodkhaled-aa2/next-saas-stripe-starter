@@ -618,6 +618,18 @@ export async function POST(request: Request) {
       );
     }
 
+    // Log delivery metadata before tenant resolution so unmatched reports are visible.
+    // Do not log phone numbers, caller data, transcripts, or webhook secrets.
+    console.info("[VAPI WEBHOOK RECEIVED]", {
+      messageType: message.type,
+      callId: message.call?.id ?? null,
+      hasPhoneNumber: Boolean(getCalledNumber(message)),
+      hasPhoneNumberId: Boolean(getVapiPhoneNumberId(message)),
+      hasStartedAt: Boolean(message.call?.startedAt ?? message.startedAt),
+      hasEndedAt: Boolean(message.call?.endedAt ?? message.endedAt),
+      hasCallDuration: typeof message.call?.duration === "number",
+    });
+
     // Resolve the tenant from Vapi's immutable imported phone-number ID first.
     // Fall back to the E.164 number for older webhook payloads.
     const calledNumber = getCalledNumber(message);
@@ -737,6 +749,7 @@ PHONE CALL ENDING RULES:
       });
 
       if (existingUsage) {
+        console.info("[VAPI VOICE USAGE DUPLICATE]", { callId });
         return NextResponse.json({ ok: true });
       }
 
@@ -957,6 +970,16 @@ PHONE CALL ENDING RULES:
             },
           },
         });
+      });
+
+      console.info("[VAPI VOICE USAGE RECORDED]", {
+        callId,
+        durationSeconds,
+        billedMinutes: Number(billedMinutes.toFixed(4)),
+        includedMinutesUsed: Number(includedMinutesUsed.toFixed(4)),
+        trialMinutesUsed: Number(trialMinutesUsed.toFixed(4)),
+        extraMinutesUsed: Number(chargeableExtraMinutes.toFixed(4)),
+        billingPeriod: trialActive ? "trial" : "subscription",
       });
 
       return NextResponse.json({ ok: true });
