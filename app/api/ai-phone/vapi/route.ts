@@ -668,6 +668,9 @@ PHONE CALL ENDING RULES:
 - Never repeat goodbye or continue a goodbye loop.
 - Do not call endCall while the caller is answering, asking a follow-up question, or asking you to wait.
 - Never claim an appointment is booked unless create_booking returned success: true.
+- If check_booking_availability returns success: false, do not say the requested time is available.
+- If create_booking returns success: false, clearly tell the caller the booking was NOT completed; offer an alternative time or human follow-up.
+- Only confirm the exact date and time returned by a successful create_booking result. Do not treat an availability check as a booking.
 - Never negotiate, discount, or change a price unless the configured business pricing explicitly authorizes it.
 `;
       const maxDurationSeconds = Math.min(
@@ -984,6 +987,34 @@ PHONE CALL ENDING RULES:
             arguments: toolCall.parameters,
             userId: configuration.businessProfile.userId,
           });
+
+          if (toolCall.name === "check_booking_availability") {
+            console.info("[VAPI BOOKING AVAILABILITY RESULT]", {
+              callId: message.call?.id ?? null,
+              success: result.success === true,
+              available: result.available === true,
+              durationMinutes:
+                typeof result.durationMinutes === "number" ? result.durationMinutes : null,
+              conflictCount: Array.isArray(result.conflicts) ? result.conflicts.length : 0,
+              alternativeCount: Array.isArray(result.alternativeTimes)
+                ? result.alternativeTimes.length
+                : 0,
+              error: typeof result.error === "string" ? result.error : null,
+            });
+          }
+
+          if (toolCall.name === "create_booking") {
+            console.info("[VAPI BOOKING CREATE RESULT]", {
+              callId: message.call?.id ?? null,
+              success: result.success === true,
+              startAt:
+                result.booking && typeof result.booking === "object" &&
+                "startAt" in result.booking
+                  ? result.booking.startAt
+                  : null,
+              error: typeof result.error === "string" ? result.error : null,
+            });
+          }
 
           console.info("[VAPI TOOL CALL COMPLETED]", {
             callId: message.call?.id ?? null,
