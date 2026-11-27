@@ -973,7 +973,6 @@ PHONE CALL ENDING RULES:
         }
         throw error;
       }
-      });
 
       console.info("[VAPI USAGE RECORDED]", {
         callId,
