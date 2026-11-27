@@ -960,7 +960,8 @@ PHONE CALL ENDING RULES:
                   : null,
             },
           },
-          });
+        });
+        });
       } catch (error) {
         if (
           error &&
