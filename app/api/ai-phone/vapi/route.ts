@@ -662,8 +662,19 @@ export async function POST(request: Request) {
       const systemPrompt = buildCustomerAgentSystemPrompt(knowledge);
       const phoneSystemPrompt = `${systemPrompt}
 
+PHONE CALL OPENING AND SERVICE RULES:
+- At the start of every call, clearly say the exact business name: ${knowledge.businessName || "the company name configured for this business"}. Do not introduce yourself without identifying the company.
+- Use a warm, natural greeting, then ask how you can help. Do not skip the company name even if a custom greeting is configured.
+- Never end a call immediately after the caller states a request. First understand the request, answer what you can, and ask the next necessary question.
+- Ask one clear question at a time. Do not make the caller repeat information already provided.
+- If the caller asks whether the company can come today, asks for an appointment today, or asks for same-day availability, treat it as a live availability request. Do not guess, say "probably", or answer from business hours.
+- For every availability or booking request, use get_booking_duration_rules first when duration depends on property details; collect only the missing details needed to calculate duration.
+- Then call check_booking_availability for the exact requested date and time using a valid startAt and endAt. If the caller asks for any time today but gives no time, ask what time they prefer, then check that time. If the caller asks whether there is any availability today without a preferred time, check suitable slots during the business hours returned in the business context; if the exact business timezone or hours cannot be determined, ask a clarifying question rather than inventing a slot.
+- If the requested slot is unavailable, offer only alternative times returned by the availability tool. If available and the caller asked you to book it, proceed to create_booking when all required details are collected.
+- Never end the call until you have either answered the caller's question, completed the requested action, or clearly explained what information/action is still needed and offered an appropriate next step.
+
 PHONE CALL ENDING RULES:
-- When the caller clearly says goodbye or confirms they have nothing else to ask, call the endCall tool immediately.
+- When the caller clearly says goodbye or confirms they have nothing else to ask, call the endCall tool immediately, but only after addressing the caller's request.
 - Do not say goodbye yourself; the endCall tool provides the final goodbye.
 - Never repeat goodbye or continue a goodbye loop.
 - Do not call endCall while the caller is answering, asking a follow-up question, or asking you to wait.
@@ -687,9 +698,15 @@ PHONE CALL ENDING RULES:
       return NextResponse.json({
         assistant: {
           name: configuration.assistantName || "Smart Cleaning Desk Receptionist",
-          firstMessage:
-            configuration.greeting ||
-            `Hi, thanks for calling ${configuration.businessProfile.businessName || "our cleaning company"}. How can I help you today?`,
+          firstMessage: (() => {
+            const businessName =
+              configuration.businessProfile.businessName?.trim() || "our cleaning company";
+            const configuredGreeting = configuration.greeting?.trim();
+            const greeting = configuredGreeting || "How can I help you today?";
+            return greeting.toLowerCase().includes(businessName.toLowerCase())
+              ? greeting
+              : `Thank you for calling ${businessName}. ${greeting}`;
+          })(),
           maxDurationSeconds,
           model: {
             provider: "openai",
